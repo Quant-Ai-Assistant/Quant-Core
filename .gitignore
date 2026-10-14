@@ -46,3 +46,14 @@ apps/web/src/locales/**/*.mjs
 apps/web/src/locales/**/*.js
 apps/web/scripts/msgids.json
 playwright-report-www
+
+# Editor and IDE files
+.idea/
+*.iml
+.vscode/
+.fleet/
+.zed/
+*.code-workspace
+*.swp
+*.swo
+*~
