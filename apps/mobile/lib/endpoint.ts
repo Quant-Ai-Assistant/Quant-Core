@@ -11,6 +11,11 @@ export const MAX_API_PROBE_RESPONSE_BYTES = 64 * 1024;
 export type EndpointResult = { ok: true; url: string } | { ok: false; error: string };
 type HealthResponse = { json?: { ok?: boolean }; error?: { message?: string } };
 
+/** True when this build ships with a server address; otherwise the user must enter one. */
+export function hasBuiltInApiBase() {
+  return Boolean(process.env.EXPO_PUBLIC_API_URL);
+}
+
 export function defaultApiBase() {
   return originOnly(DEFAULT_API) ?? LOCAL_API;
 }
@@ -18,7 +23,7 @@ export function defaultApiBase() {
 export function normalizeApiBase(input: string): EndpointResult {
   const trimmed = input.trim();
   if (!trimmed) return { ok: false, error: t("Enter a server URL") };
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  const withScheme = hasScheme(trimmed) ? trimmed : `https://${trimmed}`;
   let parsed: URL;
   try {
     parsed = new URL(withScheme);
@@ -29,9 +34,6 @@ export function normalizeApiBase(input: string): EndpointResult {
     return { ok: false, error: t("Use an http or https URL") };
   }
   if (!parsed.hostname) return { ok: false, error: t("That URL is missing a host") };
-  if (parsed.protocol === "http:" && !isLanOrLocalHost(parsed.hostname)) {
-    return { ok: false, error: "Public servers need https://" };
-  }
   const url = `${parsed.protocol}//${parsed.host}`;
   return { ok: true, url };
 }
@@ -66,6 +68,24 @@ export async function probeApiBase(
   fetchImpl: typeof fetch = fetch,
   access: ServerAccess | null = null,
 ): Promise<EndpointResult> {
+  const first = await probeOrigin(input, fetchImpl, access);
+  // A bare address gets https:// first; self-hosted servers without a domain only answer http.
+  const result =
+    !first.ok && "unreachable" in first && !hasScheme(input.trim())
+      ? await probeOrigin(`http://${input.trim()}`, fetchImpl, access)
+      : first;
+  return result.ok ? { ok: true, url: result.url } : { ok: false, error: result.error };
+}
+
+function hasScheme(value: string) {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
+}
+
+async function probeOrigin(
+  input: string,
+  fetchImpl: typeof fetch,
+  access: ServerAccess | null,
+): Promise<EndpointResult | { ok: false; error: string; unreachable: true }> {
   const parsed = normalizeApiBase(input);
   if (!parsed.ok) return parsed;
   const controller = new AbortController();
@@ -113,7 +133,7 @@ export async function probeApiBase(
     }
     return parsed;
   } catch {
-    return { ok: false, error: t("Could not reach that server") };
+    return { ok: false, error: t("Could not reach that server"), unreachable: true };
   } finally {
     clearTimeout(timer);
   }

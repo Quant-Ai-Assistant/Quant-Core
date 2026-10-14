@@ -196,15 +196,7 @@ export default function Layout() {
                         contentStyle: { backgroundColor: native.groupedPage },
                       }}
                     />
-                    <Stack.Screen
-                      name="server"
-                      options={{
-                        title: t("Server"),
-                        presentation: "formSheet",
-                        sheetAllowedDetents: [0.6, 1],
-                        sheetGrabberVisible: true,
-                      }}
-                    />
+                    <Stack.Screen name="server" options={{ title: t("Server") }} />
                     <Stack.Screen
                       name="new"
                       options={{

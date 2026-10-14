@@ -21,6 +21,7 @@ import {
   currentApiBase,
   displayApiHost,
   loadSessionToken,
+  needsServerSetup,
   passwordResetCapabilities,
   requestPasswordReset,
   rpc,
@@ -102,6 +103,7 @@ export default function SignIn() {
     );
   }
   if (hasSession) return <Redirect href="/" />;
+  if (needsServerSetup()) return <Redirect href="/server" />;
 
   async function submit() {
     if (pending || !reset?.passwordAuth) return;

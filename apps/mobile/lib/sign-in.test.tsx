@@ -62,6 +62,7 @@ vi.mock("./i18n", () => ({
 vi.mock("./api", () => ({
   currentApiBase: () => "https://example.invalid",
   displayApiHost: () => "example.invalid",
+  needsServerSetup: () => false,
   usesCustomApiBase: () => false,
   loadSessionToken: vi.fn().mockResolvedValue(null),
   passwordResetCapabilities: vi.fn(),

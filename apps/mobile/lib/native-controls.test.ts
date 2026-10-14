@@ -32,7 +32,7 @@ describe("native iOS controls", () => {
     expect(header).toContain('variant: "plain"');
     expect(header).toContain("unstable_headerRightItems");
     expect(header).toContain('variant: "done"');
-    for (const screen of ["app/new.tsx", "app/new-space.tsx", "app/server.tsx"]) {
+    for (const screen of ["app/new.tsx", "app/new-space.tsx"]) {
       const file = source(screen);
       expect(file).toContain("cancelHeaderOptions");
       expect(file).not.toMatch(/headerLeft:\s*\(\)\s*=>/);
