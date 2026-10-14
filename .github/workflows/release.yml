@@ -190,7 +190,7 @@ jobs:
           cat > "$RUNNER_TEMP/notes.md" <<NOTES
           Quant ${VERSION}, built from ${GITHUB_SHA}.
 
-          - **Server:** run \`install-images.sh\` from this release, or update an installed server from Settings → Software update.
+          - **Server:** run \`install-images.sh\` from this release, or update an installed server from Settings → Updates.
           - **Android:** install \`quant.apk\`. Later versions install from Account → Check for updates.
           - **Desktop:** \`.dmg\` for macOS, \`.exe\` for Windows, \`.AppImage\` for Linux. The apps are not signed by Apple or Microsoft; see the README for the first launch.
           NOTES

@@ -284,11 +284,16 @@ YAML
   fi
 }
 
+# A /dev/tty node can exist without a controlling terminal (CI, cron), so try to open it.
+has_tty() {
+  (exec </dev/tty) 2>/dev/null
+}
+
 # Reads one answer from the terminal even when stdin is not one. Non-interactive runs take the
 # QUANT_* variable instead and never prompt.
 ask() {
   local prompt="$1" default="$2" answer=""
-  if [[ ! -r /dev/tty ]]; then
+  if ! has_tty; then
     printf '%s' "$default"
     return 0
   fi
@@ -302,7 +307,7 @@ ask() {
 
 ask_secret() {
   local prompt="$1" first="" second=""
-  [[ -r /dev/tty ]] || return 0
+  has_tty || return 0
   while true; do
     read -r -s -p "$prompt (leave empty to generate one): " first </dev/tty || true
     echo >/dev/tty
@@ -363,7 +368,7 @@ set_env_value() {
 
 # Asks for the gate settings once. A rerun keeps what .env already has.
 configure_gate() {
-  local domain port address user password hash credential origin generated=""
+  local domain port current_port address user password hash credential origin generated=""
   if [[ -n "$(env_value QUANT_BASIC_HASH)" && -n "$(env_value QUANT_GATE_TOKEN)" ]]; then
     echo "Keeping the gate settings in .env."
     return 0
@@ -386,14 +391,16 @@ configure_gate() {
     origin="https://${domain}"
     address="$domain"
   else
-    port="${QUANT_PORT:-8080}"
+    # A rerun keeps the port the gate already holds: it is busy only because Quant runs there.
+    current_port="$(env_value QUANT_PORT)"
+    port="${QUANT_PORT:-${current_port:-8080}}"
     while true; do
       port=$(ask "Port for Quant on this server" "$port")
       if ! valid_port "$port"; then
         echo "Enter a number from 1 to 65535."
-      elif port_in_use "$port"; then
+      elif [[ "$port" != "$current_port" || -z "$(env_value QUANT_SITE_ADDRESS)" ]] && port_in_use "$port"; then
         echo "Port $port is already in use. Choose another one."
-        [[ -r /dev/tty ]] || fail "port $port is already in use. Set QUANT_PORT to a free port."
+        has_tty || fail "port $port is already in use. Set QUANT_PORT to a free port."
       else
         break
       fi

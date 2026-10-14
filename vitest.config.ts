@@ -54,5 +54,7 @@ export default defineConfig({
     ],
     testTimeout: 30_000,
     hookTimeout: 60_000,
+    // Node 25+ ships a localStorage global that shadows jsdom's in browser-environment tests.
+    execArgv: ["--no-experimental-webstorage"],
   },
 });

@@ -12,6 +12,7 @@
     "dev": "cross-env COREPACK_ENABLE_DOWNLOAD_PROMPT=0 turbo dev --filter=@rakazo/api --filter=@rakazo/worker --filter=@rakazo/web --filter=@rakazo/sandbox-supervisor",
     "build": "turbo build",
     "check": "turbo check",
+    "gate": "pnpm db:generate && pnpm lint && pnpm check && pnpm test",
     "lint": "biome check .",
     "format": "biome check --write .",
     "db:generate": "pnpm --filter @rakazo/db generate",
