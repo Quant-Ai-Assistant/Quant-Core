@@ -426,12 +426,12 @@ describe("LocalStackController", () => {
   it("keeps lifecycle commands off the standalone project despite environment overrides", async () => {
     const dir = path.join(root, "stack");
     await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, STACK_ENV_FILE), "COMPOSE_PROJECT_NAME=rakazo\n");
-    const stack = controller({ env: { COMPOSE_PROJECT_NAME: "rakazo" } }, (args) =>
+    await writeFile(path.join(dir, STACK_ENV_FILE), "COMPOSE_PROJECT_NAME=quant\n");
+    const stack = controller({ env: { COMPOSE_PROJECT_NAME: "quant" } }, (args) =>
       args[7] === "up" ? { code: 1, stderr: "port is already allocated" } : ok(args),
     );
     expect((await stack.start()).phase).toBe("failed");
-    // A fresh process must stop the same desktop project without discovering or adopting rakazo.
+    // A fresh process must stop the same desktop project without discovering or adopting quant.
     expect((await controller().stop()).phase).toBe("idle");
     const commands = calls.filter(
       (call) => call.args[0] === "compose" && call.args[1] !== "version",
@@ -445,7 +445,7 @@ describe("LocalStackController", () => {
       "stop",
     ]);
     for (const call of commands) {
-      expect(call.args.slice(5, 7)).toEqual(["--project-name", "rakazo-desktop"]);
+      expect(call.args.slice(5, 7)).toEqual(["--project-name", "quant-desktop"]);
       expect(call.env).not.toHaveProperty("COMPOSE_PROJECT_NAME");
     }
   });

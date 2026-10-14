@@ -214,6 +214,7 @@ export interface ElectronAutoUpdater {
   allowDowngrade: boolean;
   allowPrerelease: boolean;
   disableWebInstaller: boolean;
+  disableDifferentialDownload: boolean;
   on: (event: string, listener: (payload: unknown) => void) => unknown;
   checkForUpdates: () => Promise<unknown>;
   downloadUpdate: () => Promise<unknown>;
@@ -285,6 +286,7 @@ export class DesktopUpdateController {
         updater.allowPrerelease = false;
         updater.allowDowngrade = false;
         updater.disableWebInstaller = true;
+        updater.disableDifferentialDownload = true;
         updater.on("checking-for-update", () => this.push({ type: "check-start" }));
         updater.on("update-available", (payload) => {
           const version = versionFrom(payload);
