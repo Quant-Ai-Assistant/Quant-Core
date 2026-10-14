@@ -58,7 +58,22 @@
 
 <br>
 
-<!-- SCREENSHOTS -->
+<table>
+  <tr>
+    <td width="25%"><img src="docs/images/welcome.png" alt="Quant welcome page with the logo and the Sign up and Sign in buttons" width="100%"></td>
+    <td width="25%"><img src="docs/images/chat.png" alt="Chat with the bot Chief, which repeats a reminder to send the weekly report" width="100%"></td>
+    <td width="25%"><img src="docs/images/incoming-call.png" alt="Chief calling after three unanswered reminders, with Decline, Answer and Remind me in 10 minutes" width="100%"></td>
+    <td width="25%"><img src="docs/images/missed-call.png" alt="Missed call card in the chat with the call reason and a Call back button" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Welcome</sub></td>
+    <td align="center"><sub>Reminders in a chat</sub></td>
+    <td align="center"><sub>The bot calls you</sub></td>
+    <td align="center"><sub>Missed call</sub></td>
+  </tr>
+</table>
+
+<sub>Screenshots show the dark theme with demo data.</sub>
 
 > [!NOTE]
 > The web interface is available in **English, Russian, German, Spanish, French, Portuguese (Brazil), Turkish, Hindi, Korean and Simplified Chinese**; the Android app in **English, Russian, German and Simplified Chinese**. Quant follows the browser or system language, and you can switch it in the account settings. The guides come in both English and Russian: [English](docs/en/) and [Русский](docs/ru/).
