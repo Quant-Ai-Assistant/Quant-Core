@@ -2,20 +2,21 @@
 
 set -Eeuo pipefail
 
-DOWNLOAD_BASE="${RAKAZO_DOWNLOAD_BASE:-https://raw.githubusercontent.com/elie222/rakazo/main/infra/compose}"
+DOWNLOAD_BASE="${RAKAZO_DOWNLOAD_BASE:-https://raw.githubusercontent.com/Quant-Ai-Assistant/Quant-Core/main/infra/compose}"
 while [[ "$DOWNLOAD_BASE" == */ ]]; do
   DOWNLOAD_BASE="${DOWNLOAD_BASE%/}"
 done
 case "$DOWNLOAD_BASE" in
   https://*) ;;
   *)
-    echo "Rakazo setup failed: RAKAZO_DOWNLOAD_BASE must use https." >&2
+    echo "Quant setup failed: RAKAZO_DOWNLOAD_BASE must use https." >&2
     exit 1
     ;;
 esac
 readonly DOWNLOAD_BASE
 
 readonly COMPOSE_FILE="docker-compose.images.yml"
+readonly GATE_FILE="Caddyfile.gate"
 readonly ENV_EXAMPLE=".env.images.example"
 readonly ENV_FILE=".env"
 
@@ -61,7 +62,7 @@ cleanup() {
 trap cleanup EXIT
 
 fail() {
-  echo "Rakazo setup failed: $*" >&2
+  echo "Quant setup failed: $*" >&2
   exit 1
 }
 
@@ -283,8 +284,164 @@ YAML
   fi
 }
 
+# Reads one answer from the terminal even when stdin is not one. Non-interactive runs take the
+# QUANT_* variable instead and never prompt.
+ask() {
+  local prompt="$1" default="$2" answer=""
+  if [[ ! -r /dev/tty ]]; then
+    printf '%s' "$default"
+    return 0
+  fi
+  if [[ -n "$default" ]]; then
+    read -r -p "$prompt [$default]: " answer </dev/tty || true
+  else
+    read -r -p "$prompt: " answer </dev/tty || true
+  fi
+  printf '%s' "${answer:-$default}"
+}
+
+ask_secret() {
+  local prompt="$1" first="" second=""
+  [[ -r /dev/tty ]] || return 0
+  while true; do
+    read -r -s -p "$prompt (leave empty to generate one): " first </dev/tty || true
+    echo >/dev/tty
+    [[ -z "$first" ]] && return 0
+    read -r -s -p "Repeat the password: " second </dev/tty || true
+    echo >/dev/tty
+    if [[ "$first" == "$second" ]]; then
+      printf '%s' "$first"
+      return 0
+    fi
+    echo "The passwords did not match. Try again." >/dev/tty
+  done
+}
+
+port_in_use() {
+  local port="$1"
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltnH 2>/dev/null | awk '{print $4}' | grep -Eq "[:.]${port}$"
+  elif command -v lsof >/dev/null 2>&1; then
+    lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
+  else
+    (exec 3<>"/dev/tcp/127.0.0.1/${port}") 2>/dev/null
+  fi
+}
+
+valid_port() {
+  [[ "$1" =~ ^[0-9]+$ ]] && (("$1" >= 1 && "$1" <= 65535))
+}
+
+detect_address() {
+  local address=""
+  if command -v hostname >/dev/null 2>&1; then
+    address=$(hostname -I 2>/dev/null | awk '{print $1}')
+  fi
+  if [[ -z "$address" ]] && command -v ipconfig >/dev/null 2>&1; then
+    address=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)
+  fi
+  printf '%s' "${address:-127.0.0.1}"
+}
+
+env_value() {
+  local key="$1"
+  awk -F= -v k="$key" '$1 == k { sub(/^[^=]*=/, ""); print; exit }' "$ENV_FILE"
+}
+
+set_env_value() {
+  local key="$1" value="$2"
+  temporary_file=$(mktemp "./${ENV_FILE}.tmp.XXXXXX")
+  awk -v k="$key" -v v="$value" '
+    index($0, k "=") == 1 { print k "=" v; done = 1; next }
+    { print }
+    END { if (!done) print k "=" v }
+  ' "$ENV_FILE" > "$temporary_file"
+  chmod 600 "$temporary_file"
+  mv -- "$temporary_file" "$ENV_FILE"
+  temporary_file=""
+}
+
+# Asks for the gate settings once. A rerun keeps what .env already has.
+configure_gate() {
+  local domain port address user password hash credential origin generated=""
+  if [[ -n "$(env_value QUANT_BASIC_HASH)" && -n "$(env_value QUANT_GATE_TOKEN)" ]]; then
+    echo "Keeping the gate settings in .env."
+    return 0
+  fi
+
+  echo
+  echo "Quant is reached through a gate that asks for a username and password (HTTP Basic Auth)."
+  domain=$(ask "Domain for HTTPS, pointed at this server (leave empty to use http://address:port)" "${QUANT_DOMAIN:-}")
+
+  if [[ -n "$domain" ]]; then
+    [[ "$domain" =~ ^[A-Za-z0-9.-]+$ ]] || fail "'$domain' is not a domain name."
+    for port in 80 443; do
+      port_in_use "$port" && fail "port $port is already in use, and HTTPS for $domain needs it."
+    done
+    set_env_value QUANT_PORT 80
+    set_env_value QUANT_CONTAINER_PORT 80
+    set_env_value QUANT_HTTPS_BIND 0.0.0.0:443
+    set_env_value QUANT_SITE_ADDRESS "$domain"
+    set_env_value QUANT_GATE_GLOBAL_OPTIONS ""
+    origin="https://${domain}"
+    address="$domain"
+  else
+    port="${QUANT_PORT:-8080}"
+    while true; do
+      port=$(ask "Port for Quant on this server" "$port")
+      if ! valid_port "$port"; then
+        echo "Enter a number from 1 to 65535."
+      elif port_in_use "$port"; then
+        echo "Port $port is already in use. Choose another one."
+        [[ -r /dev/tty ]] || fail "port $port is already in use. Set QUANT_PORT to a free port."
+      else
+        break
+      fi
+      port=""
+    done
+    address=$(ask "Address phones and other computers will use to reach this server" "${QUANT_PUBLIC_HOST:-$(detect_address)}")
+    set_env_value QUANT_PORT "$port"
+    set_env_value QUANT_CONTAINER_PORT 8080
+    set_env_value QUANT_SITE_ADDRESS "http://:8080"
+    set_env_value QUANT_GATE_GLOBAL_OPTIONS "auto_https off"
+    origin="http://${address}:${port}"
+  fi
+
+  user=$(ask "Username for the gate" "${QUANT_BASIC_USER:-quant}")
+  [[ "$user" =~ ^[A-Za-z0-9._-]+$ ]] || fail "the username may use letters, digits, dot, dash and underscore."
+  password="${QUANT_BASIC_PASSWORD:-}"
+  [[ -n "$password" ]] || password=$(ask_secret "Password for the gate")
+  if [[ -z "$password" ]]; then
+    password=$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)
+    generated="$password"
+  fi
+
+  hash=$(printf '%s' "$password" | docker run --rm -i "${CADDY_IMAGE:-caddy:2}" caddy hash-password 2>/dev/null) \
+    || fail "could not hash the gate password with the Caddy image."
+  credential=$(printf '%s:%s' "$user" "$password" | openssl base64 -A)
+
+  set_env_value QUANT_BASIC_USER "$user"
+  set_env_value QUANT_BASIC_HASH "'${hash}'"
+  set_env_value QUANT_BASIC_B64 "$credential"
+  set_env_value QUANT_GATE_TOKEN "$(openssl rand -hex 32)"
+  set_env_value BETTER_AUTH_URL "$origin"
+  set_env_value WEB_ORIGIN "$origin"
+  set_env_value API_URL "$origin"
+  set_env_value RAKAZO_HOST "$address"
+
+  QUANT_ORIGIN="$origin"
+  QUANT_USER="$user"
+  QUANT_GENERATED_PASSWORD="$generated"
+}
+
+configure_updater() {
+  [[ -n "$(env_value RAKAZO_UPDATER_TOKEN)" ]] || set_env_value RAKAZO_UPDATER_TOKEN "$(openssl rand -hex 32)"
+  set_env_value RAKAZO_DEPLOY_DIR "$(pwd -P)"
+}
+
 download "$COMPOSE_FILE"
 download "$ENV_EXAMPLE"
+download "$GATE_FILE"
 
 if [[ -e "$ENV_FILE" ]]; then
   echo "Keeping existing .env."
@@ -292,10 +449,16 @@ else
   create_env
 fi
 
+QUANT_ORIGIN=""
+QUANT_USER=""
+QUANT_GENERATED_PASSWORD=""
+configure_gate
+configure_updater
+
 validate_required_secrets
 
 if [[ "$prepare_only" == true ]]; then
-  echo "Rakazo files are ready. Edit .env, then run: bash install-images.sh"
+  echo "Quant files are ready. Edit .env, then run: bash install-images.sh"
   exit 0
 fi
 
@@ -326,4 +489,11 @@ else
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d ${up_pull_args[@]+"${up_pull_args[@]}"}
 fi
 
-echo "Rakazo is starting at http://127.0.0.1:5173"
+origin="${QUANT_ORIGIN:-$(env_value WEB_ORIGIN)}"
+echo
+echo "Quant is starting at ${origin}"
+echo "  Gate username: ${QUANT_USER:-$(env_value QUANT_BASIC_USER)}"
+if [[ -n "$QUANT_GENERATED_PASSWORD" ]]; then
+  echo "  Gate password: ${QUANT_GENERATED_PASSWORD}  (generated; it is not shown again)"
+fi
+echo "  Phone and desktop apps: choose \"Use a custom server\", enter ${origin} and the gate username and password."
