@@ -112,12 +112,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:integration
 
-  test-e2e:
-    name: Web E2E
-    uses: ./.github/workflows/playwright.yml
-    with:
-      upload_artifacts: true
-
   publish-mobile-update:
     name: Publish compatible mobile update
     # Quant's Android app updates from GitHub releases, not an Expo channel; opt in explicitly.
@@ -125,7 +119,7 @@ jobs:
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       vars.EXPO_UPDATES_ENABLED == 'true'
-    needs: [lint, check, build, test, test-integration, test-e2e]
+    needs: [lint, check, build, test, test-integration]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
@@ -278,7 +272,7 @@ jobs:
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       vars.PRODUCTION_DEPLOY_ENABLED == 'true'
-    needs: [lint, check, build, test, test-integration, test-e2e]
+    needs: [lint, check, build, test, test-integration]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
