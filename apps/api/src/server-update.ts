@@ -297,11 +297,12 @@ async function requireSidecar(config: UpdaterProxyConfig): Promise<void> {
   }
 }
 
+/** The sidecar requires both fields, so an empty request means the official repository's default branch. */
 function requestBody(input: ServerUpdateRequest): Record<string, string> {
-  const body: Record<string, string> = {};
-  if (input.repoUrl?.trim()) body.repoUrl = input.repoUrl.trim();
-  if (input.branch?.trim()) body.branch = input.branch.trim();
-  return body;
+  return {
+    repoUrl: input.repoUrl?.trim() || OFFICIAL_REPO_URL,
+    branch: input.branch?.trim() || DEFAULT_UPDATE_BRANCH,
+  };
 }
 
 async function sidecarJson<T>(

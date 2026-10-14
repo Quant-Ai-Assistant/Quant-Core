@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { DEFAULT_UPDATE_BRANCH, OFFICIAL_REPO_URL } from "@rakazo/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applyServerUpdate,
@@ -230,6 +231,11 @@ describe("sidecar proxy auth and no-git-apply", () => {
     };
     const check = await checkServerUpdate(config);
     expect(check.status).toBe("available");
+    const plan = fetchImpl.mock.calls.find(([input]) => String(input).endsWith("/plan"));
+    expect(JSON.parse(String(plan?.[1]?.body))).toEqual({
+      repoUrl: OFFICIAL_REPO_URL,
+      branch: DEFAULT_UPDATE_BRANCH,
+    });
     expect(authHeaders).toContain(`Bearer ${TOKEN}`);
     expect(JSON.stringify(check)).not.toContain(TOKEN);
   });

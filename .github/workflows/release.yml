@@ -184,6 +184,8 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
+          # Only the app builds: the run also holds Docker build records that do not extract.
+          pattern: "@(android|desktop-*)"
           path: release-artifacts
           merge-multiple: true
       - name: Create the release and its tag
