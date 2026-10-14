@@ -72,6 +72,9 @@
       ],
       "verifyUpdateCodeSignature": false
     },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
     "linux": {
       "executableName": "quant",
       "icon": "assets/icon.png",
