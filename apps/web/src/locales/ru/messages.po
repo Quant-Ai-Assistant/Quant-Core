@@ -980,8 +980,8 @@ msgid "Choose file"
 msgstr "Выбрать файл"
 
 #: src/pages/ModelSettingsOverlay.tsx
-msgid "Choose which connected model Rakazo uses."
-msgstr "Выберите, какую подключенную модель использует Rakazo."
+msgid "Choose which connected model Quant uses."
+msgstr "Выберите, какую подключенную модель использует Quant."
 
 #: src/pages/shell/dialogs.tsx
 msgid "Clear"
@@ -1815,8 +1815,8 @@ msgid "Create space"
 msgstr "Создайте пространство"
 
 #: src/pages/Auth.tsx
-msgid "Create your Rakazo"
-msgstr "Создайте свой Rakazo"
+msgid "Create your Quant"
+msgstr "Создайте свой Quant"
 
 #: src/components/AskCard.tsx
 msgid "Created"
@@ -3446,8 +3446,8 @@ msgid "Paste a replacement key"
 msgstr "Вставьте запасной ключ"
 
 #: src/pages/ModelSettingsOverlay.tsx
-msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "Вставьте OpenAI-совместимый адрес со своего сервера. При необходимости Rakazo добавляет /v1."
+msgid "Paste the OpenAI-compatible address from your server. Quant adds /v1 if needed."
+msgstr "Вставьте OpenAI-совместимый адрес со своего сервера. При необходимости Quant добавляет /v1."
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste your API key"
@@ -3854,8 +3854,8 @@ msgid "Return to call with {0}"
 msgstr "Вернуться к звонку с {0}"
 
 #: src/pages/McpOAuthCallback.tsx
-msgid "Return to Rakazo"
-msgstr "Вернуться в Rakazo"
+msgid "Return to Quant"
+msgstr "Вернуться в Quant"
 
 #. placeholder {0}: doc.revision
 #: src/pages/KnowledgeSection.tsx
@@ -4225,8 +4225,8 @@ msgid "Sign in again"
 msgstr ""
 
 #: src/pages/Auth.tsx
-msgid "Sign in to Rakazo"
-msgstr "Войти в Rakazo"
+msgid "Sign in to Quant"
+msgstr "Войти в Quant"
 
 #: src/lib/user-error.ts
 msgid "Sign in to your existing account to link SSO"
@@ -4601,8 +4601,8 @@ msgid "This server is already connected. Disconnect it first to authorize again.
 msgstr "Этот сервер уже подключен. Сначала отключите его, чтобы авторизоваться снова."
 
 #: src/pages/ModelSettingsOverlay.tsx
-msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "Вход по этой подписке пока недоступен в Rakazo. Используйте учетные данные развертывания или выберите другого поставщика."
+msgid "This subscription sign-in is not available in Quant yet. Use a deployment credential or choose another provider."
+msgstr "Вход по этой подписке пока недоступен в Quant. Используйте учетные данные развертывания или выберите другого поставщика."
 
 #: src/pages/Artifacts.tsx
 msgid "This week"

@@ -48,6 +48,11 @@ import { loadResponseStreamingPreference } from "../lib/response-streaming";
 import { clearSavedChats } from "../lib/saved-chats";
 import { registerSessionDiskCache } from "../lib/session";
 import { startUnsentSends } from "../lib/unsent-sends";
+import { installServerAccessFetch } from "../lib/server-access";
+import { loadServerAccess } from "../lib/server-access-store";
+
+// Before any request: every fetch to a gated server carries its Basic Auth credential.
+installServerAccessFetch();
 
 configureForegroundNotifications();
 registerSessionDiskCache(clearSavedChats);
@@ -139,7 +144,7 @@ export default function Layout() {
   useEffect(() => {
     void Promise.all([
       Promise.all([
-        loadApiBase(),
+        loadServerAccess().then(() => loadApiBase()),
         loadAppearancePreference().finally(() => setAppearanceReady(true)),
         loadResponseStreamingPreference(),
         loadRemoteImagesPreference(),
@@ -176,7 +181,7 @@ export default function Layout() {
                       contentStyle: { backgroundColor: String(native.page) },
                     }}
                   >
-                    <Stack.Screen name="index" options={{ headerShown: false, title: "Rakazo" }} />
+                    <Stack.Screen name="index" options={{ headerShown: false, title: "Quant" }} />
                     <Stack.Screen name="sign-in" options={{ headerShown: false }} />
                     <Stack.Screen
                       name="(settings)"

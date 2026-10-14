@@ -22,5 +22,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     }
   }
 
-  return config as ExpoConfig;
+  // Release builds take their version from the GitHub release: v0.1.42 is versionCode 42, which
+  // is what the in-app update compares against.
+  const version = process.env.QUANT_APP_VERSION;
+  const versionCode = Number(process.env.QUANT_VERSION_CODE);
+  return {
+    ...config,
+    ...(version ? { version } : {}),
+    android: {
+      ...config.android,
+      ...(Number.isInteger(versionCode) && versionCode > 0 ? { versionCode } : {}),
+    },
+  } as ExpoConfig;
 };

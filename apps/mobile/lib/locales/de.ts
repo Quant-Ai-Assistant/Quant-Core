@@ -22,8 +22,8 @@ export const DE_MESSAGES: Record<string, string> = {
   "Chat Settings": "Chat-Einstellungen",
   "Configure a plugin catalog on the server to connect apps.":
     "Richte auf dem Server einen Plugin-Katalog ein, um Apps zu verbinden.",
-  "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed.":
-    "Füge die OpenAI-kompatible Adresse deines Servers ein. Rakazo ergänzt /v1 bei Bedarf.",
+  "Paste the OpenAI-compatible address from your server. Quant adds /v1 if needed.":
+    "Füge die OpenAI-kompatible Adresse deines Servers ein. Quant ergänzt /v1 bei Bedarf.",
   "Settings: General": "Einstellungen: Allgemein",
   "Settings: Usage": "Einstellungen: Nutzung",
   "Sign-in did not return a session": "Die Anmeldung hat keine Sitzung zurückgegeben",
@@ -55,7 +55,7 @@ export const DE_MESSAGES: Record<string, string> = {
   "Custom server {host}": "Eigener Server {host}",
   "Don’t have an account?": "Du hast noch kein Konto?",
   Email: "E-Mail",
-  "Enter your Rakazo server address.": "Gib die Adresse deines Rakazo-Servers ein.",
+  "Enter your Quant server address.": "Gib die Adresse deines Quant-Servers ein.",
   "Forgot password?": "Passwort vergessen?",
   "Loading…": "Wird geladen…",
   Password: "Passwort",
@@ -64,9 +64,9 @@ export const DE_MESSAGES: Record<string, string> = {
   "Reset your password": "Setze dein Passwort zurück",
   "Send reset link": "Link zum Zurücksetzen senden",
   Server: "Server",
-  "Sign in to Rakazo": "Bei Rakazo anmelden",
+  "Sign in to Quant": "Bei Quant anmelden",
   "Sign up": "Registrieren",
-  "Sign up for Rakazo": "Bei Rakazo registrieren",
+  "Sign up for Quant": "Bei Quant registrieren",
   "Use a custom server": "Eigenen Server verwenden",
   "Use default server": "Standardserver verwenden",
   // app/index.tsx
@@ -379,8 +379,8 @@ export const DE_MESSAGES: Record<string, string> = {
   "Switching…": "Wird gewechselt…",
   "The final page may not load. Paste its URL or code here.":
     "Die letzte Seite lädt womöglich nicht. Füge ihre URL oder ihren Code hier ein.",
-  "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider.":
-    "Diese Abonnementanmeldung ist in Rakazo noch nicht verfügbar. Verwende Zugangsdaten der Bereitstellung oder wähle einen anderen Anbieter.",
+  "This subscription sign-in is not available in Quant yet. Use a deployment credential or choose another provider.":
+    "Diese Abonnementanmeldung ist in Quant noch nicht verfügbar. Verwende Zugangsdaten der Bereitstellung oder wähle einen anderen Anbieter.",
   "Use a found model": "Gefundenes Modell verwenden",
   "Use this model": "Dieses Modell verwenden",
   "Waiting for sign-in…": "Warten auf Anmeldung…",
@@ -673,8 +673,8 @@ export const DE_MESSAGES: Record<string, string> = {
   "Enter a server URL": "Gib eine Server-URL ein",
   "Public servers need https://. HTTP only works on your local network.":
     "Öffentliche Server brauchen https://. HTTP funktioniert nur im lokalen Netzwerk.",
-  "That URL did not look like a Rakazo server":
-    "Diese URL sieht nicht nach einem Rakazo-Server aus",
+  "That URL did not look like a Quant server":
+    "Diese URL sieht nicht nach einem Quant-Server aus",
   "That URL is missing a host": "Dieser URL fehlt ein Host",
   "That doesn’t look like a URL": "Das sieht nicht nach einer URL aus",
   "Use an http or https URL": "Verwende eine http- oder https-URL",
@@ -755,7 +755,7 @@ export const DE_MESSAGES: Record<string, string> = {
   "AI models": "KI-Modelle",
   Memory: "Gedächtnis",
   "Privacy policies": "Datenschutzerklärungen",
-  Rakazo: "Rakazo",
+  Quant: "Quant",
   "Withdraw all permissions": "Alle Berechtigungen widerrufen",
   "Withdraw all permissions?": "Alle Berechtigungen widerrufen?",
   "New mobile actions won't send data to these services. Runs already in progress and routines keep going until you stop them.":
@@ -789,4 +789,13 @@ export const DE_MESSAGES: Record<string, string> = {
     "Melde dich bei deinem bestehenden Konto an, um SSO zu verknüpfen",
   "SSO is temporarily unavailable. Try again.":
     "SSO ist vorübergehend nicht verfügbar. Versuche es erneut.",
+  "Username and password, if the server asks for them": "Benutzername und Passwort, falls der Server danach fragt",
+  "This server asks for a username and password": "Dieser Server verlangt Benutzername und Passwort",
+  "The server did not accept that username and password": "Der Server hat Benutzername und Passwort nicht akzeptiert",
+  "Could not check for updates": "Updates konnten nicht geprüft werden",
+  "Checking for updates…": "Suche nach Updates…",
+  "Downloading the update…": "Update wird heruntergeladen…",
+  "Install update {version}": "Update {version} installieren",
+  "Check for updates": "Nach Updates suchen",
+  "Up to date": "Aktuell",
 };

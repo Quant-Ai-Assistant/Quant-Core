@@ -1,5 +1,7 @@
 import { readBoundedJsonResponse } from "@rakazo/core";
 import { t } from "./i18n";
+import type { ServerAccess } from "./server-access";
+import { basicCredential, SERVER_ACCESS_HEADER } from "./server-access";
 
 const LOCAL_API = "http://127.0.0.1:3100";
 const DEFAULT_API = process.env.EXPO_PUBLIC_API_URL ?? LOCAL_API;
@@ -62,6 +64,7 @@ export function apiBaseWarning(url: string): string | null {
 export async function probeApiBase(
   input: string,
   fetchImpl: typeof fetch = fetch,
+  access: ServerAccess | null = null,
 ): Promise<EndpointResult> {
   const parsed = normalizeApiBase(input);
   if (!parsed.ok) return parsed;
@@ -71,15 +74,28 @@ export async function probeApiBase(
     const res = await withAbort(
       fetchImpl(`${parsed.url}/rpc/health`, {
         method: "POST",
-        headers: { "content-type": "application/json", origin: "rakazo://" },
+        headers: {
+          "content-type": "application/json",
+          origin: "rakazo://",
+          ...(access ? { [SERVER_ACCESS_HEADER]: basicCredential(access) } : {}),
+        },
         body: JSON.stringify({ json: {} }),
         signal: controller.signal,
       }),
       controller.signal,
     );
+    if (res.status === 401) {
+      cancelResponseBody(res);
+      return {
+        ok: false,
+        error: access
+          ? t("The server did not accept that username and password")
+          : t("This server asks for a username and password"),
+      };
+    }
     if (!res.ok) {
       cancelResponseBody(res);
-      return { ok: false, error: t("That URL did not look like a Rakazo server") };
+      return { ok: false, error: t("That URL did not look like a Quant server") };
     }
     let body: HealthResponse;
     try {
@@ -93,7 +109,7 @@ export async function probeApiBase(
       body = {};
     }
     if (body.error || body.json?.ok !== true) {
-      return { ok: false, error: t("That URL did not look like a Rakazo server") };
+      return { ok: false, error: t("That URL did not look like a Quant server") };
     }
     return parsed;
   } catch {
