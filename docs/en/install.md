@@ -15,7 +15,7 @@ A Quant server runs as a set of Docker containers. One installer downloads the C
 
 ```sh
 mkdir -p quant && cd quant
-curl -fsSLO https://github.com/Quant-Ai-Assistant/Quant-Core/releases/latest/download/install-images.sh
+curl -fsSLO https://raw.githubusercontent.com/Quant-Ai-Assistant/Quant-Core/main/infra/compose/install-images.sh
 bash install-images.sh
 ```
 

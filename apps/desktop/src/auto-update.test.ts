@@ -30,6 +30,7 @@ function fakeUpdater(overrides: Partial<ElectronAutoUpdater> = {}) {
     allowDowngrade: true,
     allowPrerelease: true,
     disableWebInstaller: false,
+    disableDifferentialDownload: false,
     on: vi.fn((event, listener) => {
       listeners.set(event, listener);
       return updater;
@@ -277,6 +278,7 @@ describe("DesktopUpdateController", () => {
       allowPrerelease: false,
       allowDowngrade: false,
       disableWebInstaller: true,
+      disableDifferentialDownload: true,
     });
   });
 

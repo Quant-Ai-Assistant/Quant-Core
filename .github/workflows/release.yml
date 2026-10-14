@@ -159,12 +159,13 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: desktop-${{ matrix.name }}
+          # One installer per platform plus the latest*.yml feeds the desktop updater reads. The
+          # macOS update ZIPs and the blockmaps stay out: macOS updates open the release page, and
+          # Windows and Linux download the whole installer.
           path: |
             apps/desktop/out/*.dmg
-            apps/desktop/out/*.zip
             apps/desktop/out/*.exe
             apps/desktop/out/*.AppImage
-            apps/desktop/out/*.blockmap
             apps/desktop/out/latest*.yml
           if-no-files-found: error
           retention-days: 7
@@ -193,13 +194,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          cp infra/compose/install-images.sh release-artifacts/
           cat > "$RUNNER_TEMP/notes.md" <<NOTES
           Quant ${VERSION}, built from ${GITHUB_SHA}.
 
-          - **Server:** run \`install-images.sh\` from this release, or update an installed server from Settings → Updates.
+          - **Desktop:** \`-arm64.dmg\` for Apple silicon Macs, \`-x64.dmg\` for Intel Macs, \`.exe\` for Windows, \`.AppImage\` for Linux. The apps are not signed by Apple or Microsoft; see the README for the first launch.
           - **Android:** install \`quant.apk\`. Later versions install from Account → Check for updates.
-          - **Desktop:** \`.dmg\` for macOS, \`.exe\` for Windows, \`.AppImage\` for Linux. The apps are not signed by Apple or Microsoft; see the README for the first launch.
+          - **Server:** see the README to install, or update an installed server from Settings → Updates.
           NOTES
           gh release create "v${VERSION}" release-artifacts/* \
             --target "$GITHUB_SHA" \

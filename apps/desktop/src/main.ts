@@ -123,9 +123,6 @@ const desktopUpdater = new DesktopUpdateController(
   undefined,
   () => {
     quitting = false;
-    // Quant's macOS build has no Apple Developer ID, so Squirrel refuses to swap the app in
-    // place. Hand the user the new DMG instead of a dead end.
-    if (process.platform === "darwin") void shell.openExternal(LATEST_RELEASE_URL);
   },
 );
 let launchUpdateCheckScheduled = false;
@@ -1171,9 +1168,16 @@ app.whenReady().then(async () => {
   ipcMain.handle("desktop.update.check", (event) =>
     fromMainWindow(event) ? desktopUpdater.check(true) : desktopUpdater.state(),
   );
-  ipcMain.handle("desktop.update.download", (event) =>
-    fromMainWindow(event) ? desktopUpdater.download() : desktopUpdater.state(),
-  );
+  ipcMain.handle("desktop.update.download", (event) => {
+    if (!fromMainWindow(event)) return desktopUpdater.state();
+    // Quant's macOS build has no Apple Developer ID, so Squirrel refuses to swap the app in
+    // place and the release ships no update ZIP. Hand the user the new DMG instead.
+    if (process.platform === "darwin") {
+      void shell.openExternal(LATEST_RELEASE_URL);
+      return desktopUpdater.state();
+    }
+    return desktopUpdater.download();
+  });
   ipcMain.handle("desktop.update.install", async (event) => {
     if (!fromMainWindow(event) || desktopUpdater.state().phase !== "ready") {
       return desktopUpdater.state();

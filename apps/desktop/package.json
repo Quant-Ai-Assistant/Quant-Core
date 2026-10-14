@@ -72,6 +72,9 @@
       ],
       "verifyUpdateCodeSignature": false
     },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
     "nsis": {
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
