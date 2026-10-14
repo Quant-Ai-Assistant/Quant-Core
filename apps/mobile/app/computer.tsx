@@ -42,6 +42,7 @@ import { createComputerRefresh } from "../lib/computer-refresh";
 import { useI18n } from "../lib/i18n";
 import { useMobileTokens } from "../lib/native";
 import { iosAtLeast } from "../lib/native-controls";
+import { currentServerAccess } from "../lib/server-access";
 import { errorText } from "../lib/user-error";
 
 export default function Computer() {
@@ -602,6 +603,8 @@ function ScreenWebView({
       // runs on load, and a view-only page never attaches the key bridge.
       key={`${nativeKeyboard ? "keys" : "view"}:${sourceUrl.current}`}
       source={{ uri: sourceUrl.current }}
+      // The gate's cookie usually covers this page; the challenge answer covers a fresh install.
+      basicAuthCredential={currentServerAccess(currentApiBase()) ?? undefined}
       injectedJavaScriptBeforeContentLoaded={
         nativeKeyboard ? NATIVE_COMPUTER_KEYBOARD_BOOT : undefined
       }

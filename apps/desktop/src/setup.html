@@ -6,18 +6,18 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; form-action 'none'; base-uri 'none'"
     />
-    <title>Set up Rakazo</title>
+    <title>Set up Quant</title>
     <link rel="stylesheet" href="tokens.css" />
     <link rel="stylesheet" href="setup.css" />
   </head>
   <body>
     <header class="titlebar">
-      <span class="titlebar-name">Rakazo</span>
-      <button id="quit" class="titlebar-quit" type="button" title="Quit Rakazo">Quit</button>
+      <span class="titlebar-name">Quant</span>
+      <button id="quit" class="titlebar-quit" type="button" title="Quit Quant">Quit</button>
     </header>
 
     <main class="shell">
-      <h1 class="heading">Welcome to Rakazo</h1>
+      <h1 class="heading">Welcome to Quant</h1>
       <p class="subheading">Choose which server this app should use.</p>
 
       <form id="setup" novalidate>
@@ -83,8 +83,18 @@
             type="text"
             spellcheck="false"
             autocomplete="off"
-            placeholder="https://rakazo.example.com"
+            placeholder="http://192.168.1.10:8080"
           />
+          <label class="field-label" for="server-username">Username (if the server asks)</label>
+          <input
+            id="server-username"
+            class="field"
+            type="text"
+            spellcheck="false"
+            autocomplete="username"
+          />
+          <label class="field-label" for="server-password">Password</label>
+          <input id="server-password" class="field" type="password" autocomplete="current-password" />
         </section>
 
         <p id="status" class="status" role="status" aria-live="polite"></p>

@@ -1,6 +1,6 @@
 {
   "name": "@rakazo/desktop",
-  "productName": "Rakazo",
+  "productName": "Quant",
   "version": "0.2.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -28,7 +28,7 @@
     "vitest": "4.1.11"
   },
   "build": {
-    "appId": "dev.rakazo.desktop",
+    "appId": "ai.quant.desktop",
     "directories": {
       "output": "out",
       "buildResources": "assets"
@@ -55,23 +55,25 @@
       "main": "dist/main.js"
     },
     "mac": {
-      "icon": "../../packages/ui-tokens/assets/Rakazo.icon",
+      "icon": "assets/icon-macos.png",
       "category": "public.app-category.productivity",
       "target": [
         "dmg",
         "zip"
       ],
-      "notarize": true
+      "notarize": false,
+      "identity": "-",
+      "hardenedRuntime": false
     },
     "win": {
       "icon": "assets/icon.ico",
       "target": [
         "nsis"
       ],
-      "verifyUpdateCodeSignature": true
+      "verifyUpdateCodeSignature": false
     },
     "linux": {
-      "executableName": "rakazo",
+      "executableName": "quant",
       "icon": "assets/icon.png",
       "target": [
         "AppImage"
@@ -80,8 +82,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "elie222",
-        "repo": "rakazo"
+        "owner": "Quant-Ai-Assistant",
+        "repo": "Quant-Core"
       }
     ]
   }

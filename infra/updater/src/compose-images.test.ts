@@ -37,7 +37,7 @@ const publishWorkflow = parse(readFileSync(publishWorkflowFile, "utf8")) as {
 };
 
 const appServices = ["api", "worker", "web", "supervisor"] as const;
-const FIRST_PARTY_IMAGE = /ghcr\.io\/elie222\/rakazo\/([a-z0-9][a-z0-9._-]*)/g;
+const FIRST_PARTY_IMAGE = /ghcr\.io\/quant-ai-assistant\/quant-core\/([a-z0-9][a-z0-9._-]*)/g;
 
 function firstPartyImageNames(value: unknown): string[] {
   if (typeof value !== "string") return [];
@@ -55,16 +55,22 @@ describe("the images compose file", () => {
       "api",
       "computer",
       "data-init",
+      "gate",
       "postgres",
       "supervisor",
+      "updater",
       "web",
       "worker",
     ]);
     for (const service of appServices) {
-      expect(compose.services[service]?.image).toContain("ghcr.io/elie222/rakazo/app");
+      expect(compose.services[service]?.image).toContain(
+        "ghcr.io/quant-ai-assistant/quant-core/app",
+      );
       expect(compose.services[service]?.image).toContain("RAKAZO_IMAGE_TAG");
     }
-    expect(compose.services.computer?.image).toContain("ghcr.io/elie222/rakazo/computer");
+    expect(compose.services.computer?.image).toContain(
+      "ghcr.io/quant-ai-assistant/quant-core/computer",
+    );
     expect(compose.services.computer?.image).toContain("RAKAZO_COMPUTER_IMAGE_TAG");
     expect(compose.services.postgres?.image).toMatch(
       /^\$\{POSTGRES_IMAGE:-postgres:16@sha256:[0-9a-f]{64}\}$/,
@@ -76,7 +82,9 @@ describe("the images compose file", () => {
     expect(firstPartyImageNames(null)).toEqual([]);
     expect(firstPartyImageNames(true)).toEqual([]);
     expect(firstPartyImageNames(7091)).toEqual([]);
-    expect(firstPartyImageNames("ghcr.io/elie222/rakazo/computer:edge")).toEqual(["computer"]);
+    expect(firstPartyImageNames("ghcr.io/quant-ai-assistant/quant-core/computer:edge")).toEqual([
+      "computer",
+    ]);
   });
 
   it("only references first-party images that the publish matrix publishes", () => {
@@ -150,7 +158,7 @@ describe("the images compose file", () => {
     );
   });
 
-  it("keeps the Docker socket on the unpublished supervisor only", () => {
+  it("keeps the Docker socket on the unpublished supervisor and updater only", () => {
     for (const [name, service] of Object.entries(compose.services)) {
       const hasSocket = (service.volumes ?? []).some((volume) => volume.includes("docker.sock"));
       if (name === "supervisor") {
@@ -158,14 +166,27 @@ describe("the images compose file", () => {
         expect(service.ports).toBeUndefined();
         expect(service.user).toBe("root");
         expect(String(service.command)).toContain("sandbox-supervisor");
+      } else if (name === "updater") {
+        expect(hasSocket).toBe(true);
+        expect(service.ports).toBeUndefined();
+        expect(service.networks).toEqual(["control"]);
       } else {
         expect(hasSocket).toBe(false);
       }
     }
   });
 
-  it("publishes the web UI on loopback only", () => {
+  it("keeps the web UI on loopback and puts the network behind the gate profile", () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal Compose expressions
     expect(compose.services.web?.ports).toEqual(["127.0.0.1:${RAKAZO_WEB_PORT:-5173}:5173"]);
+    expect((compose.services.gate as { profiles?: string[] })?.profiles).toEqual(["gate"]);
+    expect((compose.services.updater as { profiles?: string[] })?.profiles).toEqual(["updater"]);
+    expect(compose.services.gate?.ports).toEqual([
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal Compose expressions
+      "${QUANT_BIND_ADDRESS:-0.0.0.0}:${QUANT_PORT:-8080}:${QUANT_CONTAINER_PORT:-8080}",
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal Compose expressions
+      "${QUANT_HTTPS_BIND:-127.0.0.1:8443}:443",
+    ]);
     expect(compose.services.api?.ports).toEqual(["127.0.0.1:${RAKAZO_API_PORT:-3100}:3100"]);
     for (const key of ["BETTER_AUTH_URL", "WEB_ORIGIN", "API_URL"]) {
       expect(compose.services.api?.environment?.[key]).toBe(`\${${key}:-http://127.0.0.1:5173}`);

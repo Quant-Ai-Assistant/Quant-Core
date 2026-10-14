@@ -38,6 +38,8 @@ import {
   selectedSpaceId,
   signOut,
 } from "../../lib/api";
+import type { AppUpdate } from "../../lib/app-update";
+import { checkForAppUpdate, installAppUpdate } from "../../lib/app-update";
 import { formatUpdateLabel, getAppVersionInfo } from "../../lib/app-version";
 import {
   getCachedAppearancePreference,
@@ -131,6 +133,26 @@ export default function Account() {
   const versionInfo = getAppVersionInfo();
   const updateLabel = formatUpdateLabel(versionInfo.update, t);
   const versionAccessibility = [versionInfo.nativeLabel, updateLabel].filter(Boolean).join(". ");
+  const [appUpdate, setAppUpdate] = useState<AppUpdate | null>(null);
+  const [appUpdateState, setAppUpdateState] = useState<"idle" | "checking" | "installing">("idle");
+  const [appUpdateError, setAppUpdateError] = useState<string | null>(null);
+
+  async function checkOrInstallUpdate() {
+    setAppUpdateError(null);
+    try {
+      if (appUpdate?.available) {
+        setAppUpdateState("installing");
+        await installAppUpdate(appUpdate);
+        return;
+      }
+      setAppUpdateState("checking");
+      setAppUpdate(await checkForAppUpdate());
+    } catch (error) {
+      setAppUpdateError(errorText(error, t("Could not check for updates")));
+    } finally {
+      setAppUpdateState("idle");
+    }
+  }
 
   useEffect(() => {
     void rpc<MobileMe>("me")
@@ -596,6 +618,27 @@ export default function Account() {
 
         <View style={styles.about}>
           <AppMark />
+          {Platform.OS === "android" ? (
+            <SettingsGroup>
+              <SettingsRow
+                accessibilityRole="button"
+                disabled={appUpdateState !== "idle"}
+                dimmed={appUpdateState !== "idle"}
+                onPress={() => void checkOrInstallUpdate()}
+                title={
+                  appUpdateState === "checking"
+                    ? t("Checking for updates…")
+                    : appUpdateState === "installing"
+                      ? t("Downloading the update…")
+                      : appUpdate?.available
+                        ? t("Install update {version}", { version: appUpdate.tag })
+                        : t("Check for updates")
+                }
+                value={appUpdate && !appUpdate.available ? t("Up to date") : undefined}
+              />
+              {appUpdateError ? <Text style={styles.error}>{appUpdateError}</Text> : null}
+            </SettingsGroup>
+          ) : null}
           {versionInfo.nativeLabel || updateLabel ? (
             <View
               accessibilityLabel={versionAccessibility}

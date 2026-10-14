@@ -4,6 +4,14 @@
 
   const form = document.getElementById("setup");
   const serverUrl = document.getElementById("server-url");
+  const serverUsername = document.getElementById("server-username");
+  const serverPassword = document.getElementById("server-password");
+
+  /** The gate's Basic Auth; an empty username means the server has none. */
+  function serverAccess() {
+    const username = serverUsername.value.trim();
+    return username === "" ? null : { username, password: serverPassword.value };
+  }
   const panelNew = document.getElementById("panel-new");
   const panelExisting = document.getElementById("panel-existing");
   const stackSection = document.getElementById("stack");
@@ -23,10 +31,10 @@
   const PHASE_LABELS = {
     "checking-docker": "Getting ready…",
     preparing: "Getting ready…",
-    pulling: "Downloading Rakazo…",
-    starting: "Starting Rakazo…",
+    pulling: "Downloading Quant…",
+    starting: "Starting Quant…",
     "waiting-healthy": "Almost ready…",
-    ready: "Rakazo is ready.",
+    ready: "Quant is ready.",
   };
   const TERMINAL_PHASES = new Set([
     "idle",
@@ -179,7 +187,11 @@
     lockMode(true);
     setStatus("Connecting…");
     try {
-      const saved = await bridge.save({ mode, serverUrl: url });
+      const saved = await bridge.save(
+        mode === "existing"
+          ? { mode, serverUrl: url, access: serverAccess() }
+          : { mode, serverUrl: url },
+      );
       if (!saved.ok) setStatus(saved.error ?? "Could not save that address.", "error");
     } catch {
       setStatus("Could not save that address. Try again.", "error");
@@ -263,10 +275,10 @@
     setBusy(true);
     setStatus("Checking…");
     try {
-      const result = await bridge.test(value);
+      const result = await bridge.test({ url: value, access: serverAccess() });
       if (result.ok) {
         serverUrl.value = result.url;
-        setStatus(`Rakazo answered at ${result.url}.`, "ok");
+        setStatus(`Quant answered at ${result.url}.`, "ok");
       } else {
         setStatus(result.error ?? "Could not reach that address.", "error");
       }
@@ -345,6 +357,7 @@
         const modeInput = document.querySelector(`input[name="mode"][value="${state.saved.mode}"]`);
         if (modeInput !== null) modeInput.checked = true;
         if (state.saved.mode === "existing") serverUrl.value = state.saved.serverUrl;
+        if (state.savedUsername) serverUsername.value = state.savedUsername;
       }
       // A relaunch with the stack down starts it before this window opens; show that
       // attempt instead of the saved mode, and follow it while it is still running.
@@ -362,7 +375,7 @@
         continueButton.focus();
       }
     } catch {
-      setStatus("Setup could not start. Quit Rakazo and try again.", "error");
+      setStatus("Setup could not start. Quit Quant and try again.", "error");
       setBusy(true);
     }
   }

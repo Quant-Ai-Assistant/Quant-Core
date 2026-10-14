@@ -1,0 +1,37 @@
+# Quant gate: the only way into a self-hosted Quant from the network.
+#
+# Every request needs one of:
+#   - HTTP Basic Auth (browsers ask for it once and resend it),
+#   - X-Quant-Auth: Basic <base64 user:password> (the mobile and desktop apps, which already use
+#     the Authorization header for their own session token),
+#   - the quant_gate cookie this gate sets after either of the above, so images, the bot
+#     computer screen and other loads the apps cannot add headers to still get through.
+#
+# Values come from .env through docker-compose.images.yml; install-images.sh fills them.
+{
+	admin off
+	{$QUANT_GATE_GLOBAL_OPTIONS}
+}
+
+{$QUANT_SITE_ADDRESS} {
+	route {
+		# The apps' own header and the cookie skip the browser prompt.
+		basic_auth @untrusted {
+			{$QUANT_BASIC_USER} {$QUANT_BASIC_HASH}
+		}
+		# Reached only once one of the three checks passed: remember this device.
+		header Set-Cookie "quant_gate={$QUANT_GATE_TOKEN}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax"
+		# The application never sees gate credentials.
+		request_header -X-Quant-Auth
+		request_header @basic -Authorization
+		reverse_proxy web:5173
+	}
+
+	@untrusted {
+		not header_regexp Cookie (^|;\s*)quant_gate={$QUANT_GATE_TOKEN}(;|$)
+		not header X-Quant-Auth "Basic {$QUANT_BASIC_B64}"
+	}
+	@basic {
+		header_regexp Authorization ^Basic\s
+	}
+}

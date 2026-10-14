@@ -4,9 +4,15 @@ name: publish-server-image
 # semver tags. Main publishes `edge`. Pull requests build with a read-only token and an isolated
 # cache, so untrusted code can validate the images without receiving package-publish authority.
 on:
-  push:
-    branches: [main]
-    tags: ["v*"]
+  # Quant's release workflow builds the images on every push to main and tags them with the
+  # release version, so this workflow has no push trigger of its own.
+  workflow_call:
+    inputs:
+      release_version:
+        description: Release version without the leading v, e.g. 0.1.42.
+        type: string
+        required: false
+        default: ""
   pull_request:
     paths:
       - ".dockerignore"
@@ -70,11 +76,14 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+      - name: Lowercase image repository
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
-          images: ghcr.io/${{ github.repository }}/${{ matrix.name }}
+          images: ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.name }}
           tags: type=sha,prefix=sha-
       - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
@@ -125,6 +134,9 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+      - name: Lowercase image repository
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - name: Log in to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
@@ -136,7 +148,7 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           # Labels only; the tagged manifest is assembled in the publish job.
-          images: ghcr.io/${{ github.repository }}/${{ matrix.name }}
+          images: ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.name }}
           tags: type=sha,prefix=sha-
       - id: build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
@@ -146,7 +158,7 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           labels: ${{ steps.meta.outputs.labels }}
           # A fork can publish only to its own namespace; no credential can redirect this value.
-          outputs: type=image,name=ghcr.io/${{ github.repository }}/${{ matrix.name }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.name }},push-by-digest=true,name-canonical=true,push=true
           # GET /health can report the exact source commit without a deployment-supplied override.
           build-args: ${{ matrix.name == 'app' && format('GIT_SHA={0}', github.sha) || '' }}
           cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.arch }}
@@ -186,6 +198,9 @@ jobs:
           - name: updater
           - name: computer
     steps:
+      - name: Lowercase image repository
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: digest-${{ matrix.name }}-*
@@ -202,19 +217,20 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           # A fork can publish only to its own namespace; no credential can redirect this value.
-          images: ghcr.io/${{ github.repository }}/${{ matrix.name }}
+          images: ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.name }}
           tags: |
             type=semver,pattern=v{{version}}
             type=semver,pattern=v{{major}}.{{minor}}
             type=sha,prefix=sha-
             type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=v${{ inputs.release_version }},enable=${{ inputs.release_version != '' }}
             # Stable releases only: a hyphen marks a prerelease (v1.0.0-rc.1) that must not move latest.
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') }}
+            type=raw,value=latest,enable=${{ inputs.release_version != '' || (startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-')) }}
       - name: Assemble and verify the multi-arch manifest
         id: manifest
         working-directory: /tmp/digests
         env:
-          IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.name }}
+          IMAGE: ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.name }}
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           set -euo pipefail
@@ -242,6 +258,6 @@ jobs:
       - name: Attest the published image
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-name: ghcr.io/${{ github.repository }}/${{ matrix.name }}
+          subject-name: ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.name }}
           subject-digest: ${{ steps.manifest.outputs.digest }}
           push-to-registry: true

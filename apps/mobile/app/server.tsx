@@ -16,6 +16,8 @@ import {
 } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useMobileTokens } from "../lib/native";
+import { currentServerAccess } from "../lib/server-access";
+import { saveServerAccess } from "../lib/server-access-store";
 
 export default function ServerScreen() {
   const { t } = useI18n();
@@ -23,6 +25,9 @@ export default function ServerScreen() {
   const router = useRouter();
   const current = currentApiBase();
   const [draft, setDraft] = useState(current);
+  const savedAccess = currentServerAccess(current);
+  const [username, setUsername] = useState(savedAccess?.username ?? "");
+  const [password, setPassword] = useState(savedAccess?.password ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const active = useRef(true);
@@ -50,7 +55,9 @@ export default function ServerScreen() {
     setPending(true);
     setError(null);
     try {
-      const probed = await probeApiBase(draft);
+      // Basic Auth for the server's gate; both empty means the server has none.
+      const access = username.trim() ? { username: username.trim(), password } : null;
+      const probed = await probeApiBase(draft, fetch, access);
       if (!active.current) return;
       if (!probed.ok) {
         setError(probed.error);
@@ -61,6 +68,7 @@ export default function ServerScreen() {
         setError(saved.error);
         return;
       }
+      await saveServerAccess(saved.url, access);
       close();
     } finally {
       saving.current = false;
@@ -80,6 +88,7 @@ export default function ServerScreen() {
         setError(saved.error);
         return;
       }
+      await saveServerAccess(saved.url, null);
       close();
     } finally {
       saving.current = false;
@@ -110,7 +119,7 @@ export default function ServerScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={{ color: tokens.mutedForeground, fontSize: 15, lineHeight: 22 }}>
-            {t("Enter your Rakazo server address.")}
+            {t("Enter your Quant server address.")}
           </Text>
           <TextInput
             autoCapitalize="none"
@@ -135,6 +144,56 @@ export default function ServerScreen() {
             }}
             textContentType="URL"
             value={draft}
+          />
+          <Text style={{ color: tokens.mutedForeground, marginTop: 24, fontSize: 13 }}>
+            {t("Username and password, if the server asks for them")}
+          </Text>
+          <TextInput
+            accessibilityLabel={t("Username")}
+            autoCapitalize="none"
+            autoComplete="username"
+            autoCorrect={false}
+            onChangeText={(value) => {
+              setUsername(value);
+              setError(null);
+            }}
+            placeholder={t("Username")}
+            placeholderTextColor={tokens.mutedForeground}
+            style={{
+              marginTop: 8,
+              backgroundColor: tokens.muted,
+              borderRadius: 13,
+              padding: 16,
+              color: tokens.foreground,
+              fontSize: 16,
+            }}
+            textContentType="username"
+            value={username}
+          />
+          <TextInput
+            accessibilityLabel={t("Password")}
+            autoCapitalize="none"
+            autoComplete="password"
+            autoCorrect={false}
+            onChangeText={(value) => {
+              setPassword(value);
+              setError(null);
+            }}
+            onSubmitEditing={() => void save()}
+            placeholder={t("Password")}
+            placeholderTextColor={tokens.mutedForeground}
+            returnKeyType="go"
+            secureTextEntry
+            style={{
+              marginTop: 8,
+              backgroundColor: tokens.muted,
+              borderRadius: 13,
+              padding: 16,
+              color: tokens.foreground,
+              fontSize: 16,
+            }}
+            textContentType="password"
+            value={password}
           />
           {warning ? (
             <Text style={{ color: tokens.mutedForeground, marginTop: 12, fontSize: 13 }}>

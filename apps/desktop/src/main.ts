@@ -12,6 +12,7 @@ import {
   Menu,
   net,
   type Session,
+  safeStorage,
   session,
   shell,
 } from "electron";
@@ -42,6 +43,17 @@ import {
   immutableRendererAsset,
   isRendererAssetMiss,
 } from "./renderer-assets.js";
+import type { ServerAccess } from "./server-access.js";
+import {
+  activeServerAccess,
+  basicAuthorization,
+  createLoginLimiter,
+  loadServerAccess,
+  parseServerAccess,
+  saveServerAccess,
+  serverAccessFor,
+  setActiveServerAccess,
+} from "./server-access.js";
 import { installSessionPermissions } from "./session-permissions.js";
 import {
   DEFAULT_LOCAL_WEB_URL,
@@ -96,6 +108,7 @@ let warmWindowTimer: NodeJS.Timeout | undefined;
 let liveProbeWindows = 0;
 const WARM_WINDOW_TTL_MS = warmWindowTtlMs(process.env.RAKAZO_WARM_WINDOW_TTL_MS);
 
+const LATEST_RELEASE_URL = "https://github.com/Quant-Ai-Assistant/Quant-Core/releases/latest";
 const updaterEnvironment = {
   packaged: app.isPackaged,
   version: app.getVersion(),
@@ -110,6 +123,9 @@ const desktopUpdater = new DesktopUpdateController(
   undefined,
   () => {
     quitting = false;
+    // Quant's macOS build has no Apple Developer ID, so Squirrel refuses to swap the app in
+    // place. Hand the user the new DMG instead of a dead end.
+    if (process.platform === "darwin") void shell.openExternal(LATEST_RELEASE_URL);
   },
 );
 let launchUpdateCheckScheduled = false;
@@ -675,7 +691,7 @@ function installApplicationMenu() {
   };
   const changeServer: Electron.MenuItemConstructorOptions = {
     id: "change-rakazo-server",
-    label: "Change Rakazo Server…",
+    label: "Change Quant Server…",
     accelerator: "CmdOrCtrl+Shift+K",
     click: () => showSetupWindow(),
   };
@@ -726,14 +742,18 @@ function installApplicationMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-/** Setup IPC must only answer the setup window, never a connected Rakazo server. */
+/** Setup IPC must only answer the setup window, never a connected Quant server. */
 function fromSetupWindow(event: Electron.IpcMainInvokeEvent) {
   return (
     setupWindow !== null && !setupWindow.isDestroyed() && event.sender === setupWindow.webContents
   );
 }
 
-async function probeServer(rawUrl: string, signal?: AbortSignal): Promise<DesktopReachability> {
+async function probeServer(
+  rawUrl: string,
+  signal?: AbortSignal,
+  access: ServerAccess | null = null,
+): Promise<DesktopReachability> {
   const url = normalizeServerUrl(rawUrl);
   if (url === null) return { ok: false, error: "Enter a valid http:// or https:// address." };
   const timeout = AbortSignal.timeout(PROBE_TIMEOUT_MS);
@@ -741,7 +761,10 @@ async function probeServer(rawUrl: string, signal?: AbortSignal): Promise<Deskto
   try {
     const response = await net.fetch(`${url}/rpc/health`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(access ? { authorization: basicAuthorization(access) } : {}),
+      },
       body: JSON.stringify({ json: {} }),
       cache: "no-store",
       credentials: "omit",
@@ -753,7 +776,17 @@ async function probeServer(rawUrl: string, signal?: AbortSignal): Promise<Deskto
         ok: false,
         status: response.status,
         url,
-        error: "That address redirects elsewhere. Enter the final Rakazo server address.",
+        error: "That address redirects elsewhere. Enter the final Quant server address.",
+      };
+    }
+    if (response.status === 401) {
+      return {
+        ok: false,
+        status: response.status,
+        url,
+        error: access
+          ? "The server did not accept that username and password."
+          : "This server asks for a username and password.",
       };
     }
     if (!response.ok) {
@@ -770,7 +803,7 @@ async function probeServer(rawUrl: string, signal?: AbortSignal): Promise<Deskto
         ok: false,
         status: response.status,
         url,
-        error: "That address did not respond like a Rakazo server.",
+        error: "That address did not respond like a Quant server.",
       };
     }
     return {
@@ -966,9 +999,23 @@ function safeOrigin(targetUrl: string) {
   }
 }
 
+// The configured server's Basic Auth gate. Only its origin gets the saved credentials, and a
+// rejected password is not retried forever.
+const allowLogin = createLoginLimiter();
+app.on("login", (event, _contents, details, authInfo, callback) => {
+  if (authInfo.isProxy) return;
+  const access = serverAccessFor(details.url);
+  if (access === null) return;
+  const origin = new URL(details.url).origin;
+  if (!allowLogin(origin)) return;
+  event.preventDefault();
+  callback(access.username, access.password);
+});
+
 app.whenReady().then(async () => {
   installSessionPermissions(session.defaultSession, permissionTarget);
   const userDataDir = app.getPath("userData");
+  await loadServerAccess(userDataDir, safeStorage);
   localStack = new LocalStackController({
     platform: process.platform,
     env: process.env,
@@ -1140,17 +1187,25 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("desktop.setup.state", (event) => {
     if (!fromSetupWindow(event)) return null;
+    const saved = activeServerAccess();
     return {
       defaultLocalUrl: localStack.webUrl(),
       saved: currentSetup,
+      savedUsername:
+        saved !== null && currentSetup !== null && saved.origin === currentSetup.serverUrl
+          ? saved.access.username
+          : undefined,
       error: setupError ?? undefined,
     };
   });
 
-  ipcMain.handle("desktop.setup.test", async (event, url: unknown) => {
+  ipcMain.handle("desktop.setup.test", async (event, payload: unknown) => {
     if (!fromSetupWindow(event)) return { ok: false, error: "Setup is not active." };
+    const request =
+      typeof payload === "string" ? { url: payload } : (payload as Record<string, unknown> | null);
+    const url = request?.url;
     if (typeof url !== "string") return { ok: false, error: "Enter a server address." };
-    return probeServer(url);
+    return probeServer(url, undefined, parseServerAccess(request?.access));
   });
 
   ipcMain.handle("desktop.setup.save", async (event, payload: unknown) => {
@@ -1161,6 +1216,7 @@ app.whenReady().then(async () => {
     setupSaveInProgress = true;
     const previousSetup = currentSetup;
     const previousUrl = currentTargetUrl;
+    const previousAccess = activeServerAccess();
     try {
       const setup = parseSetupInput(payload);
       if (setup === null) {
@@ -1178,20 +1234,27 @@ app.whenReady().then(async () => {
         if (managedUrl === null || !(await localStack.matchesDesiredStack())) {
           return {
             ok: false,
-            error: "The app-managed Rakazo services are not ready. Retry setup.",
+            error: "The app-managed Quant services are not ready. Retry setup.",
           };
         }
         openSetup = { mode: "new", serverUrl: managedUrl };
       }
 
-      const reachability = await probeServer(openSetup.serverUrl);
+      // The gate's Basic Auth, for an existing server that has one.
+      const access =
+        openSetup.mode === "existing"
+          ? parseServerAccess((payload as Record<string, unknown>).access)
+          : null;
+      const reachability = await probeServer(openSetup.serverUrl, undefined, access);
       if (!reachability.ok) return { ok: false, error: reachability.error };
 
       // Open before persisting so a failed renderer load keeps the last working setup.
       currentSetup = openSetup;
+      setActiveServerAccess(openSetup.serverUrl, access);
       const opened = await appOpener.open(openSetup.serverUrl, { switching: true });
       if (!opened) {
         currentSetup = previousSetup;
+        setActiveServerAccess(previousAccess?.origin ?? null, previousAccess?.access ?? null);
         return {
           ok: false,
           error: "Could not open that server. The previous instance was left unchanged.",
@@ -1205,6 +1268,7 @@ app.whenReady().then(async () => {
           : null;
       try {
         await writeSetup(userDataDir, openSetup);
+        await saveServerAccess(userDataDir, safeStorage, openSetup.serverUrl, access);
         if (rendererWatch?.crashed()) {
           const message = await recoverFromCrashedSave(userDataDir, previousSetup, previousUrl);
           return { ok: false, error: message };
