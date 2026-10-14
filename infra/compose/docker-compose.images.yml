@@ -6,7 +6,8 @@
 # - gate: Caddy with Basic Auth, the only service published on the network, on QUANT_PORT.
 # - updater: backs Settings -> Software update. It pins the newest release image in .env and
 #   recreates the app containers. It holds the Docker socket, which is root-equivalent.
-# Without them (the desktop app's local stack) the web UI stays on loopback only.
+# The desktop app's local stack turns on only gate, once a username for other devices is set;
+# without it the web UI stays on loopback only.
 #
 # Tag contract matches docs/self-host.md (edge from main; release tags when published).
 # Default is edge because that tag is published on every main build (linux/amd64 + linux/arm64).

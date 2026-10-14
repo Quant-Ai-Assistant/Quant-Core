@@ -20,6 +20,9 @@ export const STACK_ENV_TEMPLATE = ".env.images.example";
 export const STACK_ENV_FILE = ".env";
 export const STACK_WEB_URL_FILE = ".desktop-web-url";
 export const STACK_TOKEN_FILE = ".desktop-stack-token";
+export const STACK_GATE_FILE = "Caddyfile.gate";
+/** The gate's preferred host port; a busy one falls back to any free port. */
+export const GATE_DEFAULT_PORT = 8080;
 export const STACK_OUTPUT_LINES = 20;
 export const STACK_HEALTH_TIMEOUT_MS = 120_000;
 export const COMPOSE_WAIT_TIMEOUT_S = 300;
@@ -35,10 +38,23 @@ export async function readStackWebUrl(dir: string, fallback: string): Promise<st
 
 /** Docker owns the final bind; a racing listener is handled by bounded up retries. */
 export async function allocateLoopbackPort(): Promise<number> {
+  return listenOnce(0, "127.0.0.1");
+}
+
+/** The gate listens on every interface, so the preferred port must be free on all of them. */
+export async function allocateGatePort(): Promise<number> {
+  try {
+    return await listenOnce(GATE_DEFAULT_PORT, "0.0.0.0");
+  } catch {
+    return allocateLoopbackPort();
+  }
+}
+
+function listenOnce(port: number, host: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer();
     server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
+    server.listen(port, host, () => {
       const address = server.address();
       server.close((error) => {
         if (error) reject(error);
@@ -56,7 +72,10 @@ const PULL_TIMEOUT_MS = 30 * 60_000;
 const UP_TIMEOUT_MS = (COMPOSE_WAIT_TIMEOUT_S + 60) * 1_000;
 const LOGS_TIMEOUT_MS = 15_000;
 const STOP_TIMEOUT_MS = 90_000;
+const HASH_TIMEOUT_MS = 5 * 60_000;
+const GATE_RM_TIMEOUT_MS = 60_000;
 const MAX_STACK_TOKEN_BYTES = 1024;
+const MAX_STACK_ENV_BYTES = 256 * 1024;
 
 /** The compose project lives under the app's user data, next to the `.env` it generates. */
 export function stackDir(userDataDir: string): string {
@@ -135,6 +154,75 @@ export async function ensureStackEnv(
   }
   await writePrivateFile(destination, renderStackEnv(template, randomHex));
   return "created";
+}
+
+/** Reads one value of the stack `.env`, without the single quotes a bcrypt hash needs. */
+export function envValue(env: string, name: string): string {
+  const line = env.split("\n").find((candidate) => candidate.startsWith(`${name}=`));
+  const value = line?.slice(name.length + 1) ?? "";
+  return value.length >= 2 && value.startsWith("'") && value.endsWith("'")
+    ? value.slice(1, -1)
+    : value;
+}
+
+/** Replaces each named line of the stack `.env`, appending names it does not have yet. */
+export function withEnvValues(env: string, values: Record<string, string>): string {
+  const pending = new Map(Object.entries(values));
+  const lines = env.split("\n").map((line) => {
+    const name = line.slice(0, Math.max(0, line.indexOf("=")));
+    const value = pending.get(name);
+    if (value === undefined) return line;
+    pending.delete(name);
+    return `${name}=${value}`;
+  });
+  const added = [...pending].map(([name, value]) => `${name}=${value}`);
+  if (added.length === 0) return lines.join("\n");
+  const trailing = lines.at(-1) === "" ? lines.pop() : undefined;
+  return [...lines, ...added, ...(trailing === undefined ? [] : [trailing])].join("\n");
+}
+
+/** Basic Auth for the gate that lets phones and other computers reach this stack. */
+export interface GateAccess {
+  username: string;
+  password: string;
+}
+
+/** `keep` leaves the gate as it is, `off` closes it, `set` opens it with new credentials. */
+export type GateChange = { kind: "keep" } | { kind: "off" } | { kind: "set"; access: GateAccess };
+
+const GATE_USERNAME = /^[A-Za-z0-9._-]{1,64}$/;
+const MAX_GATE_PASSWORD = 256;
+const BCRYPT_HASH = /^\$2[aby]\$\d\d\$[./A-Za-z0-9]{53}$/;
+
+/** Absent keeps the gate, null turns it off; anything malformed is refused. */
+export function parseGateChange(value: unknown): GateChange | null {
+  if (value === undefined) return { kind: "keep" };
+  if (value === null) return { kind: "off" };
+  if (typeof value !== "object") return null;
+  const { username, password } = value as Record<string, unknown>;
+  if (typeof username !== "string" || !GATE_USERNAME.test(username)) return null;
+  if (typeof password !== "string" || password === "" || password.length > MAX_GATE_PASSWORD) {
+    return null;
+  }
+  return { kind: "set", access: { username, password } };
+}
+
+/** What the setup window shows about the gate: who signs in, and the port a tunnel targets. */
+export interface StackGate {
+  username: string;
+  port: number;
+}
+
+export function gateFromEnv(env: string): StackGate | null {
+  const username = envValue(env, "QUANT_BASIC_USER");
+  const port = Number(envValue(env, "QUANT_PORT"));
+  if (username === "" || envValue(env, "QUANT_BASIC_HASH") === "") return null;
+  return Number.isInteger(port) && port > 0 && port <= 65535 ? { username, port } : null;
+}
+
+export async function readStackGate(dir: string): Promise<StackGate | null> {
+  const env = await readPrivateFile(path.join(dir, STACK_ENV_FILE), MAX_STACK_ENV_BYTES);
+  return env === null ? null : gateFromEnv(env);
 }
 
 const STACK_TOKEN = /^[a-f0-9]{64}$/;
@@ -235,6 +323,7 @@ const DOCKER_GROUP_HINT =
   "This user cannot access Docker. Add it to the docker group (sudo usermod -aG docker $USER), sign out and back in, then check again.";
 const STOP_FAILED = "Could not stop the local stack. Check that Docker is running, then try again.";
 const START_INTERRUPTED = "The start was interrupted. Retry to continue.";
+const GATE_HASH_FAILED = "Could not save the password for other devices. Retry.";
 
 /** Docker output may contain paths and hostnames, so the person only ever sees these. */
 export function stackFailureMessage(
@@ -282,6 +371,7 @@ export interface LocalStackDeps {
   resourceDir: string;
   localWebUrl: string;
   allocatePort?: () => Promise<number>;
+  allocateGatePort?: () => Promise<number>;
   imageTag: string;
   /** Returns the authenticated running image tag, or null for any other listener. */
   probe: (url: string, signal: AbortSignal, token: string) => Promise<string | null>;
@@ -317,6 +407,9 @@ export class LocalStackController {
   private stopping: Promise<DesktopLocalStackState> | null = null;
   private inFlight: AbortController | null = null;
   private ticket = 0;
+  private gateChange: GateChange = { kind: "keep" };
+  /** Whether the current attempt runs the gate profile. */
+  private gateOn = false;
   /** Starts ticketed at or below this were superseded by a later stop and must not run. */
   private voidBefore = 0;
 
@@ -352,8 +445,9 @@ export class LocalStackController {
    * Idempotent while a start is in flight; otherwise begins a fresh attempt from any
    * phase, after any stop still running so `compose up` and `compose stop` never overlap.
    */
-  start(): Promise<DesktopLocalStackState> {
+  start(gate: GateChange = { kind: "keep" }): Promise<DesktopLocalStackState> {
     if (this.running !== null) return this.running;
+    this.gateChange = gate;
     const ticket = ++this.ticket;
     const attempt = (this.stopping ?? Promise.resolve())
       .then(() => (ticket <= this.voidBefore ? this.current : this.run()))
@@ -476,6 +570,18 @@ export class LocalStackController {
     await ensureStackEnv(this.deps.stackDir, template, this.deps.randomHex);
     const stackToken = await ensureStackToken(this.deps.stackDir, this.deps.randomHex);
     this.currentStackToken = stackToken;
+    const gate = this.gateChange;
+    this.gateChange = { kind: "keep" };
+    const envPath = path.join(this.deps.stackDir, STACK_ENV_FILE);
+    const env = await readFile(envPath, "utf8");
+    const existingGate = gateFromEnv(env);
+    this.gateOn = gate.kind === "set" || (gate.kind === "keep" && existingGate !== null);
+    if (this.gateOn) {
+      await copyFile(
+        path.join(this.deps.resourceDir, STACK_GATE_FILE),
+        path.join(this.deps.stackDir, STACK_GATE_FILE),
+      );
+    }
 
     this.push({ type: "pull-start" });
     const pulled = await this.compose(binary, ["pull"], PULL_TIMEOUT_MS, signal);
@@ -487,6 +593,40 @@ export class LocalStackController {
         message: stackFailureMessage(failureKind(pulled), "pulling", this.deps.imageTag),
       });
       return;
+    }
+
+    if (gate.kind === "set") {
+      const port = existingGate?.port ?? (await (this.deps.allocateGatePort ?? allocateGatePort)());
+      const hash = await this.hashGatePassword(binary, gate.access.password, signal);
+      if (signal.aborted) return this.push({ type: "failed", message: START_INTERRUPTED });
+      if (hash === null) {
+        this.push({ type: "failed", message: GATE_HASH_FAILED });
+        return;
+      }
+      const { username, password } = gate.access;
+      await writePrivateFile(
+        envPath,
+        withEnvValues(env, {
+          QUANT_BASIC_USER: username,
+          QUANT_BASIC_HASH: `'${hash}'`,
+          QUANT_BASIC_B64: Buffer.from(`${username}:${password}`).toString("base64"),
+          // A new password also signs out the devices the gate remembered.
+          QUANT_GATE_TOKEN: this.deps.randomHex(32),
+          QUANT_PORT: String(port),
+          // The gate's HTTPS port is unused without a domain; any free loopback port will do.
+          QUANT_HTTPS_BIND: "127.0.0.1:",
+        }),
+      );
+    } else if (gate.kind === "off" && existingGate !== null) {
+      await writePrivateFile(
+        envPath,
+        withEnvValues(env, {
+          QUANT_BASIC_USER: "",
+          QUANT_BASIC_HASH: "",
+          QUANT_BASIC_B64: "",
+          QUANT_GATE_TOKEN: "",
+        }),
+      );
     }
 
     this.push({ type: "up-start" });
@@ -517,6 +657,13 @@ export class LocalStackController {
       return;
     }
 
+    if (gate.kind === "off" && existingGate !== null) {
+      // `up` leaves a container whose profile is off running, so remove the gate explicitly.
+      await this.compose(binary, ["rm", "--stop", "--force", "gate"], GATE_RM_TIMEOUT_MS, signal, {
+        env: { COMPOSE_PROFILES: "gate" },
+      });
+    }
+
     this.push({ type: "wait-start" });
     const sleep = this.deps.sleep ?? defaultSleep;
     const deadline = Date.now() + (this.deps.healthTimeoutMs ?? STACK_HEALTH_TIMEOUT_MS);
@@ -536,7 +683,37 @@ export class LocalStackController {
     });
   }
 
-  private docker(binary: string, args: string[], timeoutMs: number, signal?: AbortSignal) {
+  /** Caddy's own bcrypt, run in the gate image; the password travels in the environment. */
+  private async hashGatePassword(binary: string, password: string, signal: AbortSignal) {
+    const hashed = await this.compose(
+      binary,
+      [
+        "run",
+        "--rm",
+        "--no-deps",
+        "-T",
+        "-e",
+        "QUANT_HASH_INPUT",
+        "gate",
+        "sh",
+        "-c",
+        'caddy hash-password --plaintext "$QUANT_HASH_INPUT"',
+      ],
+      HASH_TIMEOUT_MS,
+      signal,
+      { env: { QUANT_HASH_INPUT: password }, quiet: true },
+    );
+    const hash = hashed.stdout.trim().split("\n").at(-1)?.trim() ?? "";
+    return hashed.code === 0 && BCRYPT_HASH.test(hash) ? hash : null;
+  }
+
+  private docker(
+    binary: string,
+    args: string[],
+    timeoutMs: number,
+    signal?: AbortSignal,
+    options: DockerCallOptions = {},
+  ) {
     return this.deps.run(binary, args, {
       cwd: this.deps.stackDir,
       env: dockerSpawnEnv(this.deps.platform, this.deps.env, binary, {
@@ -552,14 +729,23 @@ export class LocalStackController {
         WEB_ORIGIN: this.currentWebUrl,
         API_URL: this.currentWebUrl,
         COMPOSE_PROGRESS: "plain",
+        ...(this.gateOn ? { COMPOSE_PROFILES: "gate" } : {}),
+        ...options.env,
       }),
       timeoutMs,
       signal,
-      onLine: (line) => this.push({ type: "output", line }),
+      // A quiet call's output can hold a secret, so it never reaches the setup window.
+      onLine: options.quiet ? undefined : (line) => this.push({ type: "output", line }),
     });
   }
 
-  private compose(binary: string, args: string[], timeoutMs: number, signal?: AbortSignal) {
+  private compose(
+    binary: string,
+    args: string[],
+    timeoutMs: number,
+    signal?: AbortSignal,
+    options: DockerCallOptions = {},
+  ) {
     return this.docker(
       binary,
       [
@@ -574,6 +760,12 @@ export class LocalStackController {
       ],
       timeoutMs,
       signal,
+      options,
     );
   }
+}
+
+interface DockerCallOptions {
+  env?: Record<string, string>;
+  quiet?: boolean;
 }
