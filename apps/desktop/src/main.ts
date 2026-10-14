@@ -29,6 +29,8 @@ import { DOCKER_INSTALL_LINKS, isDesktopSetupLink, runDocker } from "./docker-cl
 import { requestLocalSettings } from "./local-settings.js";
 import {
   LocalStackController,
+  parseGateChange,
+  readStackGate,
   readStackToken,
   readStackWebUrl,
   resolveImageTag,
@@ -1189,11 +1191,12 @@ app.whenReady().then(async () => {
     if (state.phase !== "ready" || state.message !== null) quitting = false;
     return state;
   });
-  ipcMain.handle("desktop.setup.state", (event) => {
+  ipcMain.handle("desktop.setup.state", async (event) => {
     if (!fromSetupWindow(event)) return null;
     const saved = activeServerAccess();
     return {
       defaultLocalUrl: localStack.webUrl(),
+      gate: await readStackGate(stackDir(userDataDir)),
       saved: currentSetup,
       savedUsername:
         saved !== null && currentSetup !== null && saved.origin === currentSetup.serverUrl
@@ -1317,10 +1320,16 @@ app.whenReady().then(async () => {
   ipcMain.handle("desktop.setup.stack.state", (event) =>
     fromSetupWindow(event) ? localStack.state() : null,
   );
-  ipcMain.handle("desktop.setup.stack.start", (event) => {
+  ipcMain.handle("desktop.setup.stack.start", (event, payload: unknown) => {
     if (!fromSetupWindow(event)) return null;
+    const gate = parseGateChange(
+      payload !== null && typeof payload === "object"
+        ? (payload as Record<string, unknown>).access
+        : undefined,
+    );
+    if (gate === null) return localStack.state();
     // Respond right away; the setup window polls `stack.state` until a terminal phase.
-    void localStack.start();
+    void localStack.start(gate);
     return localStack.state();
   });
 

@@ -49,6 +49,10 @@
       {
         "from": "../../infra/compose/.env.images.example",
         "to": "stack/.env.images.example"
+      },
+      {
+        "from": "../../infra/compose/Caddyfile.gate",
+        "to": "stack/Caddyfile.gate"
       }
     ],
     "extraMetadata": {

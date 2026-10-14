@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld("rakazoSetup", {
   openLink: (link) => ipcRenderer.invoke("desktop.setup.openLink", link),
   stack: {
     state: () => ipcRenderer.invoke("desktop.setup.stack.state"),
-    start: () => ipcRenderer.invoke("desktop.setup.stack.start"),
+    start: (payload) => ipcRenderer.invoke("desktop.setup.stack.start", payload),
     onChange: (listener) => {
       ipcRenderer.on("desktop.setup.stack.changed", (_event, state) => listener(state));
     },

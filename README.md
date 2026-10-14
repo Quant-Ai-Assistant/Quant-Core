@@ -107,7 +107,7 @@
     </td>
     <td width="50%" valign="top">
       <h3>Apps for every device</h3>
-      The Android app and the desktop apps connect to your server with its address and gate password, stored in the system keychain. A desktop app can also run a private local instance.
+      The Android app and the desktop apps connect to your server with its address and gate password, stored in the system keychain. A desktop app can also run the server itself, with a username and password for your phone.
       <br><br>
       See <a href="docs/en/connect.md">connecting the apps</a>.
     </td>
@@ -239,7 +239,7 @@ Every guide exists in English ([`docs/en`](docs/en/)) and in Russian ([`docs/ru`
 | Document | Covers |
 | --- | --- |
 | [Install a Quant server](docs/en/install.md) | Requirements, installer questions, services, files, HTTPS, first steps |
-| [Connect the apps](docs/en/connect.md) | Browser, Android, macOS, Windows, Linux, local instance |
+| [Connect the apps](docs/en/connect.md) | Browser, Android, macOS, Windows, Linux, server on the desktop |
 | [Updates](docs/en/updates.md) | Server updater, Android updates, desktop updates, versions |
 | [Calls and voice](docs/en/calls.md) | Calling a bot, dictation, bot-initiated calls, limits |
 | [Operations](docs/en/operations.md) | Logs, restart, gate password, port, backups, removal, security |

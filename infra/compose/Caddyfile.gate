@@ -24,7 +24,11 @@
 		# The application never sees gate credentials.
 		request_header -X-Quant-Auth
 		request_header @basic -Authorization
-		reverse_proxy web:5173
+		# Past this gate the request is authenticated, so the web server need not know the name
+		# it was reached by (a domain, a LAN address, a tunnel's random host).
+		reverse_proxy web:5173 {
+			header_up Host localhost
+		}
 	}
 
 	@untrusted {

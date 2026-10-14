@@ -36,6 +36,18 @@
         </fieldset>
 
         <section id="panel-new" class="panel">
+          <label class="field-label" for="gate-username">Username for other devices</label>
+          <input
+            id="gate-username"
+            class="field"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="quant"
+          />
+          <label class="field-label" for="gate-password">Password</label>
+          <input id="gate-password" class="field" type="password" autocomplete="new-password" />
+          <p id="gate-address" class="field-hint" hidden></p>
           <div id="stack" hidden>
             <div class="stack-head">
               <p id="stack-phase" class="stack-phase" role="status" aria-live="polite"></p>

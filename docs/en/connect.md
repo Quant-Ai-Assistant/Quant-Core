@@ -48,6 +48,14 @@ chmod +x Quant-*.AppImage
 ./Quant-*.AppImage
 ```
 
-## Local instance on the desktop
+## Server on the desktop
 
-The desktop app can also run a private Quant on the same computer with Docker: choose **This computer** in the setup window. That instance listens on `127.0.0.1` only and has no gate.
+The desktop app can run the Quant server itself on the same computer with Docker:
+
+1. In the setup window choose **This computer**.
+2. To reach it from a phone or another computer, fill in **Username for other devices** and **Password**. Leave them empty to keep the server to this computer.
+3. Click **Continue**. The app downloads and starts Quant, then opens it.
+
+With a username set, the setup window shows a tunnel address such as `http://localhost:8080`: the gate that asks other devices for that username and password. Point a tunnel (Cloudflare Tunnel, ngrok, Tailscale Funnel) at it and use the tunnel's public `https://` address on the phone, together with the same username and password. Devices on the same network can also use `http://<this computer's address>:8080`.
+
+To change the username or password, or to close access, open **Change Quant Server…**, edit the fields under **This computer** and click **Continue**. Leave the password empty to keep the current one. A new password signs the other devices out of the gate.

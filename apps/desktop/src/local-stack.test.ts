@@ -7,9 +7,13 @@ import {
   COMPOSE_WAIT_TIMEOUT_S,
   ensureStackEnv,
   ensureStackToken,
+  envValue,
+  gateFromEnv,
   initialStackState,
   LocalStackController,
   type LocalStackDeps,
+  parseGateChange,
+  readStackGate,
   readStackToken,
   reduceStackState,
   renderStackEnv,
@@ -17,12 +21,14 @@ import {
   STACK_COMPOSE_FILE,
   STACK_ENV_FILE,
   STACK_ENV_TEMPLATE,
+  STACK_GATE_FILE,
   STACK_OUTPUT_LINES,
   STACK_PROJECT_NAME,
   STACK_TOKEN_FILE,
   stackDir,
   stackFailureMessage,
   stackResourceDir,
+  withEnvValues,
 } from "./local-stack.js";
 
 const COMPOSE_DIR = path.resolve(import.meta.dirname, "..", "..", "..", "infra", "compose");
@@ -301,6 +307,38 @@ const ok: Script = (args) => {
   return {};
 };
 
+describe("gate settings", () => {
+  it("reads and rewrites .env values, keeping the hash quotes out of the value", () => {
+    const env = "QUANT_PORT=8080\nQUANT_BASIC_HASH='$2a$14$abc'\n";
+    expect(envValue(env, "QUANT_BASIC_HASH")).toBe("$2a$14$abc");
+    expect(envValue(env, "QUANT_BASIC_USER")).toBe("");
+    expect(withEnvValues(env, { QUANT_PORT: "9090", QUANT_BASIC_USER: "me" })).toBe(
+      "QUANT_PORT=9090\nQUANT_BASIC_HASH='$2a$14$abc'\nQUANT_BASIC_USER=me\n",
+    );
+  });
+
+  it("only reports a gate that has a user, a hash and a valid port", () => {
+    expect(gateFromEnv("QUANT_BASIC_USER=me\nQUANT_BASIC_HASH='h'\nQUANT_PORT=8080")).toEqual({
+      username: "me",
+      port: 8080,
+    });
+    expect(gateFromEnv("QUANT_BASIC_USER=me\nQUANT_BASIC_HASH=\nQUANT_PORT=8080")).toBeNull();
+    expect(gateFromEnv("QUANT_BASIC_USER=me\nQUANT_BASIC_HASH='h'\nQUANT_PORT=0")).toBeNull();
+  });
+
+  it("keeps the gate when nothing is sent and refuses malformed credentials", () => {
+    expect(parseGateChange(undefined)).toEqual({ kind: "keep" });
+    expect(parseGateChange(null)).toEqual({ kind: "off" });
+    expect(parseGateChange({ username: "me", password: "pw" })).toEqual({
+      kind: "set",
+      access: { username: "me", password: "pw" },
+    });
+    expect(parseGateChange({ username: "me:you", password: "pw" })).toBeNull();
+    expect(parseGateChange({ username: "me", password: "" })).toBeNull();
+    expect(parseGateChange("me")).toBeNull();
+  });
+});
+
 describe("LocalStackController", () => {
   let root: string;
   let calls: RecordedCall[];
@@ -344,6 +382,96 @@ describe("LocalStackController", () => {
     const stack = new LocalStackController(deps);
     return stack;
   }
+
+  const HASH = `$2a$14$${"a".repeat(53)}`;
+  const withHash: Script = (args) => {
+    if (args[7] === "run") return { stdout: `${HASH}\n` };
+    return ok(args);
+  };
+
+  it("opens the gate with hashed credentials on its own port and the gate profile", async () => {
+    const stack = controller({ allocateGatePort: async () => 8081 }, withHash);
+
+    const state = await stack.start({
+      kind: "set",
+      access: { username: "me", password: "hunter2-pw" },
+    });
+    expect(state.phase).toBe("ready");
+
+    const stackPath = path.join(root, "stack");
+    const env = await readFile(path.join(stackPath, STACK_ENV_FILE), "utf8");
+    expect(env).toContain("QUANT_BASIC_USER=me\n");
+    expect(env).toContain(`QUANT_BASIC_HASH='${HASH}'\n`);
+    expect(env).toContain(`QUANT_BASIC_B64=${Buffer.from("me:hunter2-pw").toString("base64")}\n`);
+    expect(env).toContain(`QUANT_GATE_TOKEN=${"ab".repeat(32)}\n`);
+    expect(env).toContain("QUANT_PORT=8081\n");
+    expect(env).not.toContain("hunter2-pw");
+    await expect(readStackGate(stackPath)).resolves.toEqual({ username: "me", port: 8081 });
+    await expect(readFile(path.join(stackPath, STACK_GATE_FILE), "utf8")).resolves.toBe(
+      await readFile(path.join(COMPOSE_DIR, STACK_GATE_FILE), "utf8"),
+    );
+
+    const hashCall = calls.find((call) => call.args[7] === "run");
+    expect(hashCall?.args.slice(7)).toEqual([
+      "run",
+      "--rm",
+      "--no-deps",
+      "-T",
+      "-e",
+      "QUANT_HASH_INPUT",
+      "gate",
+      "sh",
+      "-c",
+      'caddy hash-password --plaintext "$QUANT_HASH_INPUT"',
+    ]);
+    // The password reaches only the hashing container's environment, never an argv or the output.
+    expect(hashCall?.env.QUANT_HASH_INPUT).toBe("hunter2-pw");
+    expect(calls.filter((call) => call.args.join(" ").includes("hunter2-pw"))).toEqual([]);
+    expect(state.output.join("\n")).not.toContain(HASH);
+    for (const call of calls.filter((call) => ["pull", "up"].includes(call.args[7] ?? ""))) {
+      expect(call.env.COMPOSE_PROFILES).toBe("gate");
+      expect(call.env).not.toHaveProperty("QUANT_HASH_INPUT");
+    }
+  });
+
+  it("keeps the gate and its port on a plain restart, and closes it on request", async () => {
+    await controller({ allocateGatePort: async () => 8081 }, withHash).start({
+      kind: "set",
+      access: { username: "me", password: "hunter2-pw" },
+    });
+    calls.length = 0;
+
+    await controller({ allocateGatePort: async () => 9999 }, withHash).start();
+    expect(calls.some((call) => call.args[7] === "run")).toBe(false);
+    expect(calls.find((call) => call.args[7] === "up")?.env.COMPOSE_PROFILES).toBe("gate");
+    await expect(readStackGate(path.join(root, "stack"))).resolves.toEqual({
+      username: "me",
+      port: 8081,
+    });
+    calls.length = 0;
+
+    const closed = await controller({}, withHash).start({ kind: "off" });
+    expect(closed.phase).toBe("ready");
+    expect(calls.find((call) => call.args[7] === "up")?.env).not.toHaveProperty("COMPOSE_PROFILES");
+    const removal = calls.find((call) => call.args[7] === "rm");
+    expect(removal?.args.slice(7)).toEqual(["rm", "--stop", "--force", "gate"]);
+    expect(removal?.env.COMPOSE_PROFILES).toBe("gate");
+    await expect(readStackGate(path.join(root, "stack"))).resolves.toBeNull();
+  });
+
+  it("fails without touching .env when Caddy does not return a hash", async () => {
+    const stack = controller({ allocateGatePort: async () => 8081 }, (args) =>
+      args[7] === "run" ? { code: 1, stderr: "boom" } : ok(args),
+    );
+
+    const state = await stack.start({ kind: "set", access: { username: "me", password: "pw" } });
+    expect(state).toMatchObject({
+      phase: "failed",
+      message: "Could not save the password for other devices. Retry.",
+    });
+    expect(calls.some((call) => call.args[7] === "up")).toBe(false);
+    await expect(readStackGate(path.join(root, "stack"))).resolves.toBeNull();
+  });
 
   it("pushes every state change so the setup window is never left waiting on a poll", async () => {
     const pushed: string[] = [];
