@@ -15,9 +15,9 @@ import {
   usesCustomApiBase,
 } from "../lib/api";
 import { useI18n } from "../lib/i18n";
+import { useMobileTokens } from "../lib/native";
 import { currentServerAccess } from "../lib/server-access";
 import { saveServerAccess } from "../lib/server-access-store";
-import { useMobileTokens } from "../lib/native";
 
 export default function ServerScreen() {
   const { t } = useI18n();

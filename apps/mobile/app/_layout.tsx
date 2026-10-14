@@ -46,10 +46,10 @@ import {
 } from "../lib/remote-images-preference";
 import { loadResponseStreamingPreference } from "../lib/response-streaming";
 import { clearSavedChats } from "../lib/saved-chats";
-import { registerSessionDiskCache } from "../lib/session";
-import { startUnsentSends } from "../lib/unsent-sends";
 import { installServerAccessFetch } from "../lib/server-access";
 import { loadServerAccess } from "../lib/server-access-store";
+import { registerSessionDiskCache } from "../lib/session";
+import { startUnsentSends } from "../lib/unsent-sends";
 
 // Before any request: every fetch to a gated server carries its Basic Auth credential.
 installServerAccessFetch();

@@ -673,8 +673,7 @@ export const DE_MESSAGES: Record<string, string> = {
   "Enter a server URL": "Gib eine Server-URL ein",
   "Public servers need https://. HTTP only works on your local network.":
     "Öffentliche Server brauchen https://. HTTP funktioniert nur im lokalen Netzwerk.",
-  "That URL did not look like a Quant server":
-    "Diese URL sieht nicht nach einem Quant-Server aus",
+  "That URL did not look like a Quant server": "Diese URL sieht nicht nach einem Quant-Server aus",
   "That URL is missing a host": "Dieser URL fehlt ein Host",
   "That doesn’t look like a URL": "Das sieht nicht nach einer URL aus",
   "Use an http or https URL": "Verwende eine http- oder https-URL",
@@ -789,9 +788,12 @@ export const DE_MESSAGES: Record<string, string> = {
     "Melde dich bei deinem bestehenden Konto an, um SSO zu verknüpfen",
   "SSO is temporarily unavailable. Try again.":
     "SSO ist vorübergehend nicht verfügbar. Versuche es erneut.",
-  "Username and password, if the server asks for them": "Benutzername und Passwort, falls der Server danach fragt",
-  "This server asks for a username and password": "Dieser Server verlangt Benutzername und Passwort",
-  "The server did not accept that username and password": "Der Server hat Benutzername und Passwort nicht akzeptiert",
+  "Username and password, if the server asks for them":
+    "Benutzername und Passwort, falls der Server danach fragt",
+  "This server asks for a username and password":
+    "Dieser Server verlangt Benutzername und Passwort",
+  "The server did not accept that username and password":
+    "Der Server hat Benutzername und Passwort nicht akzeptiert",
   "Could not check for updates": "Updates konnten nicht geprüft werden",
   "Checking for updates…": "Suche nach Updates…",
   "Downloading the update…": "Update wird heruntergeladen…",

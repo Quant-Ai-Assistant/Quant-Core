@@ -437,6 +437,7 @@ configure_gate() {
 configure_updater() {
   [[ -n "$(env_value RAKAZO_UPDATER_TOKEN)" ]] || set_env_value RAKAZO_UPDATER_TOKEN "$(openssl rand -hex 32)"
   set_env_value RAKAZO_DEPLOY_DIR "$(pwd -P)"
+  set_env_value COMPOSE_PROFILES "gate,updater"
 }
 
 download "$COMPOSE_FILE"

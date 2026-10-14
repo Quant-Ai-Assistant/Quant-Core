@@ -1,0 +1,201 @@
+name: release
+
+# Every push to main ships a Quant release: the server images, the Android APK and the desktop
+# apps, under one version. Software update on a server, Check for updates on Android and the
+# desktop updater all read the newest release here.
+#
+# It is one workflow on purpose: a tag pushed with GITHUB_TOKEN starts no other workflow, so the
+# images, apps and the release have to be built in the same run.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Choose the version
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      code: ${{ steps.version.outputs.code }}
+    steps:
+      - id: version
+        # v0.1.<run> keeps versions increasing; the run number is also the Android versionCode,
+        # which the in-app update compares.
+        run: |
+          echo "code=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "version=0.1.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+  images:
+    name: Server images
+    needs: version
+    uses: ./.github/workflows/publish-server-image.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      release_version: ${{ needs.version.outputs.version }}
+
+  android:
+    name: Android APK
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      QUANT_APP_VERSION: ${{ needs.version.outputs.version }}
+      QUANT_VERSION_CODE: ${{ needs.version.outputs.code }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generate the Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --no-install --clean
+      - name: Build the release APK
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Sign with the Quant release key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          # The same key on every release, or Android refuses the update over the installed app.
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" ]]; then
+            echo "Add the ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS secrets." >&2
+            exit 1
+          fi
+          keystore="$RUNNER_TEMP/quant-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          build_tools="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          unsigned="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          mkdir -p release-artifacts
+          "$build_tools/zipalign" -f -p 4 "$unsigned" "$RUNNER_TEMP/aligned.apk"
+          "$build_tools/apksigner" sign \
+            --ks "$keystore" --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --out release-artifacts/quant.apk "$RUNNER_TEMP/aligned.apk"
+          "$build_tools/apksigner" verify --print-certs release-artifacts/quant.apk
+          rm -f "$keystore"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android
+          path: release-artifacts/quant.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  desktop:
+    name: Desktop ${{ matrix.name }}
+    needs: version
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            runner: macos-latest
+            args: --mac --arm64 --x64
+          - name: Windows
+            runner: windows-latest
+            args: --win --x64
+          - name: Linux
+            runner: ubuntu-latest
+            args: --linux --x64
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      # No Apple Developer ID or Authenticode certificate: macOS gets an ad-hoc signature from the
+      # build config, Windows stays unsigned.
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Set the app version
+        working-directory: apps/desktop
+        shell: bash
+        run: npm pkg set "version=$VERSION"
+      - name: Build
+        shell: bash
+        run: |
+          pnpm --filter @rakazo/web build
+          pnpm --filter @rakazo/desktop build
+          cd apps/desktop
+          npx electron-builder ${{ matrix.args }} --publish never
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: desktop-${{ matrix.name }}
+          path: |
+            apps/desktop/out/*.dmg
+            apps/desktop/out/*.zip
+            apps/desktop/out/*.exe
+            apps/desktop/out/*.AppImage
+            apps/desktop/out/*.blockmap
+            apps/desktop/out/latest*.yml
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish the release
+    needs: [version, images, android, desktop]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+      - name: Create the release and its tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cp infra/compose/install-images.sh release-artifacts/
+          cat > "$RUNNER_TEMP/notes.md" <<NOTES
+          Quant ${VERSION}, built from ${GITHUB_SHA}.
+
+          - **Server:** run \`install-images.sh\` from this release, or update an installed server from Settings → Software update.
+          - **Android:** install \`quant.apk\`. Later versions install from Account → Check for updates.
+          - **Desktop:** \`.dmg\` for macOS, \`.exe\` for Windows, \`.AppImage\` for Linux. The apps are not signed by Apple or Microsoft; see the README for the first launch.
+          NOTES
+          gh release create "v${VERSION}" release-artifacts/* \
+            --target "$GITHUB_SHA" \
+            --title "Quant ${VERSION}" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            --latest

@@ -11,7 +11,10 @@ module.exports = function withQuantAndroid(config) {
     const manifest = next.modResults;
     const application = manifest.manifest.application?.[0];
     if (application) application.$["android:usesCleartextTraffic"] = "true";
-    AndroidConfig.Permissions.ensurePermission(manifest, "android.permission.REQUEST_INSTALL_PACKAGES");
+    AndroidConfig.Permissions.ensurePermission(
+      manifest,
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+    );
     return next;
   });
 };
