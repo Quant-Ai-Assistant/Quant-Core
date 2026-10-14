@@ -52,7 +52,7 @@ jobs:
     name: Android APK
     needs: version
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       QUANT_APP_VERSION: ${{ needs.version.outputs.version }}
       QUANT_VERSION_CODE: ${{ needs.version.outputs.code }}
@@ -75,7 +75,12 @@ jobs:
         run: npx expo prebuild --platform android --no-install --clean
       - name: Build the release APK
         working-directory: apps/mobile/android
-        run: ./gradlew assembleRelease --no-daemon
+        # Android lint runs out of Metaspace on the hosted runner and then hangs; the code is
+        # checked by the ci workflow, so the release build skips lint and gets more memory.
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -Dorg.gradle.jvmargs="-Xmx6g -XX:MaxMetaspaceSize=2g" \
+            -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease
       - name: Sign with the Quant release key
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -190,7 +195,7 @@ jobs:
           cat > "$RUNNER_TEMP/notes.md" <<NOTES
           Quant ${VERSION}, built from ${GITHUB_SHA}.
 
-          - **Server:** run \`install-images.sh\` from this release, or update an installed server from Settings → Software update.
+          - **Server:** run \`install-images.sh\` from this release, or update an installed server from Settings → Updates.
           - **Android:** install \`quant.apk\`. Later versions install from Account → Check for updates.
           - **Desktop:** \`.dmg\` for macOS, \`.exe\` for Windows, \`.AppImage\` for Linux. The apps are not signed by Apple or Microsoft; see the README for the first launch.
           NOTES

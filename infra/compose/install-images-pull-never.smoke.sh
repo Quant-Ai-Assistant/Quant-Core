@@ -142,12 +142,18 @@ setup_work() {
   write_stubs "$work/bin"
   : > "$work/cwd/docker-compose.images.yml"
   : > "$work/cwd/.env.images.example"
+  : > "$work/cwd/Caddyfile.gate"
+  # A rerun: the gate is already configured, so the installer asks nothing.
   cat > "$work/cwd/.env" <<'EOF'
 POSTGRES_PASSWORD=test-postgres
 BETTER_AUTH_SECRET=test-auth-secret
 ENCRYPTION_KEY=test-encryption-key
 SCREEN_PROXY_SECRET=test-screen-secret
 SANDBOX_SUPERVISOR_TOKEN=test-supervisor-token
+QUANT_BASIC_USER=quant
+QUANT_BASIC_HASH='$2a$14$test'
+QUANT_GATE_TOKEN=test-gate-token
+WEB_ORIGIN=http://192.0.2.10:8080
 EOF
   : > "$work/docker.log"
   : > "$work/curl.log"
@@ -185,7 +191,7 @@ set -e
 [[ "$offline_out" == *"Using local docker-compose.images.yml"* ]] || fail "--offline did not keep local compose file"
 [[ "$offline_out" == *"Using local .env.images.example"* ]] || fail "--offline did not keep local env example"
 [[ "$offline_out" == *"Skipping image pull"* ]] || fail "--offline did not skip image pull"
-[[ "$offline_out" == *"Rakazo is starting"* ]] || fail "--offline did not start"
+[[ "$offline_out" == *"Quant is starting"* ]] || fail "--offline did not start"
 [[ ! -s "$tmp/offline/curl.log" ]] || fail "--offline should not curl when files are local: $(cat "$tmp/offline/curl.log")"
 has_compose_pull "$tmp/offline" && fail "--offline should not run compose pull"
 has_up_pull_never "$tmp/offline" || fail "--offline should pass --pull never to compose up: $(cat "$tmp/offline/docker.log")"
@@ -217,8 +223,8 @@ unset STUB_COMPOSE_UP_HELP STUB_COMPOSE_SHORT
 [[ "$old_code" -eq 0 ]] || fail "old Compose --offline exited $old_code: $old_out"
 [[ "$old_out" == *"cannot enforce pull-never on this Compose version; startup fails if an image is missing locally"* ]] \
   || fail "old Compose --offline missing soft warning: $old_out"
-[[ "$old_out" != *"Rakazo setup failed:"* ]] || fail "old Compose --offline should not hard-fail: $old_out"
-[[ "$old_out" == *"Rakazo is starting"* ]] || fail "old Compose --offline should continue: $old_out"
+[[ "$old_out" != *"Quant setup failed:"* ]] || fail "old Compose --offline should not hard-fail: $old_out"
+[[ "$old_out" == *"Quant is starting"* ]] || fail "old Compose --offline should continue: $old_out"
 has_compose_pull "$tmp/old" && fail "old Compose --offline should not run compose pull"
 if grep -F -e ' --pull never' "$tmp/old/docker.log" >/dev/null; then
   fail "old Compose up should not receive --pull never: $(cat "$tmp/old/docker.log")"
