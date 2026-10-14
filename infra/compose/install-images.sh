@@ -423,7 +423,10 @@ configure_gate() {
     generated="$password"
   fi
 
-  hash=$(printf '%s' "$password" | docker run --rm -i "${CADDY_IMAGE:-caddy:2}" caddy hash-password 2>/dev/null) \
+  # Caddy reads a password from stdin only on a terminal, so pass it in the container's
+  # environment rather than on the host's command line.
+  hash=$(QUANT_HASH_INPUT="$password" docker run --rm -e QUANT_HASH_INPUT "${CADDY_IMAGE:-caddy:2}" \
+    sh -c 'caddy hash-password --plaintext "$QUANT_HASH_INPUT"' 2>/dev/null) \
     || fail "could not hash the gate password with the Caddy image."
   credential=$(printf '%s:%s' "$user" "$password" | openssl base64 -A)
 
@@ -439,6 +442,27 @@ configure_gate() {
   QUANT_ORIGIN="$origin"
   QUANT_USER="$user"
   QUANT_GENERATED_PASSWORD="$generated"
+}
+
+# The web UI and API stay on loopback for the server itself; move them off ports already taken.
+free_port_from() {
+  local port="$1"
+  while port_in_use "$port"; do
+    port=$((port + 1))
+  done
+  printf '%s' "$port"
+}
+
+configure_loopback_ports() {
+  local name default chosen
+  for name in RAKAZO_WEB_PORT:5173 RAKAZO_API_PORT:3100; do
+    default="${name#*:}"
+    name="${name%%:*}"
+    [[ -n "$(env_value "$name")" ]] && continue
+    chosen=$(free_port_from "$default")
+    [[ "$chosen" == "$default" ]] || echo "Port $default is in use; using $chosen for ${name}."
+    set_env_value "$name" "$chosen"
+  done
 }
 
 configure_updater() {
@@ -461,6 +485,7 @@ QUANT_ORIGIN=""
 QUANT_USER=""
 QUANT_GENERATED_PASSWORD=""
 configure_gate
+configure_loopback_ports
 configure_updater
 
 validate_required_secrets
