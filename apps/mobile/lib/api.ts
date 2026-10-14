@@ -45,7 +45,7 @@ import * as SecureStore from "expo-secure-store";
 import { promptAiConsent } from "./ai-consent";
 import { getCachedAvatarStyle, saveAvatarStyle } from "./avatar-style";
 import type { EndpointResult } from "./endpoint";
-import { defaultApiBase, normalizeApiBase } from "./endpoint";
+import { defaultApiBase, hasBuiltInApiBase, normalizeApiBase } from "./endpoint";
 import { t } from "./i18n";
 import { resumeLiveNotifications } from "./live-notifications";
 import {
@@ -72,6 +72,7 @@ export const MAX_MOBILE_RPC_RESPONSE_BYTES = 16 * 1024 * 1024;
 const SPACE_AUTH_RECOVERY_SAFE_PROCS = new Set(["spaces/list", "me"]);
 
 let cachedApiBase: string | undefined;
+let apiBaseChosen = false;
 const apiBaseListeners = new Set<() => void>();
 
 export function subscribeApiBase(listener: () => void): () => void {
@@ -131,6 +132,11 @@ export function currentApiBase() {
   return parsed.url;
 }
 
+/** True until the user connects a server, in builds that ship without one. */
+export function needsServerSetup() {
+  return !hasBuiltInApiBase() && !apiBaseChosen;
+}
+
 export async function loadApiBase() {
   let apiBase = defaultApiBase();
   try {
@@ -139,6 +145,7 @@ export async function loadApiBase() {
       const parsed = normalizeApiBase(stored);
       if (parsed.ok) {
         apiBase = parsed.url;
+        apiBaseChosen = true;
       }
     }
   } catch {
@@ -391,7 +398,8 @@ async function recoverSpaceRollback(apiBase: string) {
 export async function saveApiBase(input: string): Promise<EndpointResult> {
   const parsed = normalizeApiBase(input);
   if (!parsed.ok) return parsed;
-  if (parsed.url === defaultApiBase()) return resetApiBase();
+  // Without a built-in server the default is only a placeholder, so it is saved like any other.
+  if (parsed.url === defaultApiBase() && hasBuiltInApiBase()) return resetApiBase();
   const previous = currentApiBase();
   let cleared:
     | {
@@ -407,6 +415,7 @@ export async function saveApiBase(input: string): Promise<EndpointResult> {
   }
   try {
     await SecureStore.setItemAsync(ENDPOINT_KEY, parsed.url);
+    apiBaseChosen = true;
   } catch {
     if (cleared) {
       await restoreCredentials(
@@ -449,6 +458,7 @@ export async function resetApiBase(): Promise<EndpointResult> {
       return { ok: false, error: t("Could not clear the custom server URL") };
     }
   }
+  apiBaseChosen = false;
   setCachedApiBase(url);
   await clearStoredValue(SPACE_ROLLBACK_KEY);
   return { ok: true, url };
@@ -1429,6 +1439,7 @@ export {
   apiBaseWarning,
   defaultApiBase,
   displayApiHost,
+  hasBuiltInApiBase,
   normalizeApiBase,
   probeApiBase,
   usesCustomApiBase,

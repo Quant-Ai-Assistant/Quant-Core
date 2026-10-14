@@ -22,6 +22,7 @@ import {
   MAX_MOBILE_RPC_RESPONSE_BYTES,
   mergeMobileSnapshot,
   mobileThreadRefreshResult,
+  needsServerSetup,
   passwordResetCapabilities,
   prependMobileMessagePage,
   requestAccountDeletionCode,
@@ -416,7 +417,8 @@ describe("mobile API authentication", () => {
     }
   });
 
-  it("does not send a password or bearer token to a persisted public HTTP server", async () => {
+  it("uses a persisted HTTP server the user chose", async () => {
+    // Self-hosted servers without a domain only answer http://address:port.
     vi.mocked(SecureStore.getItemAsync).mockImplementation(async (key) => {
       if (key === "rakazo.api_base") return "http://app.example.test";
       if (key === "rakazo.session_token") return "session-token";
@@ -426,18 +428,17 @@ describe("mobile API authentication", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await loadApiBase();
+    expect(needsServerSetup()).toBe(false);
     await changePassword("old-password", "new-password");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:3100/api/auth/change-password",
+      "http://app.example.test/api/auth/change-password",
       expect.objectContaining({
         headers: expect.objectContaining({ authorization: "Bearer session-token" }),
       }),
     );
-    expect(fetchMock).not.toHaveBeenCalledWith(
-      expect.stringMatching(/^http:\/\/app\.example\.test/),
-      expect.anything(),
-    );
+    await resetApiBase();
+    expect(needsServerSetup()).toBe(true);
   });
 
   it("starts notifications only after the inbox selects the default space", async () => {

@@ -32,9 +32,10 @@ describe("normalizeApiBase", () => {
       ok: true,
       url: "http://192.168.1.20:3100",
     });
-    expect(normalizeApiBase("http://app.example.com")).toEqual({
-      ok: false,
-      error: "Public servers need https://",
+    // Self-hosted servers without a domain answer on http://address:port.
+    expect(normalizeApiBase("http://203.0.113.24:8080")).toEqual({
+      ok: true,
+      url: "http://203.0.113.24:8080",
     });
   });
 
@@ -64,12 +65,15 @@ describe("display and warnings", () => {
     vi.unstubAllEnvs();
   });
 
-  it("falls back to loopback when the compile-time endpoint is public HTTP", async () => {
-    vi.stubEnv("EXPO_PUBLIC_API_URL", "http://app.example.com");
+  it("needs a server from the user only when the build has none", async () => {
+    vi.stubEnv("EXPO_PUBLIC_API_URL", "https://app.example.com");
     vi.resetModules();
     const endpoint = await import("./endpoint.js");
 
-    expect(endpoint.defaultApiBase()).toBe("http://127.0.0.1:3100");
+    expect(endpoint.hasBuiltInApiBase()).toBe(true);
+    expect(endpoint.defaultApiBase()).toBe("https://app.example.com");
+    vi.stubEnv("EXPO_PUBLIC_API_URL", "");
+    expect(endpoint.hasBuiltInApiBase()).toBe(false);
     vi.unstubAllEnvs();
   });
 
@@ -108,6 +112,28 @@ describe("probeApiBase", () => {
       "https://app.example.com/rpc/health",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("falls back to http for a bare address that does not answer https", async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.startsWith("https://")) throw new TypeError("Network request failed");
+      return new Response(JSON.stringify({ json: { ok: true } }), { status: 200 });
+    }) as unknown as typeof fetch;
+    await expect(probeApiBase("203.0.113.24:8080", fetchImpl)).resolves.toEqual({
+      ok: true,
+      url: "http://203.0.113.24:8080",
+    });
+  });
+
+  it("keeps an explicit https address on https", async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError("Network request failed");
+    }) as unknown as typeof fetch;
+    await expect(probeApiBase("https://app.example.com", fetchImpl)).resolves.toEqual({
+      ok: false,
+      error: "Could not reach that server",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it("rejects a host that is up but is not Quant", async () => {
