@@ -8,12 +8,13 @@
   "scripts": {
     "dev": "pnpm build && electron .",
     "build": "tsc -p tsconfig.json && node scripts/copy-static.mjs",
-    "pack": "pnpm --filter @rakazo/web build && pnpm build && electron-builder --mac --win --linux",
-    "pack:dir": "pnpm --filter @rakazo/web build && pnpm build && electron-builder --dir",
-    "check": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --root ../.. apps/desktop/src",
+    "pack": "pnpm --filter @rakazo/web build && pnpm build && pnpm build:server && electron-builder --mac --win --linux",
+    "pack:dir": "pnpm --filter @rakazo/web build && pnpm build && pnpm build:server && electron-builder --dir",
+    "check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p server/tsconfig.json",
+    "test": "vitest run --root ../.. apps/desktop/src apps/desktop/server",
     "test:e2e": "pnpm build && playwright test --config e2e/playwright.config.ts",
-    "release": "pnpm --filter @rakazo/web build && pnpm build && electron-builder --publish never"
+    "release": "pnpm --filter @rakazo/web build && pnpm build && pnpm build:server && electron-builder --publish never",
+    "build:server": "node scripts/build-server.mjs"
   },
   "dependencies": {
     "@rakazo/contracts": "workspace:*",
@@ -22,8 +23,11 @@
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@rakazo/ui-tokens": "workspace:*",
+    "@types/pg": "8.23.1",
     "electron": "44.3.0",
     "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "pg": "8.23.0",
     "typescript": "7.0.2",
     "vitest": "4.1.11"
   },
@@ -43,16 +47,24 @@
         "to": "web"
       },
       {
-        "from": "../../infra/compose/docker-compose.images.yml",
-        "to": "stack/docker-compose.images.yml"
+        "from": "server-dist",
+        "to": "server",
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../../infra/compose/.env.images.example",
         "to": "stack/.env.images.example"
       },
       {
-        "from": "../../infra/compose/Caddyfile.gate",
-        "to": "stack/Caddyfile.gate"
+        "from": "assets",
+        "to": "tray",
+        "filter": [
+          "tray.png",
+          "trayTemplate.png",
+          "trayTemplate@2x.png"
+        ]
       }
     ],
     "extraMetadata": {

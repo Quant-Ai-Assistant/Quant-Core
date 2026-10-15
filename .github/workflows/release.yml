@@ -154,6 +154,8 @@ jobs:
         run: |
           pnpm --filter @rakazo/web build
           pnpm --filter @rakazo/desktop build
+          # The server the app runs itself for "This computer": API, worker, Postgres.
+          pnpm --filter @rakazo/desktop build:server
           cd apps/desktop
           npx electron-builder ${{ matrix.args }} --publish never
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

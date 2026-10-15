@@ -112,7 +112,6 @@ describe("setup preload bridge", () => {
     expect(globalName).toBe("rakazoSetup");
     expect(bridge.platform).toBe("linux");
     expect(Object.keys(bridge).sort()).toEqual([
-      "openLink",
       "platform",
       "quit",
       "save",
@@ -126,7 +125,6 @@ describe("setup preload bridge", () => {
     await bridge.test("http://127.0.0.1:5173");
     await bridge.save({ mode: "new", serverUrl: "http://127.0.0.1:5173" });
     await bridge.quit();
-    await bridge.openLink("orbstack");
     await bridge.stack.state();
     await bridge.stack.start();
     await bridge.stack.checkPort(8080);
@@ -135,12 +133,10 @@ describe("setup preload bridge", () => {
       "desktop.setup.test",
       "desktop.setup.save",
       "desktop.setup.quit",
-      "desktop.setup.openLink",
       "desktop.setup.stack.state",
       "desktop.setup.stack.start",
       "desktop.setup.stack.checkPort",
     ]);
-    expect(invoke).toHaveBeenCalledWith("desktop.setup.openLink", "orbstack");
 
     const listener = vi.fn();
     bridge.stack.onChange(listener);
