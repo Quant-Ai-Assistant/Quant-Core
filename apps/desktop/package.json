@@ -14,7 +14,7 @@
     "test": "vitest run --root ../.. apps/desktop/src apps/desktop/server",
     "test:e2e": "pnpm build && playwright test --config e2e/playwright.config.ts",
     "release": "pnpm --filter @rakazo/web build && pnpm build && pnpm build:server && electron-builder --publish never",
-    "build:server": "node scripts/build-server.mjs"
+    "build:server": "pnpm --filter @rakazo/db generate && node scripts/build-server.mjs"
   },
   "dependencies": {
     "@rakazo/contracts": "workspace:*",
