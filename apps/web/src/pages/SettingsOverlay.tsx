@@ -8,6 +8,7 @@ import {
   CreditCard,
   Gauge,
   Monitor,
+  Phone,
   Settings,
   Volume2,
   XIcon,
@@ -22,6 +23,7 @@ import {
   UsageSettingsPanel,
 } from "./AccountSettingsOverlay";
 import { BillingSettingsPanel } from "./BillingSettingsPanel";
+import { CallSettingsPanel } from "./CallSettingsPanel";
 import { MemorySettingsOverlay } from "./MemorySettingsOverlay";
 import { ModelSettingsOverlay } from "./ModelSettingsOverlay";
 import { VoiceSettingsOverlay } from "./VoiceSettingsOverlay";
@@ -31,6 +33,7 @@ export type SettingsSection =
   | "models"
   | "memory"
   | "voice"
+  | "calls"
   | "usage"
   | "computer"
   | "billing"
@@ -55,6 +58,7 @@ export function SettingsOverlay({
   sandboxProvider,
   onSandboxProviderChange,
   messagingEnabled = false,
+  callsEnabled = false,
   onOpenMessaging,
   memoryConfig,
   onMemoryConfigChange,
@@ -78,6 +82,8 @@ export function SettingsOverlay({
   sandboxProvider?: string | null;
   onSandboxProviderChange?: (sandboxProvider: string) => void;
   messagingEnabled?: boolean;
+  /** Phone calls are on for this deployment. */
+  callsEnabled?: boolean;
   onOpenMessaging?: () => void;
   memoryConfig: SpaceMemoryConfig | null | undefined;
   onMemoryConfigChange: (config: SpaceMemoryConfig | null) => void;
@@ -90,11 +96,12 @@ export function SettingsOverlay({
   const [section, setSection] = useState<SettingsSection>(initialSection);
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [callsBusy, setCallsBusy] = useState(false);
   const [keepComputerRecovery, setKeepComputerRecovery] = useState(false);
   const recoveryHoldTimer = useRef<number | undefined>(undefined);
   const showComputer =
     keepComputerRecovery || (isDeploymentOwner && computersAreUnavailable(sandboxProvider));
-  const panelBusy = memoryBusy || voiceBusy;
+  const panelBusy = memoryBusy || voiceBusy || callsBusy;
   const releaseComputerRecovery = useCallback(() => {
     window.clearTimeout(recoveryHoldTimer.current);
     recoveryHoldTimer.current = undefined;
@@ -122,6 +129,10 @@ export function SettingsOverlay({
   }, [billingEnabled, section]);
 
   useEffect(() => {
+    if (!callsEnabled && section === "calls") setSection("general");
+  }, [callsEnabled, section]);
+
+  useEffect(() => {
     if (section !== "computer") releaseComputerRecovery();
   }, [section, releaseComputerRecovery]);
   useEffect(() => () => window.clearTimeout(recoveryHoldTimer.current), []);
@@ -138,6 +149,7 @@ export function SettingsOverlay({
     { id: "models", label: t`Models`, icon: Cpu },
     { id: "memory", label: t`Memory`, icon: Brain },
     { id: "voice", label: t`Voice`, icon: Volume2 },
+    ...(callsEnabled ? [{ id: "calls" as const, label: t`Calls`, icon: Phone }] : []),
     { id: "usage", label: t`Usage`, icon: Gauge },
     ...(showComputer ? [{ id: "computer" as const, label: t`Computer`, icon: Monitor }] : []),
     ...(billingEnabled ? [{ id: "billing" as const, label: t`Billing`, icon: CreditCard }] : []),
@@ -244,7 +256,10 @@ export function SettingsOverlay({
 
             <div
               className={`min-h-0 flex-1 ${
-                section === "models" || section === "voice" || section === "memory"
+                section === "models" ||
+                section === "voice" ||
+                section === "memory" ||
+                section === "calls"
                   ? "flex flex-col overflow-hidden"
                   : "rk-scroll overflow-y-auto overscroll-contain px-6 pb-6 pt-5 sm:px-8 sm:pb-8"
               }`}
@@ -293,6 +308,9 @@ export function SettingsOverlay({
               ) : null}
               {section === "voice" ? (
                 <VoiceSettingsOverlay embedded onClose={requestClose} onBusyChange={setVoiceBusy} />
+              ) : null}
+              {section === "calls" && callsEnabled ? (
+                <CallSettingsPanel onBusyChange={setCallsBusy} />
               ) : null}
             </div>
           </div>

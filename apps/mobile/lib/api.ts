@@ -819,8 +819,10 @@ export async function rpc<T>(
     if (!res.ok) {
       // oRPC sends a failure as `{ json: { code, status, message } }`; the message is the
       // server's user-facing copy.
-      const error = parsed.json as { message?: unknown } | undefined;
-      const message = errorText(typeof error?.message === "string" ? error.message : "");
+      const error = parsed.json as { message?: unknown; data?: unknown } | undefined;
+      const message = errorText(
+        withRejectedFields(typeof error?.message === "string" ? error.message : "", error?.data),
+      );
       const unauthorized = res.status === 401;
       // Without a Space header a 401 means the server no longer accepts the
       // session itself; Space recovery below probes the same way. Clearing it
@@ -935,6 +937,31 @@ export async function rpc<T>(
     if (timer) clearTimeout(timer);
     options.signal?.removeEventListener("abort", cancel);
   }
+}
+
+/**
+ * A rejected request names the fields the server refused (`Input validation failed (callId)`),
+ * so a report from the field says what was wrong without server logs.
+ */
+export function withRejectedFields(message: string, data: unknown): string {
+  const issues = (data as { issues?: unknown } | null | undefined)?.issues;
+  if (!message || !Array.isArray(issues)) return message;
+  const fields = [
+    ...new Set(
+      issues
+        .map((issue) => (issue as { path?: unknown } | null)?.path)
+        .filter(Array.isArray)
+        .map((path) =>
+          path
+            .map((part) =>
+              typeof part === "object" && part ? (part as { key?: unknown }).key : part,
+            )
+            .join("."),
+        )
+        .filter(Boolean),
+    ),
+  ];
+  return fields.length ? `${message} (${fields.join(", ")})` : message;
 }
 
 export type MobileBot = Pick<

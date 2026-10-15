@@ -16,12 +16,9 @@ import {
   speechFromBlocks,
 } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import {
-  appendEventInTransaction,
-  createThreadMessageInTransaction,
-  findVoiceCredential,
-} from "@rakazo/db";
+import { appendEventInTransaction, createThreadMessageInTransaction, hasCallKey } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
+import { callModelPin, loadCallKey } from "./call-settings.js";
 import { sendThreadMessage, type ThreadTarget } from "./thread-target.js";
 import { voiceContext } from "./voice.js";
 
@@ -58,18 +55,9 @@ type LiveCall = {
 const liveCalls = new Map<string, LiveCall>();
 const callKey = (actor: Actor, callId: string) => `${actor.userId}:${callId}`;
 
-async function loadLiveKey(deps: LiveCallDeps, actor: Actor): Promise<string | null> {
-  const cred = await findVoiceCredential(deps.prisma, actor, LIVE_CALL_VOICE_PROVIDER);
-  if (!cred) return null;
-  const secret = await deps.prisma.secret.findFirst({
-    where: { id: cred.secretId, userId: actor.userId, spaceId: null },
-  });
-  return secret ? deps.secrets.load(secret.ciphertext, secret.id) : null;
-}
-
-/** Whether a call can be a live conversation: the caller connected a live-capable provider. */
+/** Whether calls are offered: the caller connected the calls OpenAI key. */
 export async function liveCallAvailable(deps: LiveCallDeps, actor: Actor): Promise<boolean> {
-  return Boolean(await findVoiceCredential(deps.prisma, actor, LIVE_CALL_VOICE_PROVIDER));
+  return hasCallKey(deps.prisma, actor.userId);
 }
 
 export function liveCallInstructions(input: {
@@ -128,10 +116,10 @@ export async function startLiveCall(
   target: BotTarget,
   input: { callId: string; offerSdp: string; greeting?: string; language?: string },
 ): Promise<{ answerSdp: string }> {
-  const apiKey = await loadLiveKey(deps, actor);
+  const apiKey = await loadCallKey(deps, actor);
   if (!apiKey) {
     throw new ORPCError("PRECONDITION_FAILED", {
-      message: "Connect OpenAI in Voice for live calls.",
+      message: "Add an OpenAI key in Calls settings.",
     });
   }
   const provider = (deps.voiceProvider ?? createVoiceProvider)(LIVE_CALL_VOICE_PROVIDER);
@@ -246,9 +234,11 @@ async function followLiveCall(
     }
     // The bot's run sees the call so far, so file what came before this request first.
     await filing;
+    const modelPin = await callModelPin(deps, actor);
     const sent = await sendThreadMessage(deps, actor, target, {
       text,
       clientNonce: callClientNonce(call.callId),
+      ...(modelPin ? { modelPin } : {}),
     });
     call.control.note(delegationId, "The assistant is working on it. No result yet.");
     const reply = await awaitRunReply(deps, sent.runId, sent.seq);

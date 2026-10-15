@@ -9,7 +9,7 @@ import {
 } from "./call-request.js";
 
 function prismaWith(options: {
-  voice?: boolean;
+  callKey?: boolean;
   recent?: boolean;
   status?: string;
   updated?: number;
@@ -29,8 +29,8 @@ function prismaWith(options: {
     $queryRaw: vi.fn(async () => []),
     thread: { update: vi.fn(async () => ({ nextEventSeq: 1 })) },
     event: { create: vi.fn(async () => ({ seq: 0 })) },
-    userVoiceCredential: {
-      findFirst: vi.fn(async () => (options.voice === false ? null : { id: "voice-1" })),
+    userCallSettings: {
+      findFirst: vi.fn(async () => (options.callKey === false ? null : { userId: "user-1" })),
     },
     message: {
       findFirst: vi.fn(async () => (options.recent ? { id: "earlier" } : null)),
@@ -53,14 +53,14 @@ function prismaWith(options: {
 }
 
 describe("call_user", () => {
-  it("only rings a one-to-one chat with a voice provider, once per cooldown", async () => {
+  it("only rings a one-to-one chat once calls are set up, once per cooldown", async () => {
     const input = { userId: "user-1", threadId: "thread-1", groupChat: false };
     await expect(callRequestRefusal(prismaWith({}), input)).resolves.toBeNull();
     await expect(
       callRequestRefusal(prismaWith({}), { ...input, groupChat: true }),
     ).resolves.toMatch(/one-to-one/);
-    await expect(callRequestRefusal(prismaWith({ voice: false }), input)).resolves.toMatch(
-      /voice provider/,
+    await expect(callRequestRefusal(prismaWith({ callKey: false }), input)).resolves.toMatch(
+      /not set up calls/,
     );
     await expect(callRequestRefusal(prismaWith({ recent: true }), input)).resolves.toMatch(
       /last 10 minutes/,
@@ -203,13 +203,8 @@ describe("requestUserCall security", () => {
         update: vi.fn(async () => ({ nextMessageSeq: 1, nextEventSeq: 1 })),
       },
       run: { findUnique: vi.fn(async () => ({ status: "running" })) },
-      userVoiceCredential: { findFirst: vi.fn(async () => ({ id: "voice-1" })) },
-      spaceVoicePreference: {
-        findFirst: vi.fn(
-          async (): Promise<{ credential: { id: string; provider: string } } | null> => ({
-            credential: { id: "voice-1", provider: "openai" },
-          }),
-        ),
+      userCallSettings: {
+        findFirst: vi.fn(async (): Promise<{ userId: string } | null> => ({ userId: run.userId })),
       },
       message: {
         findFirst: vi.fn(async () => saved),
@@ -259,17 +254,16 @@ describe("requestUserCall security", () => {
     expect(deps.prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("does not ring a user who has not connected OpenAI voice, which calls need", async () => {
+  it("does not ring a user who has not connected the calls OpenAI key", async () => {
     const { deps, tx } = fixture();
-    tx.spaceVoicePreference.findFirst.mockResolvedValueOnce(null);
-    tx.userVoiceCredential.findFirst.mockResolvedValueOnce(null as never);
+    tx.userCallSettings.findFirst.mockResolvedValueOnce(null);
     expect(await requestUserCall(deps, run, input)).toHaveProperty("error");
-    expect(tx.spaceVoicePreference.findFirst).toHaveBeenCalledWith(
+    expect(tx.userCallSettings.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ userId: run.userId, credential: { provider: "openai" } }),
+        where: { userId: run.userId, secretId: { not: null } },
       }),
     );
-    expect(deps.prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.message.create).not.toHaveBeenCalled();
   });
 
   it.each(["userId", "spaceId", "botId", "threadId"] as const)(

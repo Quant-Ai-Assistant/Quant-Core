@@ -224,7 +224,7 @@ function CallScreen({
           android="settings-outline"
           onPress={() => {
             onMinimize();
-            router.push("/voice");
+            router.push("/calls");
           }}
         />
         <RoundAction

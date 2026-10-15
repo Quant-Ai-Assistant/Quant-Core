@@ -777,6 +777,7 @@ msgstr "Bot 屏幕预览"
 msgid "Bot to link"
 msgstr "要关联的 Bot"
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/RoutineEditor.tsx
 msgid "Bot's model"
 msgstr "Bot 的模型"
@@ -833,6 +834,10 @@ msgstr ""
 #: src/components/call/CallCard.tsx
 msgid "Calling…"
 msgstr ""
+
+#: src/pages/SettingsOverlay.tsx
+msgid "Calls"
+msgstr "通话"
 
 #: src/App.tsx
 msgid "Can't reach the server."
@@ -1187,6 +1192,7 @@ msgid "Confirm the URL is reachable from this browser session, then test again."
 msgstr "请确认此浏览器会话可以访问该 URL，然后重新测试。"
 
 #: src/components/integrations/IntegrationSetup.tsx
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -1255,6 +1261,7 @@ msgid "Connected. Its tools are available from your next message."
 msgstr "已连接，下一条消息起即可使用其工具。"
 
 #: src/components/integrations/IntegrationSetup.tsx
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
@@ -1516,6 +1523,10 @@ msgstr ""
 msgid "Could not load bots. Reload to try again."
 msgstr ""
 
+#: src/pages/CallSettingsPanel.tsx
+msgid "Could not load call settings"
+msgstr "无法加载通话设置"
+
 #: src/components/computer/TerminalApp.tsx
 msgid "Could not load commands"
 msgstr ""
@@ -1659,6 +1670,10 @@ msgstr "无法保存自动审核"
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Could not save backup models"
 msgstr "无法保存备用模型。"
+
+#: src/pages/CallSettingsPanel.tsx
+msgid "Could not save call settings"
+msgstr "无法保存通话设置"
 
 #: src/pages/GroupPanel.tsx
 msgid "Could not save group"
@@ -1894,19 +1909,21 @@ msgstr "拒绝"
 msgid "Default"
 msgstr "默认"
 
-#. js-lingui-explicit-id
 #. placeholder {0}: thinkingLevelLabel("medium")
-#: src/pages/ModelSettingsOverlay.tsx
-msgid "Default ({0})"
-msgstr ""
-
-#. placeholder {0}: thinkingLevelLabel("medium")
+#. placeholder {0}: thinkingLevelLabel(defaultEffort)
 #. placeholder {0}: thinkingLevelLabel(defaultThinkingLevel)
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/bot-panel.tsx
 msgid "Default ({0})"
 msgstr "默认（{0}）"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: thinkingLevelLabel("medium")
+#: src/pages/ModelSettingsOverlay.tsx
+msgid "Default ({0})"
+msgstr ""
 
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "Default scope"
@@ -2011,6 +2028,7 @@ msgstr ""
 msgid "Discard recording"
 msgstr ""
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2027,6 +2045,7 @@ msgstr ""
 msgid "Disconnected {0}."
 msgstr ""
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -2473,10 +2492,6 @@ msgstr "如何检查"
 #: src/pages/Shell.tsx
 msgid "I’m done"
 msgstr "我做完了"
-
-#: src/pages/VoiceSettingsOverlay.tsx
-msgid "If you heard that, voice is ready."
-msgstr "如果听到了，说明语音已就绪。"
 
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
@@ -2930,6 +2945,10 @@ msgstr "模型"
 msgid "Model \"{modelId}\" was not listed."
 msgstr "模型“{modelId}”未列出。"
 
+#: src/pages/CallSettingsPanel.tsx
+msgid "Model for tasks"
+msgstr "任务模型"
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Model id"
@@ -3331,6 +3350,10 @@ msgstr "打开 Shell"
 msgid "Open work"
 msgstr "待办"
 
+#: src/pages/CallSettingsPanel.tsx
+msgid "OpenAI API key"
+msgstr "OpenAI API 密钥"
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "OpenAI-compatible server URL"
@@ -3424,6 +3447,7 @@ msgstr "两次密码不一致"
 msgid "Past due"
 msgstr ""
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste a replacement key"
@@ -3433,6 +3457,7 @@ msgstr "粘贴替换密钥"
 msgid "Paste the OpenAI-compatible address from your server. Quant adds /v1 if needed."
 msgstr "粘贴服务器的 OpenAI 兼容地址。需要时 Quant 会补上 /v1。"
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste your API key"
 msgstr "粘贴你的 API 密钥"
@@ -3465,10 +3490,6 @@ msgstr "请从列表中选择模型，或输入此端点提供的模型 ID。"
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "置顶"
-
-#: src/pages/VoiceSettingsOverlay.tsx
-msgid "Playing…"
-msgstr "播放中…"
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -3541,6 +3562,7 @@ msgstr "表情回应"
 msgid "Read replies aloud"
 msgstr "朗读回复"
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Reasoning effort"
@@ -3735,6 +3757,7 @@ msgstr "重新打开"
 msgid "Replace API key"
 msgstr "替换 API 密钥"
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Replace key"
 msgstr "替换密钥"
@@ -4327,6 +4350,7 @@ msgid "Steps"
 msgstr "步骤"
 
 #: src/pages/Shell.tsx
+#: src/pages/VoiceSettingsOverlay.tsx
 msgid "Stop"
 msgstr "停止"
 

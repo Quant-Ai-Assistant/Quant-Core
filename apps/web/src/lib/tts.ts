@@ -16,6 +16,8 @@ interface SpeakOptions {
   voiceId?: string;
   botId?: string;
   messageId?: string;
+  /** Speak with this connected provider instead of the default one, e.g. for a sample. */
+  provider?: string;
 }
 
 type TtsErrorBody = { error?: string };
@@ -152,7 +154,7 @@ export class Speaker {
     spaceId: string | null,
   ): Promise<string[]> {
     const body = await rpc.voice.prepare(
-      { text, voiceId: opts.voiceId, botId: opts.botId },
+      { text, voiceId: opts.voiceId, botId: opts.botId, provider: opts.provider },
       { signal, context: { spaceId } },
     );
     if (!body.ready) {
@@ -174,7 +176,12 @@ export class Speaker {
           method: "POST",
           headers: withSpaceHeaders({ "content-type": "application/json" }, spaceId),
           credentials: "include",
-          body: JSON.stringify({ text, voiceId: opts.voiceId, botId: opts.botId }),
+          body: JSON.stringify({
+            text,
+            voiceId: opts.voiceId,
+            botId: opts.botId,
+            provider: opts.provider,
+          }),
           signal: deadline.signal,
         }),
       );

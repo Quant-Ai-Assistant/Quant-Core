@@ -670,7 +670,7 @@ export function ShellPage() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [initialBotsLoaded, setInitialBotsLoaded] = useState(false);
   const [bootstrapMe, setBootstrapMe] = useState<Me | null>();
-  /** Calls are live conversations: offered only once the OpenAI voice connection is set up. */
+  /** Calls are live conversations: offered only once the calls OpenAI key is set up. */
   const callsAvailable = Boolean(bootstrapMe?.phoneCallsEnabled && voiceStatus?.live);
   const callsEnabledRef = useRef(false);
   useEffect(() => {
@@ -3783,7 +3783,7 @@ export function ShellPage() {
         ) : null}
       </main>
 
-      <CallCard onSettings={() => openSettings("voice")} />
+      <CallCard onSettings={() => openSettings("calls")} />
       <IncomingCall
         bots={callsAvailable ? bots : []}
         onAnswered={(botId) => navigate(`/app/${botId}`)}
@@ -4608,6 +4608,7 @@ export function ShellPage() {
               setBootstrapMe((prev) => (prev ? { ...prev, sandboxProvider } : prev))
             }
             messagingEnabled={messagingSurfaceEnabled}
+            callsEnabled={bootstrapMe?.phoneCallsEnabled === true}
             onOpenMessaging={() => {
               setSettingsOpen(false);
               setMessagingSettingsOpen(true);

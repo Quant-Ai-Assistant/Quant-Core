@@ -801,4 +801,10 @@ export const ZH_MESSAGES: Record<string, string> = {
   "Incoming call": "来电",
   "Let bots' calls show on the lock screen?": "在锁屏上显示机器人的来电？",
   "This call is no longer ringing.": "此来电已结束。",
+  Calls: "通话",
+  "Could not load call settings": "无法加载通话设置",
+  "Could not save call settings": "无法保存通话设置",
+  "OpenAI API key": "OpenAI API 密钥",
+  "Model for tasks": "任务模型",
+  "Bot's model": "机器人的模型",
 };

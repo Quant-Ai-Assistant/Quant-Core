@@ -38,6 +38,7 @@ import {
   BotMcpServerSchema,
   BotSchema,
   BotSectionSchema,
+  CallSettingsSchema,
   CapabilityInstallSchema,
   ComputerModeSchema,
   ComputerReleaseReasonSchema,
@@ -999,9 +1000,27 @@ export const appContract = {
           text: z.string().max(20000),
           voiceId: z.string().max(120).optional(),
           botId: Id.optional(),
+          /** A sample of this connected provider instead of the default one. */
+          provider: z.string().max(40).optional(),
         }),
       )
       .output(z.object({ ready: z.boolean(), utterances: z.array(z.string()) })),
+  },
+  calls: {
+    settings: oc.output(CallSettingsSchema),
+    /** Verifies and saves the OpenAI key calls use. */
+    connect: oc.input(z.object({ apiKey: z.string().min(8).max(500) })).output(CallSettingsSchema),
+    disconnect: oc.output(CallSettingsSchema),
+    /** Both null: tasks from a call run on the bot's own model. */
+    setModel: oc
+      .input(
+        z.object({
+          modelProvider: z.string().min(1).max(80).nullable(),
+          modelId: z.string().min(1).max(200).nullable(),
+          thinkingLevel: ThinkingLevelSchema.nullable(),
+        }),
+      )
+      .output(CallSettingsSchema),
   },
   externalConversations: {
     updatePolicy: oc

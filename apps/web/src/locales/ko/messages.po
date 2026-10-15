@@ -777,6 +777,7 @@ msgstr "Bot 화면 미리보기"
 msgid "Bot to link"
 msgstr "연결할 Bot"
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/RoutineEditor.tsx
 msgid "Bot's model"
 msgstr "봇의 모델"
@@ -832,6 +833,10 @@ msgstr ""
 
 #: src/components/call/CallCard.tsx
 msgid "Calling…"
+msgstr ""
+
+#: src/pages/SettingsOverlay.tsx
+msgid "Calls"
 msgstr ""
 
 #: src/App.tsx
@@ -1187,6 +1192,7 @@ msgid "Confirm the URL is reachable from this browser session, then test again."
 msgstr "이 브라우저 세션에서 URL에 연결할 수 있는지 확인한 뒤 다시 테스트하세요."
 
 #: src/components/integrations/IntegrationSetup.tsx
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -1255,6 +1261,7 @@ msgid "Connected. Its tools are available from your next message."
 msgstr "연결되었습니다. 다음 메시지부터 이 도구를 사용할 수 있습니다."
 
 #: src/components/integrations/IntegrationSetup.tsx
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
@@ -1516,6 +1523,10 @@ msgstr ""
 msgid "Could not load bots. Reload to try again."
 msgstr ""
 
+#: src/pages/CallSettingsPanel.tsx
+msgid "Could not load call settings"
+msgstr ""
+
 #: src/components/computer/TerminalApp.tsx
 msgid "Could not load commands"
 msgstr ""
@@ -1659,6 +1670,10 @@ msgstr "자동 검토를 저장할 수 없습니다"
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Could not save backup models"
 msgstr "백업 모델을 저장하지 못했습니다."
+
+#: src/pages/CallSettingsPanel.tsx
+msgid "Could not save call settings"
+msgstr ""
 
 #: src/pages/GroupPanel.tsx
 msgid "Could not save group"
@@ -1894,19 +1909,21 @@ msgstr "거절"
 msgid "Default"
 msgstr "기본값"
 
-#. js-lingui-explicit-id
 #. placeholder {0}: thinkingLevelLabel("medium")
-#: src/pages/ModelSettingsOverlay.tsx
-msgid "Default ({0})"
-msgstr ""
-
-#. placeholder {0}: thinkingLevelLabel("medium")
+#. placeholder {0}: thinkingLevelLabel(defaultEffort)
 #. placeholder {0}: thinkingLevelLabel(defaultThinkingLevel)
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/bot-panel.tsx
 msgid "Default ({0})"
 msgstr "기본값 ({0})"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: thinkingLevelLabel("medium")
+#: src/pages/ModelSettingsOverlay.tsx
+msgid "Default ({0})"
+msgstr ""
 
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "Default scope"
@@ -2011,6 +2028,7 @@ msgstr ""
 msgid "Discard recording"
 msgstr ""
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2027,6 +2045,7 @@ msgstr ""
 msgid "Disconnected {0}."
 msgstr ""
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -2473,10 +2492,6 @@ msgstr "완료 확인 방법"
 #: src/pages/Shell.tsx
 msgid "I’m done"
 msgstr "조작 끝내기"
-
-#: src/pages/VoiceSettingsOverlay.tsx
-msgid "If you heard that, voice is ready."
-msgstr "샘플이 들렸다면 음성 설정이 완료되었습니다."
 
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
@@ -2930,6 +2945,10 @@ msgstr "모델"
 msgid "Model \"{modelId}\" was not listed."
 msgstr "\"{modelId}\" 모델이 목록에 없습니다."
 
+#: src/pages/CallSettingsPanel.tsx
+msgid "Model for tasks"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Model id"
@@ -3331,6 +3350,10 @@ msgstr "셸 열기"
 msgid "Open work"
 msgstr "진행 중인 작업"
 
+#: src/pages/CallSettingsPanel.tsx
+msgid "OpenAI API key"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "OpenAI-compatible server URL"
@@ -3424,6 +3447,7 @@ msgstr "비밀번호가 일치하지 않습니다"
 msgid "Past due"
 msgstr ""
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste a replacement key"
@@ -3433,6 +3457,7 @@ msgstr "새 API 키를 붙여넣으세요"
 msgid "Paste the OpenAI-compatible address from your server. Quant adds /v1 if needed."
 msgstr "서버의 OpenAI 호환 주소를 붙여넣으세요. 필요하면 Quant가 /v1을 추가합니다."
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste your API key"
 msgstr "API 키를 붙여넣으세요"
@@ -3465,10 +3490,6 @@ msgstr "목록에서 모델을 선택하거나 이 엔드포인트가 제공하�
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "고정"
-
-#: src/pages/VoiceSettingsOverlay.tsx
-msgid "Playing…"
-msgstr "재생 중…"
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -3541,6 +3562,7 @@ msgstr "반응"
 msgid "Read replies aloud"
 msgstr "답변을 자동으로 읽기"
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Reasoning effort"
@@ -3735,6 +3757,7 @@ msgstr "다시 열기"
 msgid "Replace API key"
 msgstr "API 키 교체"
 
+#: src/pages/CallSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Replace key"
 msgstr "키 교체"
@@ -4327,6 +4350,7 @@ msgid "Steps"
 msgstr "실행 단계"
 
 #: src/pages/Shell.tsx
+#: src/pages/VoiceSettingsOverlay.tsx
 msgid "Stop"
 msgstr "중지"
 

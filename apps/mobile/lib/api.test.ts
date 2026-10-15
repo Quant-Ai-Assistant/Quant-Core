@@ -40,6 +40,7 @@ import {
   subscribeServerReachable,
   subscribeSessionRejected,
   subscribeThread,
+  withRejectedFields,
 } from "./api.js";
 import {
   AVATAR_STYLE_KEY,
@@ -3225,4 +3226,22 @@ it("localizes non-JSON successful account-security responses", async () => {
     vi.fn(async () => new Response("<html>Gateway error</html>")),
   );
   await expect(fetchAccountSecurity()).rejects.toThrow("Could not load sign-in options");
+});
+
+describe("withRejectedFields", () => {
+  it("names the fields a server rejected, so a report says what was wrong", () => {
+    const data = {
+      issues: [
+        { path: ["callId"], message: "Invalid" },
+        { path: [{ key: "botId" }], message: "Required" },
+        { path: ["callId"], message: "Too long" },
+      ],
+    };
+    expect(withRejectedFields("Input validation failed", data)).toBe(
+      "Input validation failed (callId, botId)",
+    );
+    expect(withRejectedFields("This call is no longer ringing.", undefined)).toBe(
+      "This call is no longer ringing.",
+    );
+  });
 });

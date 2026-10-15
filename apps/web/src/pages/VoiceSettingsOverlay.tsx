@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { VoiceCatalogEntry, VoiceCredential, VoiceInfo, VoiceStatus } from "@rakazo/contracts";
+import type { VoiceCatalogEntry, VoiceCredential, VoiceInfo } from "@rakazo/contracts";
 import {
   Button,
   Dialog,
@@ -33,7 +33,6 @@ export function VoiceSettingsOverlay({
   const speechModelId = useId();
   const [catalog, setCatalog] = useState<VoiceCatalogEntry[]>([]);
   const [credentials, setCredentials] = useState<VoiceCredential[]>([]);
-  const [status, setStatus] = useState<VoiceStatus | null>(null);
   const [voices, setVoices] = useState<VoiceInfo[]>([]);
   const [provider, setProvider] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -41,7 +40,9 @@ export function VoiceSettingsOverlay({
   const [speechModel, setSpeechModel] = useState("");
   const speechModelSave = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pending, setPending] = useState<"connect" | "disconnect" | "voice" | "test" | null>(null);
+  const [pending, setPending] = useState<"connect" | "disconnect" | "voice" | null>(null);
+  /** A sample plays without locking the panel, and can be stopped. */
+  const [sampling, setSampling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -51,7 +52,17 @@ export function VoiceSettingsOverlay({
     return () => onBusyChange?.(false);
   }, [onBusyChange]);
 
-  function markPending(next: "connect" | "disconnect" | "voice" | "test" | null) {
+  const samplingRef = useRef(false);
+  samplingRef.current = sampling;
+  // Closing the panel ends its sample.
+  useEffect(
+    () => () => {
+      if (samplingRef.current) void import("../lib/tts.js").then(({ speaker }) => speaker.stop());
+    },
+    [],
+  );
+
+  function markPending(next: "connect" | "disconnect" | "voice" | null) {
     setPending(next);
     onBusyChange?.(next !== null);
   }
@@ -65,7 +76,6 @@ export function VoiceSettingsOverlay({
     const selected = nextProvider || provider || nextStatus.provider || nextCatalog[0]?.id || "";
     setCatalog(nextCatalog);
     setCredentials(nextCredentials);
-    setStatus(nextStatus);
     setProvider(selected);
     const cred = nextCredentials.find((entry) => entry.provider === selected);
     const activeVoice = cred?.voiceId ?? "";
@@ -167,21 +177,25 @@ export function VoiceSettingsOverlay({
   }
 
   async function testVoice() {
+    const { speaker } = await import("../lib/tts.js");
+    if (sampling) {
+      speaker.stop();
+      return;
+    }
+    if (!selected || !credential) return;
     setError(null);
     setNotice(null);
-    markPending("test");
+    setSampling(true);
     try {
-      const { speaker } = await import("../lib/tts.js");
-      await speaker.speak(t`Hi, this is how I'll sound when I read replies out loud.`);
-      if (speaker.state.error) {
-        setError(speaker.state.error);
-        return;
-      }
-      setNotice(t`If you heard that, voice is ready.`);
+      await speaker.speak(t`Hi, this is how I'll sound when I read replies out loud.`, {
+        provider: selected.id,
+        voiceId: voiceId || undefined,
+      });
+      if (speaker.state.error) setError(speaker.state.error);
     } catch (err) {
       setError(errorText(err, t`Could not play a test clip`));
     } finally {
-      markPending(null);
+      setSampling(false);
     }
   }
 
@@ -218,6 +232,7 @@ export function VoiceSettingsOverlay({
                   type="button"
                   disabled={busy}
                   onClick={() => {
+                    if (sampling) void testVoice();
                     setProvider(entry.id);
                     setApiKey("");
                     setError(null);
@@ -356,10 +371,10 @@ export function VoiceSettingsOverlay({
                     type="button"
                     variant="secondary"
                     className="mt-4 rounded-full"
-                    disabled={busy || !status?.ready}
+                    disabled={busy || !voiceId}
                     onClick={() => void testVoice()}
                   >
-                    {pending === "test" ? <Trans>Playing…</Trans> : <Trans>Hear a sample</Trans>}
+                    {sampling ? <Trans>Stop</Trans> : <Trans>Hear a sample</Trans>}
                   </Button>
                 </>
               ) : null}
