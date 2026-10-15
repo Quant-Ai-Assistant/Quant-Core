@@ -285,17 +285,47 @@ test("a failed start shows the output and offers Back and Retry", async () => {
   await expect((await appWindowPromise).getByText(APP_MARKER)).toBeVisible();
 });
 
-test("a saved local server starts with the app and opens without setup", async () => {
+async function saveLocalServer({ started }: { started: boolean }) {
   await writeFile(
     path.join(userData, "setup.json"),
     `${JSON.stringify({ mode: "new", serverUrl: webUrl }, null, 2)}\n`,
     { encoding: "utf8", mode: 0o600 },
   );
+  if (started) {
+    await mkdir(path.join(userData, "server", "postgres"), { recursive: true });
+    await writeFile(path.join(userData, "server", "postgres", "PG_VERSION"), "16\n");
+  }
+}
+
+test("a saved local server starts with the app and opens without setup", async () => {
+  await saveLocalServer({ started: true });
   app = await launch();
   const appWindow = await app.firstWindow();
   await expect(appWindow.getByText(APP_MARKER)).toBeVisible();
   expect(app.windows()).toHaveLength(1);
   expect(await calls()).toContain("migrate 1");
+});
+
+test("a saved server the app never ran opens the wizard on its first step", async () => {
+  // An install from the Docker version: setup.json says This computer, but nothing ran here.
+  await saveLocalServer({ started: false });
+  app = await launch();
+  const setup = await app.firstWindow();
+  await expect(setup.getByRole("heading", { name: "Where will Quant run?" })).toBeVisible();
+  await expect(setup.getByRole("radio", { name: /This computer/ })).toBeChecked();
+  expect(await calls()).toEqual([]);
+});
+
+test("a launch whose start fails goes back to the first step with the reason", async () => {
+  await saveLocalServer({ started: true });
+  await writeFile(path.join(userData, "fail-migrate"), "");
+  app = await launch();
+  const setup = await app.firstWindow();
+  await expect(setup.getByRole("heading", { name: "Where will Quant run?" })).toBeVisible();
+  await expect(setup.locator("#status")).toHaveText(
+    "Could not update the database. Check the output below, then retry.",
+  );
+  await expect(setup.getByRole("button", { name: "Back" })).toBeHidden();
 });
 
 test("closing the window keeps the server running, and quitting stops it", async () => {

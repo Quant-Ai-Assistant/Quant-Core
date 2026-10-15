@@ -1340,6 +1340,12 @@ app.whenReady().then(async () => {
  * start takes a moment, and stays up with the reason when it fails.
  */
 async function openLocalServer(userDataDir: string) {
+  // A server this app never ran (an install from the Docker version) is set up with the
+  // wizard first, so the person confirms its sign-in and port before anything starts.
+  if (!existsSync(path.join(serverDir(userDataDir), "postgres", "PG_VERSION"))) {
+    showSetupWindow();
+    return;
+  }
   const started = localStack.start();
   const quick = await Promise.race([
     started,

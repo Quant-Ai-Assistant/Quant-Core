@@ -78,6 +78,8 @@
       "В этой сборке нет локального сервера. Переустановите Quant.",
     "Quant could not reach Docker to move your existing data into the app. Start Docker, then retry.":
       "Quant не смог связаться с Docker, чтобы перенести ваши данные в приложение. Запустите Docker и повторите.",
+    "Docker is out of disk space, so Quant cannot read your existing data. Free some space in Docker, then retry.":
+      "В Docker закончилось место на диске, поэтому Quant не может прочитать ваши данные. Освободите место в Docker и повторите.",
     "Quant could not move your existing data from Docker. Check the output below, then retry.":
       "Quant не смог перенести ваши данные из Docker. Посмотрите вывод ниже и повторите.",
     "Port {port} is busy. Choose another port in setup.":
@@ -173,6 +175,8 @@
   /** Resolves the poll wait early when the main process pushes a new state. */
   let wakePoll = null;
   let busy = false;
+  /** Whether this window started the stack; a launch's own start fails back to step 1. */
+  let stackStartedHere = false;
 
   function selectedMode() {
     const checked = form.querySelector('input[name="mode"]:checked');
@@ -367,6 +371,16 @@
   }
 
   /** Follows a start already in flight until it settles, then opens the app once it is ready. */
+  /**
+   * A start that failed on its own at launch goes back to the first step, with the reason, so
+   * the person can change the sign-in or the port before trying again.
+   */
+  function failBackToStart(stack) {
+    document.getElementById("mode-new").checked = true;
+    showStep("choose");
+    setStatus(stack.message ?? "Could not start the local stack. Try again.", "error");
+  }
+
   async function followStack() {
     if (stackPolling) return;
     stackPolling = true;
@@ -376,6 +390,10 @@
         if (stack === null) throw new Error("Setup is not active");
         renderStack(stack);
         if (TERMINAL_PHASES.has(stack.phase)) {
+          if (stack.phase === "failed" && !stackStartedHere) {
+            failBackToStart(stack);
+            return;
+          }
           if (stack.phase === "ready") {
             const current = await bridge.state();
             defaultLocalUrl = current.defaultLocalUrl;
@@ -394,6 +412,7 @@
   }
 
   async function runStack() {
+    stackStartedHere = true;
     showStep("install");
     setBusy(true);
     try {
@@ -551,6 +570,10 @@
       // A relaunch with the stack down starts it before this window opens; show that
       // attempt instead of the saved mode, and follow it while it is still running.
       const stack = await bridge.stack.state();
+      if (stack !== null && stack.phase === "failed" && !stackStartedHere) {
+        failBackToStart(stack);
+        return;
+      }
       if (stack !== null && stack.phase !== "idle") {
         document.getElementById("mode-new").checked = true;
         // A launch restarting the saved server is not an install.

@@ -31,6 +31,10 @@ export const STACK_TOKEN_FILE = ".desktop-stack-token";
 /** Earlier versions ran the server with Docker Compose from this file. */
 export const LEGACY_COMPOSE_FILE = "docker-compose.images.yml";
 export const LEGACY_PROJECT_NAME = "quant-desktop";
+/** The Compose stack's own images, which an earlier install already has. */
+export const LEGACY_POSTGRES_IMAGE = "postgres:16";
+export const LEGACY_COPY_IMAGE = "busybox:1";
+const LEGACY_READY_ATTEMPTS = 60;
 /** Written once the Compose stack's data lives in the app. */
 export const LEGACY_MOVED_FILE = ".moved-to-app";
 /** The port setup suggests for the gate; the person may choose another one. */
@@ -335,6 +339,8 @@ const NOT_ANSWERING = "The server started but did not answer. Retry, and check t
 const SERVER_MISSING = "This build has no local server. Reinstall Quant.";
 const MOVE_NEEDS_DOCKER =
   "Quant could not reach Docker to move your existing data into the app. Start Docker, then retry.";
+const MOVE_NO_SPACE =
+  "Docker is out of disk space, so Quant cannot read your existing data. Free some space in Docker, then retry.";
 const MOVE_FAILED =
   "Quant could not move your existing data from Docker. Check the output below, then retry.";
 
@@ -836,16 +842,15 @@ export class LocalServerController {
   }
 
   /**
-   * An install made by an earlier version keeps its data in Docker. Dump its database, copy
-   * its files out, and stop its containers so the gate's port is free; the migrator applies
-   * the dump before any migration. Returns the dump to apply, or null when nothing moves.
+   * An install made by an earlier version keeps its data in Docker volumes. Dump the database
+   * with a throwaway Postgres container on its volume and copy the files out of theirs, so the
+   * move works whether the stack's containers still exist or not. The migrator applies the
+   * dump before any migration. Returns the dump to apply, or null when nothing moves.
    */
   private async moveFromDocker(env: string, signal: AbortSignal): Promise<string | null> {
     const { deps } = this;
-    if (
-      !this.exists(path.join(deps.stackDir, LEGACY_COMPOSE_FILE)) ||
-      this.exists(path.join(deps.stackDir, LEGACY_MOVED_FILE))
-    ) {
+    const moved = path.join(deps.stackDir, LEGACY_MOVED_FILE);
+    if (!this.exists(path.join(deps.stackDir, LEGACY_COMPOSE_FILE)) || this.exists(moved)) {
       return null;
     }
     const importFile = path.join(deps.serverDir, "docker-import.sql");
@@ -853,55 +858,125 @@ export class LocalServerController {
     if (this.exists(importFile)) return importFile;
     // A database the app already runs is never overwritten.
     if (this.exists(path.join(deps.serverDir, "postgres", "PG_VERSION"))) {
-      await writePrivateFile(path.join(deps.stackDir, LEGACY_MOVED_FILE), "kept\n");
+      await writePrivateFile(moved, "kept\n");
       return null;
     }
     this.push({ type: "import-start" });
     const binary = resolveDockerBinary(deps.platform, deps.env, (file) => this.exists(file));
     if (binary === null) throw new StartFailed(MOVE_NEEDS_DOCKER);
-    const compose = (args: string[], timeoutMs: number) =>
-      this.legacyCompose(binary, args, timeoutMs, signal).then((result) => {
-        this.checkAborted(signal);
-        return result;
+    const docker = async (args: string[], timeoutMs = LEGACY_STEP_TIMEOUT_MS) => {
+      const result = await deps.run(binary, args, {
+        cwd: deps.stackDir,
+        env: dockerSpawnEnv(deps.platform, deps.env, binary),
+        timeoutMs,
+        signal,
+        // A dump is the database itself; it never goes to the setup window.
+        onLine: args.includes("pg_dump") ? undefined : this.output,
       });
-    const started = await compose(["start", "postgres"], LEGACY_STEP_TIMEOUT_MS);
-    if (started.code !== 0) {
-      throw new StartFailed(
-        ["daemon-down", "socket-permission"].includes(
-          classifyDockerFailure(`${started.stdout}\n${started.stderr}`),
-        )
-          ? MOVE_NEEDS_DOCKER
-          : MOVE_FAILED,
-      );
+      this.checkAborted(signal);
+      return result;
+    };
+    const volume = (name: string) => `${LEGACY_PROJECT_NAME}_${name}`;
+
+    const database = await docker(["volume", "inspect", volume("pgdata")]);
+    if (database.code !== 0) {
+      const kind = classifyDockerFailure(`${database.stdout}\n${database.stderr}`);
+      if (kind === "daemon-down" || kind === "socket-permission") {
+        throw new StartFailed(MOVE_NEEDS_DOCKER);
+      }
+      // The volume is gone, so there is nothing left to move.
+      await writePrivateFile(moved, "nothing\n");
+      return null;
     }
+    // Containers still running from the stack hold the volume and the gate's port.
+    await this.legacyCompose(binary, ["stop"], LEGACY_STEP_TIMEOUT_MS, signal);
+    this.checkAborted(signal);
+
     const user = envValue(env, "POSTGRES_USER") || "rakazo";
-    const database = envValue(env, "POSTGRES_DB") || "rakazo";
-    const dumped = await compose(
-      [
-        "exec",
-        "-T",
-        "postgres",
-        "pg_dump",
-        "-U",
-        user,
-        "-d",
-        database,
-        "--no-owner",
-        "--no-privileges",
-        "--inserts",
-        "--rows-per-insert=500",
-      ],
-      LEGACY_DUMP_TIMEOUT_MS,
-    );
-    if (dumped.code !== 0) throw new StartFailed(MOVE_FAILED);
-    const copied = await compose(
-      ["cp", "api:/data/.", path.join(deps.serverDir, "data")],
-      LEGACY_DUMP_TIMEOUT_MS,
-    );
-    if (copied.code !== 0) throw new StartFailed(MOVE_FAILED);
-    await writeFile(importFile, dumped.stdout, { encoding: "utf8", mode: 0o600 });
-    // The volumes stay, so nothing is lost if the person goes back to Docker.
-    await compose(["stop"], LEGACY_STEP_TIMEOUT_MS);
+    const name = `quant-move-${deps.randomHex(4)}`;
+    const started = await docker([
+      "run",
+      "--detach",
+      "--name",
+      name,
+      "--network",
+      "none",
+      "--mount",
+      `type=volume,src=${volume("pgdata")},dst=/var/lib/postgresql/data`,
+      "--env",
+      "POSTGRES_PASSWORD=unused",
+      envValue(env, "POSTGRES_IMAGE") || LEGACY_POSTGRES_IMAGE,
+    ]);
+    if (started.code !== 0) throw new StartFailed(MOVE_FAILED);
+    let dump: string;
+    try {
+      const sleep = deps.sleep ?? defaultSleep;
+      let ready = false;
+      for (let attempt = 0; attempt < LEGACY_READY_ATTEMPTS && !ready; attempt += 1) {
+        const check = await docker(["exec", name, "pg_isready", "-U", user]);
+        ready = check.code === 0;
+        // A container that exited will never become ready.
+        if (!ready && /is not running/i.test(check.stderr)) break;
+        if (!ready) await sleep(1_000, signal);
+      }
+      if (!ready) {
+        const logs = await docker(["logs", "--tail", "20", name]);
+        throw new StartFailed(
+          /no space left on device/i.test(`${logs.stdout}\n${logs.stderr}`)
+            ? MOVE_NO_SPACE
+            : MOVE_FAILED,
+        );
+      }
+      const dumped = await docker(
+        [
+          "exec",
+          name,
+          "pg_dump",
+          "-U",
+          user,
+          "-d",
+          envValue(env, "POSTGRES_DB") || "rakazo",
+          "--no-owner",
+          "--no-privileges",
+          "--inserts",
+          "--rows-per-insert=500",
+        ],
+        LEGACY_DUMP_TIMEOUT_MS,
+      );
+      if (dumped.code !== 0) throw new StartFailed(MOVE_FAILED);
+      dump = dumped.stdout;
+    } finally {
+      await deps
+        .run(binary, ["rm", "--force", name], {
+          cwd: deps.stackDir,
+          env: dockerSpawnEnv(deps.platform, deps.env, binary),
+          timeoutMs: LEGACY_STEP_TIMEOUT_MS,
+        })
+        .catch(() => undefined);
+    }
+
+    if ((await docker(["volume", "inspect", volume("appdata")])).code === 0) {
+      const copied = await docker(
+        [
+          "run",
+          "--rm",
+          "--network",
+          "none",
+          "--mount",
+          `type=volume,src=${volume("appdata")},dst=/data,readonly`,
+          "--mount",
+          `type=bind,src=${path.join(deps.serverDir, "data")},dst=/out`,
+          LEGACY_COPY_IMAGE,
+          "sh",
+          "-c",
+          // The copy runs as root; on Linux the files would otherwise belong to root.
+          `cp -R /data/. /out/ && (chown -R ${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0} /out || true)`,
+        ],
+        LEGACY_DUMP_TIMEOUT_MS,
+      );
+      if (copied.code !== 0) throw new StartFailed(MOVE_FAILED);
+    }
+    await writeFile(importFile, dump, { encoding: "utf8", mode: 0o600 });
     return importFile;
   }
 

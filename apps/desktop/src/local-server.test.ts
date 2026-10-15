@@ -316,23 +316,32 @@ describe("moving an earlier Docker install into the app", () => {
   const docker = { RAKAZO_DOCKER_BINARY: "/fake/docker", PATH: "/usr/bin" };
   const exists = (file: string) => file === "/fake/docker" || existsSync(file);
 
-  it("dumps the database, copies the files, stops the containers and imports once", async () => {
+  it("dumps the database and copies the files from the volumes, then imports once", async () => {
     await legacyStack();
     const stack = controller({ env: docker, exists }, (command, args) =>
-      command === "/fake/docker" && args.includes("exec")
+      command === "/fake/docker" && args.includes("pg_dump")
         ? { stdout: "INSERT INTO t VALUES (1);\n" }
         : undefined,
     );
     const state = await stack.start();
     expect(state.phase).toBe("ready");
-    const compose = calls
+    const commands = calls
       .filter((call) => call.command === "/fake/docker")
-      .map((call) => call.args.slice(7).join(" "));
-    expect(compose).toEqual([
-      "start postgres",
-      "exec -T postgres pg_dump -U rakazo -d rakazo --no-owner --no-privileges --inserts --rows-per-insert=500",
-      `cp api:/data/. ${path.join(root, "server", "data")}`,
+      .map((call) => (call.args[0] === "compose" ? call.args.slice(7) : call.args).join(" "));
+    const move = `quant-move-${hex(4)}`;
+    expect(commands).toEqual([
+      "volume inspect quant-desktop_pgdata",
       "stop",
+      `run --detach --name ${move} --network none --mount type=volume,src=quant-desktop_pgdata,dst=/var/lib/postgresql/data --env POSTGRES_PASSWORD=unused postgres:16`,
+      `exec ${move} pg_isready -U rakazo`,
+      `exec ${move} pg_dump -U rakazo -d rakazo --no-owner --no-privileges --inserts --rows-per-insert=500`,
+      `rm --force ${move}`,
+      "volume inspect quant-desktop_appdata",
+      expect.stringMatching(
+        new RegExp(
+          `^run --rm --network none --mount type=volume,src=quant-desktop_appdata,dst=/data,readonly --mount type=bind,src=${path.join(root, "server", "data")},dst=/out busybox:1 sh -c cp -R /data/\\. /out/`,
+        ),
+      ),
     ]);
     const migrate = migrateCall()!;
     const importFile = path.join(root, "server", "docker-import.sql");
@@ -343,6 +352,52 @@ describe("moving an earlier Docker install into the app", () => {
     calls = [];
     await controller({ env: docker, exists }).start();
     expect(calls.some((call) => call.command === "/fake/docker")).toBe(false);
+  });
+
+  it("starts fresh when the stack's database volume is gone", async () => {
+    await legacyStack();
+    const state = await controller({ env: docker, exists }, (command, args) =>
+      command === "/fake/docker" && args[0] === "volume"
+        ? {
+            code: 1,
+            stderr: "Error response from daemon: get quant-desktop_pgdata: no such volume",
+          }
+        : undefined,
+    ).start();
+    expect(state.phase).toBe("ready");
+    expect(migrateCall()?.args).not.toContain("--import");
+    expect(await readFile(path.join(stackPath(), LEGACY_MOVED_FILE), "utf8")).toBe("nothing\n");
+  });
+
+  it("explains a Docker that is out of disk space", async () => {
+    await legacyStack();
+    const state = await controller({ env: docker, exists }, (command, args) => {
+      if (command !== "/fake/docker") return undefined;
+      if (args.includes("pg_isready")) return { code: 1, stderr: "container is not running" };
+      if (args[0] === "logs") {
+        return {
+          stdout: 'FATAL: could not write lock file "postmaster.pid": No space left on device',
+        };
+      }
+      return undefined;
+    }).start();
+    expect(state.message).toBe(
+      "Docker is out of disk space, so Quant cannot read your existing data. Free some space in Docker, then retry.",
+    );
+    // One readiness check: a container that exited is not waited on.
+    expect(calls.filter((call) => call.args.includes("pg_isready"))).toHaveLength(1);
+    expect(calls.at(-1)?.args).toEqual(["rm", "--force", `quant-move-${hex(4)}`]);
+  });
+
+  it("stops the throwaway container even when the dump fails", async () => {
+    await legacyStack();
+    const state = await controller({ env: docker, exists }, (command, args) =>
+      command === "/fake/docker" && args.includes("pg_dump") ? { code: 1 } : undefined,
+    ).start();
+    expect(state.message).toBe(
+      "Quant could not move your existing data from Docker. Check the output below, then retry.",
+    );
+    expect(calls.at(-1)?.args).toEqual(["rm", "--force", `quant-move-${hex(4)}`]);
   });
 
   it("asks for Docker when it is not there to move the data", async () => {
