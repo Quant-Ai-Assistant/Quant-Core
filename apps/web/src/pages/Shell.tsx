@@ -574,19 +574,9 @@ export function ShellPage() {
   >(undefined);
   const memoryProviderConfigRevision = useRef(0);
   const call = useCallSession();
-  /** Calls a bot, or opens voice settings first when no voice is connected. */
   const callBot = (bot: Bot) => {
-    if (!bootstrapMe?.phoneCallsEnabled) return;
-    if (!voiceStatus?.ready) {
-      openSettings("voice");
-      return;
-    }
-    startCall({
-      botId: bot.id,
-      botName: bot.name,
-      botColor: bot.color,
-      transcribe: voiceStatus ? Boolean(voiceStatus.transcribe) : undefined,
-    });
+    if (!callsAvailable) return;
+    startCall({ botId: bot.id, botName: bot.name, botColor: bot.color });
   };
   const [voiceStatus, setVoiceStatus] = useState<VoiceStatus | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
@@ -680,6 +670,8 @@ export function ShellPage() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [initialBotsLoaded, setInitialBotsLoaded] = useState(false);
   const [bootstrapMe, setBootstrapMe] = useState<Me | null>();
+  /** Calls are live conversations: offered only once the OpenAI voice connection is set up. */
+  const callsAvailable = Boolean(bootstrapMe?.phoneCallsEnabled && voiceStatus?.live);
   const callsEnabledRef = useRef(false);
   useEffect(() => {
     callsEnabledRef.current = bootstrapMe?.phoneCallsEnabled === true;
@@ -3651,7 +3643,7 @@ export function ShellPage() {
             </button>
           </div>
           <div className="flex items-center gap-1">
-            {bootstrapMe?.phoneCallsEnabled && !inGroup && active ? (
+            {callsAvailable && !inGroup && active ? (
               <button
                 type="button"
                 data-testid="call-button"
@@ -3712,11 +3704,7 @@ export function ShellPage() {
             answerableAskMessageId={answerableAskMessageId}
             running={transcriptRunning}
             workingBots={workingBots}
-            onCallBack={
-              bootstrapMe?.phoneCallsEnabled && !inGroup && active
-                ? () => callBot(active)
-                : undefined
-            }
+            onCallBack={callsAvailable && !inGroup && active ? () => callBot(active) : undefined}
             onLoadOlder={loadOlder}
             onOpenBot={openBot}
             onAnswer={answerMessage}
@@ -3797,8 +3785,7 @@ export function ShellPage() {
 
       <CallCard onSettings={() => openSettings("voice")} />
       <IncomingCall
-        bots={bootstrapMe?.phoneCallsEnabled ? bots : []}
-        transcribe={voiceStatus ? Boolean(voiceStatus.transcribe) : undefined}
+        bots={callsAvailable ? bots : []}
         onAnswered={(botId) => navigate(`/app/${botId}`)}
       />
 

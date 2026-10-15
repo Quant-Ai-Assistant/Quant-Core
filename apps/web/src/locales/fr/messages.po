@@ -1369,6 +1369,10 @@ msgstr "Impossible de se connecter"
 msgid "Could not connect {0}"
 msgstr "Impossible de se connecter à {0}"
 
+#: src/lib/call-session.ts
+msgid "Could not connect the call."
+msgstr "Impossible de connecter l’appel."
+
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Could not connect this provider"
 msgstr "Impossible de se connecter à ce fournisseur"
@@ -1705,7 +1709,6 @@ msgid "Could not send reset email"
 msgstr "Impossible d'envoyer l'e-mail de réinitialisation"
 
 #: src/components/call/IncomingCall.tsx
-#: src/lib/call-session.ts
 msgid "Could not send that"
 msgstr "Impossible d'envoyer cela"
 
@@ -2393,14 +2396,6 @@ msgstr "Groupes"
 msgid "Hang up"
 msgstr "Raccrocher"
 
-#: src/lib/call-session.ts
-msgid "Hang up first, then enter the code on screen."
-msgstr "Raccrochez d'abord, puis saisissez le code à l'écran."
-
-#: src/lib/call-session.ts
-msgid "Hang up, then enter the code on screen."
-msgstr "Raccrochez, puis saisissez le code à l'écran."
-
 #: src/pages/RoutineEditor.tsx
 msgid "header"
 msgstr "en-tête"
@@ -2889,10 +2884,6 @@ msgstr "A contacté {peer}"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Messaging"
 msgstr "Messagerie"
-
-#: src/lib/call-session.ts
-msgid "Microphone failed"
-msgstr "Le microphone a échoué"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -3985,10 +3976,6 @@ msgstr "Enregistrement..."
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "Enregistrement en cours…"
-
-#: src/lib/call-session.ts
-msgid "Say yes or no, or answer in a sentence."
-msgstr "Dites oui ou non, ou répondez en une phrase."
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx

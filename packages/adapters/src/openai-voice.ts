@@ -1,6 +1,8 @@
 import type {
   AdapterContext,
   AdapterDescriptor,
+  LiveCallRequest,
+  LiveCallSession,
   SpeechClip,
   VoiceCapabilities,
   VoiceInfo,
@@ -9,6 +11,7 @@ import type {
   VoiceTranscribeRequest,
   VoiceVerifyResult,
 } from "@rakazo/adapter-kit";
+import { startOpenAILiveCall } from "./openai-live.js";
 import {
   readVoiceAudio,
   readVoiceJson,
@@ -45,6 +48,10 @@ export class OpenAIVoiceProvider implements VoiceProvider {
       adapterVersion: "0.1.0",
       capabilities: { catalog: true, synthesize: true, transcribe: true },
     };
+  }
+
+  startLiveCall(request: LiveCallRequest, context: AdapterContext): Promise<LiveCallSession> {
+    return startOpenAILiveCall(request, context);
   }
 
   async verify(apiKey: string, context: AdapterContext): Promise<VoiceVerifyResult> {

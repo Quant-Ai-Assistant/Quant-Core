@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { captureScreenshot, completeOnboarding, openUserSettings, rpc, signup } from "./helpers";
 
@@ -5,6 +6,16 @@ test.use({
   launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
   permissions: ["microphone"],
 });
+
+/** Reports the OpenAI voice connection that calls need, without a real OpenAI key. */
+async function reportLiveCalls(page: Page) {
+  await page.route("**/rpc/voice/status", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.json.live = true;
+    await route.fulfill({ response, json: body });
+  });
+}
 
 test("voice settings connect a key, speak a reply, and open a call", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
@@ -22,9 +33,10 @@ test("voice settings connect a key, speak a reply, and open a call", async ({ pa
   await expect(
     page.getByTestId("composer-bar").getByRole("button", { name: "Hold to talk", exact: true }),
   ).toHaveCount(1);
-  await expect(page.getByTestId("call-button")).toHaveAccessibleName("Call");
+  // Calls are live conversations: without the OpenAI voice connection there is no call button.
+  await expect(page.getByTestId("call-button")).toHaveCount(0);
   await captureScreenshot(page, testInfo, "voice-composer");
-  await page.getByTestId("call-button").click();
+  await openUserSettings(page, "voice");
   await expect(page.getByTestId("voice-settings")).toBeVisible();
   await expect(page.getByLabel("API key", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Dictate", exact: true })).toHaveCount(0);
@@ -85,13 +97,19 @@ test("voice settings connect a key, speak a reply, and open a call", async ({ pa
   await expect(page.getByRole("button", { name: "Replace key" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close voice settings" }).click();
+  // A speak-only voice still offers no calls.
+  await expect(page.getByTestId("call-button")).toHaveCount(0);
 
+  await reportLiveCalls(page);
+  // The live session needs a real provider; leave its start pending so the call stays up.
+  await page.route("**/rpc/threads/startLiveCall", () => undefined);
+  await page.reload();
   await page.getByTestId("call-button").click();
   await expect(page.getByTestId("call-view")).toBeVisible();
   await expect(page.getByTestId("call-view").getByText("Calling…")).toBeVisible();
   await expect(page.getByRole("button", { name: "Hang up" })).toBeVisible();
   await captureScreenshot(page, testInfo, "outgoing-ringing");
-  await expect(page.getByTestId("call-view").getByText(/· Listening/)).toBeVisible();
+  await expect(page.getByTestId("call-view").getByText("Calling…")).toHaveCount(0);
   await captureScreenshot(page, testInfo, "voice-call");
   await page.getByRole("button", { name: "Minimize call" }).click();
   await expect(page.getByTestId("call-view")).toHaveCount(0);
@@ -134,6 +152,7 @@ test("incoming calls keep failed actions available for retry", async ({ page }, 
   const bots = await rpc<Array<{ id: string }>>(page, "bots/list", {});
   const bot = bots[0];
   if (!bot) throw new Error("Missing test bot");
+  await reportLiveCalls(page);
   const incomingCall = {
     callId: "test-incoming-call",
     reason: "Review the sample report",

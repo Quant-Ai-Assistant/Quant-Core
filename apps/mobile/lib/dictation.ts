@@ -1,15 +1,11 @@
 /**
- * On-device dictation for calls, mirroring the web store's endpoint mode: the recognizer
- * reports words, and only a quiet gap measured here ends a turn. The recognizer's own
- * `isFinal` / `end` is a breath or an OS timeout, never the caller finishing a sentence.
+ * On-device dictation for hold-to-talk: it listens while the caller holds the microphone,
+ * and only `submit` ends it. The recognizer's own `isFinal` / `end` is a breath or an OS
+ * timeout, never the caller letting go.
  */
 
-/** Quiet gap that ends an utterance. A natural breath is well under it, a finished turn well over. */
-export const ENDPOINT_SILENCE_MS = 1_200;
 const RESTART_MIN_MS = 250;
 const RESTART_MAX_MS = 2_000;
-/** Restarts in a row that hear nothing: the recognizer is wedged, stop churning the mic. */
-const MAX_DEAD_RESTARTS = 5;
 /** Errors that mean this turn cannot recover; the rest are routine and `end` restarts. */
 const FATAL_ERRORS = new Set(["not-allowed", "service-not-allowed", "audio-capture"]);
 
@@ -40,10 +36,8 @@ type Session = {
   carried: string;
   /** Text of the recognizer session running now. */
   heard: string;
-  silence?: ReturnType<typeof setTimeout>;
   restart?: ReturnType<typeof setTimeout>;
   backoff: number;
-  deadRestarts: number;
 };
 
 let injected: SpeechRecognizer | null = null;
@@ -78,7 +72,6 @@ export function stop(): void {
   active = null;
   token += 1;
   if (!session) return;
-  clearTimeout(session.silence);
   clearTimeout(session.restart);
   for (const sub of session.subs) sub.remove();
   try {
@@ -88,7 +81,7 @@ export function stop(): void {
   }
 }
 
-/** Opens the microphone until a quiet gap ends the utterance, or `signal` aborts it. */
+/** Opens the microphone until `submit`, `stop`, or `signal` ends it. */
 export async function listen(opts: {
   onInterim?: (text: string) => void;
   onFinal: (text: string) => void;
@@ -110,7 +103,6 @@ export async function listen(opts: {
     carried: "",
     heard: "",
     backoff: RESTART_MIN_MS,
-    deadRestarts: 0,
   };
   active = session;
   opts.signal?.addEventListener(
@@ -137,7 +129,6 @@ function onResult(session: Session, event: ResultEvent): void {
   if (active !== session) return;
   const heard = event.results?.[0]?.transcript ?? "";
   session.backoff = RESTART_MIN_MS;
-  session.deadRestarts = 0;
   // Android reports a phrase once and starts over, iOS grows one transcript: folding a
   // final into the carried text and clearing the live one covers both.
   if (event.isFinal) {
@@ -149,10 +140,11 @@ function onResult(session: Session, event: ResultEvent): void {
   const text = join(session.carried, session.heard);
   if (!text) return;
   session.onInterim?.(text);
-  // Any result means the caller was just heard, so the quiet gap restarts here — including
-  // a phrase the recognizer finalises after repeating it, whose boundary is a breath.
-  clearTimeout(session.silence);
-  session.silence = setTimeout(() => finish(session), ENDPOINT_SILENCE_MS);
+}
+
+/** Ends a held session now and delivers what it heard. */
+export function submit(): void {
+  if (active) finish(active);
 }
 
 function onEnd(session: Session): void {
@@ -161,13 +153,6 @@ function onEnd(session: Session): void {
   // says nothing about whether the caller finished. Pick the microphone straight back up.
   session.carried = join(session.carried, session.heard);
   session.heard = "";
-  session.deadRestarts += 1;
-  if (session.deadRestarts > MAX_DEAD_RESTARTS) {
-    // ponytail: a wedged recognizer just ends the turn; the call opens the mic again next
-    // turn. Surface it as an error if callers ever need to tell it from a real endpoint.
-    finish(session);
-    return;
-  }
   clearTimeout(session.restart);
   const delay = session.backoff;
   session.backoff = Math.min(RESTART_MAX_MS, session.backoff * 2);

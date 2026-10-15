@@ -41,6 +41,7 @@ vi.mock("react-native", () => {
       View,
       Value: class {
         setValue = vi.fn();
+        interpolate = vi.fn();
       },
       loop: () => ({ start: vi.fn(), stop: vi.fn() }),
       sequence: vi.fn(),
@@ -67,16 +68,8 @@ vi.mock("./i18n", () => ({
 vi.mock("./native", () => ({ useMobileTokens: () => ({}) }));
 vi.mock("../components/bot-avatar", () => ({ BotAvatar: () => null }));
 vi.mock("../components/native-symbol", () => ({ NativeSymbol: () => null }));
-vi.mock("expo-file-system", () => ({ File: class {} }));
-vi.mock("./voice", () => ({ speakText: vi.fn(), stopSpeaking: vi.fn() }));
-vi.mock("./dictation", () => ({ available: vi.fn(), listen: vi.fn() }));
-vi.mock("./call-sounds", () => ({
-  playCallCue: vi.fn(),
-  preloadWaitSound: vi.fn(),
-  releaseWaitSound: vi.fn(),
-  startWaitSound: vi.fn(),
-  stopWaitSound: vi.fn(),
-}));
+vi.mock("./live-call", () => ({ connectLiveCall: vi.fn() }));
+vi.mock("./call-sounds", () => ({ playCallCue: vi.fn(), stopCallCues: vi.fn() }));
 
 describe("CallCard keep-awake lifetime", () => {
   let root: Root;
@@ -110,16 +103,9 @@ describe("CallCard keep-awake lifetime", () => {
 
   it("keeps the screen awake only while a call is active", async () => {
     const deps: CallDeps = {
-      dictate: async () => true,
-      record: vi.fn(),
-      transcribe: vi.fn(),
-      send: vi.fn(),
+      connectLive: vi.fn(async () => ({ setMuted: vi.fn(), close: vi.fn() })),
       endCall: async () => undefined,
-      speak: async () => undefined,
-      watch: () => vi.fn(),
-      stopSpeaking: vi.fn(),
       cue: async () => undefined,
-      waitSound: vi.fn(),
     };
 
     act(() => root.render(<CallCard />));

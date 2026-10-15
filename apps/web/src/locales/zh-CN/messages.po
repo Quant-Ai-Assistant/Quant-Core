@@ -1369,6 +1369,10 @@ msgstr "无法连接"
 msgid "Could not connect {0}"
 msgstr "无法连接 {0}"
 
+#: src/lib/call-session.ts
+msgid "Could not connect the call."
+msgstr "无法接通通话。"
+
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Could not connect this provider"
 msgstr "无法连接此提供方"
@@ -1705,7 +1709,6 @@ msgid "Could not send reset email"
 msgstr "无法发送重置邮件"
 
 #: src/components/call/IncomingCall.tsx
-#: src/lib/call-session.ts
 msgid "Could not send that"
 msgstr "无法发送"
 
@@ -2393,14 +2396,6 @@ msgstr ""
 msgid "Hang up"
 msgstr "挂断"
 
-#: src/lib/call-session.ts
-msgid "Hang up first, then enter the code on screen."
-msgstr "请先挂断，然后输入屏幕上的代码。"
-
-#: src/lib/call-session.ts
-msgid "Hang up, then enter the code on screen."
-msgstr "请挂断，然后输入屏幕上的代码。"
-
 #: src/pages/RoutineEditor.tsx
 msgid "header"
 msgstr "请求头"
@@ -2889,10 +2884,6 @@ msgstr "已发给 {peer}"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Messaging"
 msgstr "消息"
-
-#: src/lib/call-session.ts
-msgid "Microphone failed"
-msgstr "麦克风失败"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -3985,10 +3976,6 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "正在保存…"
-
-#: src/lib/call-session.ts
-msgid "Say yes or no, or answer in a sentence."
-msgstr "回答是或否，或一句话说明。"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx

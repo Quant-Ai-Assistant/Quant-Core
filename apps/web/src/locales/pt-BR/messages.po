@@ -1369,6 +1369,10 @@ msgstr "Não foi possível conectar"
 msgid "Could not connect {0}"
 msgstr "Não foi possível conectar o {0}"
 
+#: src/lib/call-session.ts
+msgid "Could not connect the call."
+msgstr "Não foi possível conectar a chamada."
+
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Could not connect this provider"
 msgstr "Não foi possível conectar este provedor"
@@ -1705,7 +1709,6 @@ msgid "Could not send reset email"
 msgstr "Não foi possível enviar o e-mail de redefinição"
 
 #: src/components/call/IncomingCall.tsx
-#: src/lib/call-session.ts
 msgid "Could not send that"
 msgstr "Não foi possível enviar"
 
@@ -2393,14 +2396,6 @@ msgstr ""
 msgid "Hang up"
 msgstr "Desligar"
 
-#: src/lib/call-session.ts
-msgid "Hang up first, then enter the code on screen."
-msgstr ""
-
-#: src/lib/call-session.ts
-msgid "Hang up, then enter the code on screen."
-msgstr ""
-
 #: src/pages/RoutineEditor.tsx
 msgid "header"
 msgstr ""
@@ -2889,10 +2884,6 @@ msgstr "Enviou mensagem para {peer}"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Messaging"
 msgstr ""
-
-#: src/lib/call-session.ts
-msgid "Microphone failed"
-msgstr "Falha no microfone"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -3985,10 +3976,6 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "Salvando..."
-
-#: src/lib/call-session.ts
-msgid "Say yes or no, or answer in a sentence."
-msgstr "Diga sim ou não, ou responda em uma frase."
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx

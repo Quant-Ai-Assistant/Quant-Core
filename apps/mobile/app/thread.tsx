@@ -143,10 +143,8 @@ import { nextAutoSpeakAction } from "../lib/auto-speak";
 import { confirmDeleteBot, restoreArchivedBot } from "../lib/bot-lifecycle";
 import { retainUnchangedBotRoster } from "../lib/bot-roster";
 import { findSwitchTarget, ringOnArrival, takeRingOnArrival } from "../lib/bot-switch";
-import { setCallProviderTranscribe, startCall, useCallSession } from "../lib/call-session";
+import { startCall, useCallSession } from "../lib/call-session";
 import { transparentColor } from "../lib/color";
-import { loadDeviceVoiceEnabled } from "../lib/device-voice";
-import { available as dictationAvailable } from "../lib/dictation";
 import { cancelFocusPrompt, focusPromptThreadActive } from "../lib/focus-prompt";
 import { dateLocaleForUi, t, useI18n } from "../lib/i18n";
 import { isInlineImageMimeType } from "../lib/inline-image";
@@ -208,11 +206,7 @@ import { reconcileVisibleThreadSnapshot } from "../lib/thread-snapshot";
 import { prepareUnsentSends } from "../lib/unsent-sends";
 import { errorText } from "../lib/user-error";
 import { speakQueue, speakText } from "../lib/voice";
-import {
-  loadCallCallerName,
-  probeProviderTranscribe,
-  resolveVoiceCallPlan,
-} from "../lib/voice-call-entry";
+import { loadCallCallerName } from "../lib/voice-call-entry";
 
 type PendingAttachment = PickedAttachment & { threadKey: string };
 type AskAction = NonNullable<Extract<MessageBlock, { kind: "ask" }>["actions"]>[number];
@@ -477,6 +471,37 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
   const inGroup = Boolean(groupId);
   const call = useCallSession();
   const onCall = Boolean(botId) && call?.botId === botId;
+  /** The server allows calls; null until it says so. Gates the call button and hold-to-talk. */
+  const [callFeatures, setCallFeatures] = useState<{ transcribe: boolean; live: boolean } | null>(
+    null,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([
+      rpc<MobileMe>("me"),
+      rpc<{ ready: boolean; transcribe: boolean; live?: boolean }>("voice/status").catch(
+        () => null,
+      ),
+    ])
+      .then(([me, voice]) => {
+        if (cancelled) return;
+        setCallFeatures(
+          me.phoneCallsEnabled
+            ? {
+                transcribe: Boolean(voice?.ready && voice.transcribe),
+                live: Boolean(voice?.live),
+              }
+            : null,
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const canCall = !inGroup && Boolean(botId) && !readOnly && Boolean(callFeatures?.live) && !onCall;
+  const startVoiceCallRef = useRef(startVoiceCall);
+  startVoiceCallRef.current = startVoiceCall;
   const voiceCallStarting = useRef(false);
   const scroll = useRef<FlatList<ThreadItem<MobileMessage>>>(null);
   const pinnedScroll = useRef<ScrollView>(null);
@@ -863,6 +888,16 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
       ...(iosAtLeast(26)
         ? {
             unstable_headerRightItems: () => [
+              ...(canCall
+                ? [
+                    {
+                      type: "button" as const,
+                      accessibilityLabel: t("Call"),
+                      icon: { type: "sfSymbol" as const, name: "phone" },
+                      onPress: () => void startVoiceCallRef.current(),
+                    },
+                  ]
+                : []),
               {
                 type: "button" as const,
                 accessibilityLabel: inGroup ? t("Group settings") : t("Bot actions"),
@@ -899,25 +934,43 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
             />
           </Pressable>
         ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("Bot actions")}
-            hitSlop={8}
-            onPress={showBotActions}
-          >
-            <NativeSymbol
-              ios="ellipsis"
-              android="ellipsis-horizontal"
-              size={21}
-              color={tokens.foreground}
-            />
-          </Pressable>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 20 }}>
+            {canCall ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("Call")}
+                hitSlop={8}
+                onPress={() => void startVoiceCallRef.current()}
+              >
+                <NativeSymbol
+                  ios="phone"
+                  android="call-outline"
+                  size={21}
+                  color={tokens.foreground}
+                />
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("Bot actions")}
+              hitSlop={8}
+              onPress={showBotActions}
+            >
+              <NativeSymbol
+                ios="ellipsis"
+                android="ellipsis-horizontal"
+                size={21}
+                color={tokens.foreground}
+              />
+            </Pressable>
+          </View>
         ),
       ...(readOnly
         ? trailingHeaderOptions(t("Restore"), () => void restoreConversation(), restoring)
         : {}),
     });
   }, [
+    canCall,
     readOnly,
     restoring,
     botId,
@@ -1788,59 +1841,29 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
   }
 
   /** `switchedHere`: the caller asked another bot to put them through, so this bot answers. */
+  /** Calls are live conversations; the button only shows once the OpenAI voice key is set up. */
   async function startVoiceCall(switchedHere = false) {
     if (readOnly) return;
     const targetBotId = botId;
     if (!targetBotId || voiceCallStarting.current) return;
     voiceCallStarting.current = true;
-    const loadVoiceStatus = () => rpc<{ ready: boolean; transcribe: boolean }>("voice/status");
     try {
-      const [plan, callerName] = await Promise.all([
-        resolveVoiceCallPlan({
-          loadDeviceVoiceEnabled,
-          dictationAvailable,
-          loadVoiceStatus,
-        }),
+      const [status, callerName] = await Promise.all([
+        rpc<{ live?: boolean }>("voice/status").catch(() => null),
         loadCallCallerName(() => rpc<MobileMe>("me")),
       ]);
       if (activeBotId.current !== targetBotId) return;
-      if (plan.kind === "settings") {
+      if (!status?.live) {
         router.push("/voice");
         return;
       }
-      if (plan.kind === "dictation") {
-        Alert.alert(
-          t("Calls need transcription"),
-          t("Allow speech recognition in Settings, or connect ElevenLabs, OpenAI, or Fish Audio."),
-          [
-            { text: t("Not now"), style: "cancel" },
-            { text: t("Open Voice"), onPress: () => router.push("/voice") },
-          ],
-        );
-        return;
-      }
       const botName = displayName ?? t("Bot");
-      const startedCallId = startCall({
+      startCall({
         botId: targetBotId,
         botName,
         botColor: mentionBots.find((bot) => bot.id === targetBotId)?.color,
-        transcribe: plan.transcribe,
         greeting: callGreeting(botName, callerName, switchedHere),
-        switchBot: (text) => {
-          const target = findSwitchTarget(text, mentionBotsRef.current);
-          if (!target || target.id === targetBotId) return undefined;
-          return { name: target.name, ring: () => openBotChat(target, true) };
-        },
       });
-      if (plan.kind === "device") {
-        void probeProviderTranscribe(loadVoiceStatus)
-          .then((enabled) => {
-            if (enabled) setCallProviderTranscribe(true, startedCallId);
-          })
-          .catch(() => undefined);
-      }
-    } catch {
-      if (activeBotId.current === targetBotId) router.push("/voice");
     } finally {
       voiceCallStarting.current = false;
     }
@@ -2567,7 +2590,6 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
           replyTargetId={replyTarget?.id}
           replyQuote={replyQuote}
           attachmentIds={activePendingAttachments.map((attachment) => attachment.id)}
-          botId={botId}
           onCall={onCall}
           working={working}
           sending={sending}
@@ -2576,7 +2598,7 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
           attachFrom={attachFrom}
           send={send}
           stop={stop}
-          startVoiceCall={startVoiceCall}
+          holdToTalk={!inGroup && botId && !readOnly ? callFeatures : null}
           onSlashAction={runSlashAction}
         />
       </View>

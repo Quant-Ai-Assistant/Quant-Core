@@ -218,15 +218,3 @@ export function speechFromBlocks(blocks: MessageBlock[]): string {
     .filter(Boolean)
     .join("\n");
 }
-
-const YES = /^(yes|yeah|yep|yup|ok|okay|sure|do it|go ahead|approve|confirmed|affirmative)\b/i;
-const NO = /^(no|nope|nah|cancel|stop|don't|do not|reject|deny|negative)\b/i;
-
-/** Consent must never be inferred from a sentence that merely contained "sure". */
-export function spokenDecision(transcript: string): "yes" | "no" | null {
-  const text = transcript.trim();
-  if (!text) return null;
-  if (YES.test(text) && text.split(/\s+/).length <= 6) return "yes";
-  if (NO.test(text) && text.split(/\s+/).length <= 6) return "no";
-  return null;
-}

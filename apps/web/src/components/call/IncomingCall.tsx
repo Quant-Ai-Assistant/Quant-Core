@@ -55,11 +55,9 @@ type Ringing = { bot: Bot; call: NonNullable<Bot["incomingCall"]> };
  */
 export function IncomingCall({
   bots,
-  transcribe,
   onAnswered,
 }: {
   bots: Bot[];
-  transcribe?: boolean;
   onAnswered: (botId: string) => void;
 }) {
   const { t } = useLingui();
@@ -145,7 +143,6 @@ export function IncomingCall({
         botId: bot.id,
         botName: bot.name,
         botColor: bot.color,
-        transcribe,
         answered: { callId: call.callId, opening: answered.opening },
       });
       onAnswered(bot.id);

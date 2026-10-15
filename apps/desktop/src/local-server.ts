@@ -418,6 +418,7 @@ export function serverProcessEnv(input: {
     WAKEUP_DRIVER: "graphile",
     AGENT_RUNTIME: "pi",
     SECRET_STORE: input.stackEnv.SECRET_STORE || "encrypted",
+    PHONE_CALLS_ENABLED: input.stackEnv.PHONE_CALLS_ENABLED || "true",
     RAKAZO_DESKTOP_STACK_TOKEN: input.stackToken,
     RAKAZO_IMAGE_TAG: input.version,
   };

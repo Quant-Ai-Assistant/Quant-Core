@@ -105,7 +105,7 @@ describe("hold to talk", () => {
   it("sends what was said when the hold is released", () => {
     const mic = button("Hold to talk");
     pointer(mic, "pointerdown");
-    expect(dictation.listen).toHaveBeenCalledWith(expect.objectContaining({ mode: "hold" }));
+    expect(dictation.listen).toHaveBeenCalledWith(expect.objectContaining({ transcribe: false }));
     heard("buy milk tomorrow");
     expect(container?.textContent).toContain("buy milk tomorrow");
 

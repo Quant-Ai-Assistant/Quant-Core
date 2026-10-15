@@ -52,7 +52,13 @@
       "expo-sharing",
       "./plugins/with-worklets-headers",
       "./plugins/with-scene-lifecycle",
-      "./plugins/with-quant-android"
+      "./plugins/with-quant-android",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "microphonePermission": "Quant uses the microphone for voice calls with your bots."
+        }
+      ]
     ],
     "ios": {
       "bundleIdentifier": "com.quantai.quant",

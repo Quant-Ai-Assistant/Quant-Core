@@ -9,9 +9,14 @@ import {
   CALL_REQUEST_RING_MS,
   callRequestBlock,
   callRequestClientNonce,
+  LIVE_CALL_VOICE_PROVIDER,
 } from "@rakazo/core";
 import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
-import { appendEventInTransaction, createThreadMessageInTransaction } from "@rakazo/db";
+import {
+  appendEventInTransaction,
+  createThreadMessageInTransaction,
+  findVoiceCredential,
+} from "@rakazo/db";
 
 const REASON_MAX = 120;
 const OPENING_MAX = 240;
@@ -147,6 +152,10 @@ export async function requestUserCall(
   input: { reason: string; opening: string },
 ) {
   if (!deps.phoneCallsEnabled) return { error: "Calls are disabled." };
+  // Calls are live conversations, which need the user's OpenAI voice connection.
+  if (!(await findVoiceCredential(deps.prisma, run, LIVE_CALL_VOICE_PROVIDER))) {
+    return { error: "The user has not set up calls. Send a message instead." };
+  }
   const request = newCallRequest(input);
   if ("error" in request) return request;
   const result = await deps.prisma.$transaction(async (tx) => {

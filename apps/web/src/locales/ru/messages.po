@@ -1369,6 +1369,10 @@ msgstr "Не удалось подключиться"
 msgid "Could not connect {0}"
 msgstr "Не удалось подключить {0}"
 
+#: src/lib/call-session.ts
+msgid "Could not connect the call."
+msgstr "Не удалось соединить звонок."
+
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Could not connect this provider"
 msgstr "Не удалось подключить этого провайдера"
@@ -1705,7 +1709,6 @@ msgid "Could not send reset email"
 msgstr "Не удалось отправить электронное письмо для сброса"
 
 #: src/components/call/IncomingCall.tsx
-#: src/lib/call-session.ts
 msgid "Could not send that"
 msgstr "Не удалось отправить это"
 
@@ -2393,14 +2396,6 @@ msgstr "Группы"
 msgid "Hang up"
 msgstr "Завершить звонок"
 
-#: src/lib/call-session.ts
-msgid "Hang up first, then enter the code on screen."
-msgstr "Сначала повесьте трубку, затем введите код на экране."
-
-#: src/lib/call-session.ts
-msgid "Hang up, then enter the code on screen."
-msgstr "Повесьте трубку, затем введите код на экране."
-
 #: src/pages/RoutineEditor.tsx
 msgid "header"
 msgstr "заголовок"
@@ -2889,10 +2884,6 @@ msgstr "Отправлено сообщение {peer}"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Messaging"
 msgstr "Обмен сообщениями"
-
-#: src/lib/call-session.ts
-msgid "Microphone failed"
-msgstr "Ошибка микрофона"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -3985,10 +3976,6 @@ msgstr "Сохранение..."
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "Сохранение…"
-
-#: src/lib/call-session.ts
-msgid "Say yes or no, or answer in a sentence."
-msgstr "Скажите «да» или «нет» или ответьте предложением."
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx

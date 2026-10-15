@@ -237,6 +237,7 @@ import {
   toComputerStatus,
 } from "./computer-status.js";
 import { searchIntegrationCatalog } from "./integration-catalog.js";
+import { finishLiveCall, liveCallAvailable, startLiveCall } from "./live-call.js";
 import {
   dismissMcpServerApprovals,
   resolveMcpApprovalCards,
@@ -2383,10 +2384,21 @@ export function createRouter(deps: RouterDeps) {
         });
         return { ok: true as const };
       }),
+      startLiveCall: callsEnabled.threads.startLiveCall.handler(async ({ context, input }) => {
+        if ((await modelSetup(deps, context.actor)).needsModel) {
+          throw new ORPCError("BAD_REQUEST", { message: "Connect a model to start a run." });
+        }
+        const target = await resolveThreadTarget(deps.prisma, context.actor, input);
+        if (target.kind !== "bot") throw new IsolationError();
+        await assertTeachingSendAllowed(deps.prisma, context.actor.spaceId, target.botId);
+        return startLiveCall(deps, context.actor, target, input);
+      }),
       endCall: callsEnabled.threads.endCall.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         if (target.kind !== "bot") throw new IsolationError();
         await assertTeachingSendAllowed(deps.prisma, context.actor.spaceId, target.botId);
+        // A live call files its last words before the card closes over them.
+        await finishLiveCall(context.actor, input.callId);
         const { botId, threadId } = target;
         // The bot's own call: its card keeps how long the user stayed on.
         await settleCallRequest(deps, {
@@ -6081,8 +6093,13 @@ export function createRouter(deps: RouterDeps) {
     voice: {
       catalog: authed.voice.catalog.handler(async () => listVoiceCatalog()),
       status: authed.voice.status.handler(async ({ context }) => {
-        const cred = await findDefaultVoiceCredential(deps.prisma, context.actor);
-        return toVoiceStatus(cred);
+        const [cred, live] = await Promise.all([
+          findDefaultVoiceCredential(deps.prisma, context.actor),
+          deps.env?.phoneCallsEnabled
+            ? liveCallAvailable(deps, context.actor)
+            : Promise.resolve(false),
+        ]);
+        return { ...toVoiceStatus(cred), live };
       }),
       credentials: authed.voice.credentials.handler(async ({ context }) => {
         const rows = await deps.prisma.userVoiceCredential.findMany({

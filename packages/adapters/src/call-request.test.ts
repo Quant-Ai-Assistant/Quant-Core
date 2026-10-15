@@ -204,6 +204,13 @@ describe("requestUserCall security", () => {
       },
       run: { findUnique: vi.fn(async () => ({ status: "running" })) },
       userVoiceCredential: { findFirst: vi.fn(async () => ({ id: "voice-1" })) },
+      spaceVoicePreference: {
+        findFirst: vi.fn(
+          async (): Promise<{ credential: { id: string; provider: string } } | null> => ({
+            credential: { id: "voice-1", provider: "openai" },
+          }),
+        ),
+      },
       message: {
         findFirst: vi.fn(async () => saved),
         create: vi.fn(async ({ data }: { data: { blocks: unknown } }) => {
@@ -248,6 +255,19 @@ describe("requestUserCall security", () => {
     const { deps } = fixture();
     expect(await requestUserCall({ ...deps, phoneCallsEnabled: false }, run, input)).toHaveProperty(
       "error",
+    );
+    expect(deps.prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("does not ring a user who has not connected OpenAI voice, which calls need", async () => {
+    const { deps, tx } = fixture();
+    tx.spaceVoicePreference.findFirst.mockResolvedValueOnce(null);
+    tx.userVoiceCredential.findFirst.mockResolvedValueOnce(null as never);
+    expect(await requestUserCall(deps, run, input)).toHaveProperty("error");
+    expect(tx.spaceVoicePreference.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: run.userId, credential: { provider: "openai" } }),
+      }),
     );
     expect(deps.prisma.$transaction).not.toHaveBeenCalled();
   });

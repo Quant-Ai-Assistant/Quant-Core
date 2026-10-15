@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  combineTranscript,
   Dictation,
   MAX_TRANSCRIPTION_RESPONSE_BYTES,
   speechLocaleTag,
@@ -71,7 +70,6 @@ describe("Dictation recorder fallback", () => {
 
     const dictation = new Dictation();
     const listening = dictation.listen({
-      mode: "hold",
       transcribe: true,
       onFinal: () => undefined,
     });
@@ -123,11 +121,11 @@ describe("Dictation recorder fallback", () => {
     const first = vi.fn();
     const second = vi.fn();
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: first });
+    await dictation.listen({ transcribe: true, onFinal: first });
     dictation.submitHold();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
 
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: second });
+    await dictation.listen({ transcribe: true, onFinal: second });
     transcribe({ text: "stale take" });
     await Promise.resolve();
     await Promise.resolve();
@@ -143,7 +141,7 @@ describe("Dictation recorder fallback", () => {
     const onFinal = vi.fn();
     const dictation = new Dictation();
 
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal });
+    await dictation.listen({ transcribe: true, onFinal });
     dictation.submitHold();
 
     await vi.waitFor(() => expect(onFinal).toHaveBeenCalledWith("line one\n\nline two"));
@@ -192,7 +190,7 @@ describe("Dictation recorder fallback", () => {
 
     const onFinal = vi.fn();
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal });
+    await dictation.listen({ transcribe: true, onFinal });
     store.set("rakazo:space-id", "space-other");
     dictation.submitHold();
     await vi.waitFor(() => expect(onFinal).toHaveBeenCalledWith("hello"));
@@ -236,7 +234,7 @@ describe("Dictation recorder fallback", () => {
 
     const onFinal = vi.fn();
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", onFinal });
+    await dictation.listen({ onFinal });
     dictation.submitHold();
     await vi.waitFor(() => expect(onFinal).toHaveBeenCalledWith("hola, una prueba"));
 
@@ -288,7 +286,7 @@ describe("Dictation recorder fallback", () => {
 
     const onFinal = vi.fn();
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", onFinal });
+    await dictation.listen({ onFinal });
     expect(recognition).not.toHaveBeenCalled();
     expect(dictation.state.status).toBe("listening");
     dictation.submitHold();
@@ -333,7 +331,7 @@ describe("Dictation recorder fallback", () => {
 
     const onFinal = vi.fn();
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", onFinal });
+    await dictation.listen({ onFinal });
     dictation.submitHold();
     await vi.waitFor(() => expect(onFinal).toHaveBeenCalledWith("hola"));
 
@@ -352,7 +350,7 @@ describe("Dictation recorder fallback", () => {
     stubRecorderFallback(fetchMock);
     const dictation = new Dictation();
 
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: () => undefined });
+    await dictation.listen({ transcribe: true, onFinal: () => undefined });
     dictation.submitHold();
 
     await vi.waitFor(() =>
@@ -374,7 +372,7 @@ describe("Dictation recorder fallback", () => {
     stubRecorderFallback(fetchMock);
     const dictation = new Dictation();
 
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: () => undefined });
+    await dictation.listen({ transcribe: true, onFinal: () => undefined });
     dictation.submitHold();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     await vi.advanceTimersByTimeAsync(TRANSCRIPTION_RESPONSE_TIMEOUT_MS);
@@ -392,7 +390,7 @@ describe("Dictation recorder fallback", () => {
     stubRecorderFallback(fetchMock);
     const dictation = new Dictation();
 
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: () => undefined });
+    await dictation.listen({ transcribe: true, onFinal: () => undefined });
     dictation.submitHold();
 
     await vi.waitFor(() => expect(dictation.state.error).toBe("Transcription request timed out."));
@@ -415,7 +413,7 @@ describe("Dictation recorder fallback", () => {
     stubRecorderFallback(fetchMock);
     const dictation = new Dictation();
 
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: () => undefined });
+    await dictation.listen({ transcribe: true, onFinal: () => undefined });
     dictation.submitHold();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     expect(dictation.state.status).toBe("transcribing");
@@ -465,8 +463,8 @@ describe("Dictation recorder fallback", () => {
     vi.stubGlobal("MediaRecorder", FakeRecorder);
 
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: () => undefined });
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: () => undefined });
+    await dictation.listen({ transcribe: true, onFinal: () => undefined });
+    await dictation.listen({ transcribe: true, onFinal: () => undefined });
     recorders[0]?.ondataavailable?.({
       data: new Blob(["STALE-AUDIO-DATA"], { type: "audio/webm" }),
     });
@@ -498,258 +496,11 @@ describe("Dictation recorder fallback", () => {
     );
 
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: () => undefined });
+    await dictation.listen({ transcribe: true, onFinal: () => undefined });
 
     expect(dictation.state.status).toBe("idle");
     expect(dictation.state.error).toBe("recorder unavailable");
     expect(track.stop).toHaveBeenCalledOnce();
-  });
-
-  it("fails visibly when endpoint dictation has no silence detector", async () => {
-    const track = { stop: vi.fn() };
-    vi.stubGlobal("navigator", {
-      mediaDevices: {
-        getUserMedia: vi.fn(async () => ({ getTracks: () => [track] })),
-      },
-      language: "en-US",
-    });
-    const started = vi.fn();
-    vi.stubGlobal(
-      "MediaRecorder",
-      class {
-        start() {
-          started();
-        }
-      },
-    );
-
-    const dictation = new Dictation();
-    await dictation.listen({
-      mode: "endpoint",
-      transcribe: true,
-      onFinal: () => undefined,
-    });
-    expect(started).not.toHaveBeenCalled();
-    expect(track.stop).toHaveBeenCalledOnce();
-    expect(dictation.state.error).toMatch(/stop talking/i);
-  });
-
-  it.each([
-    ["recorder fallback", "", 240],
-    [
-      "phone with Web Speech available",
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
-      undefined,
-    ],
-  ])("stops an endpoint recording after silence on %s", async (_browser, userAgent, endpointMs) => {
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-    const level = { current: 0.6 };
-    class FakeAnalyser {
-      fftSize = 2048;
-      getByteTimeDomainData(data: Uint8Array) {
-        data.fill(Math.round(128 + level.current * 127));
-      }
-    }
-    class FakeContext {
-      state = "running";
-      createMediaStreamSource() {
-        return { connect() {} };
-      }
-      createAnalyser() {
-        return new FakeAnalyser();
-      }
-      close() {
-        return Promise.resolve();
-      }
-      resume() {
-        return Promise.resolve();
-      }
-    }
-    vi.stubGlobal("AudioContext", FakeContext);
-
-    const recognition = vi.fn();
-    if (userAgent) {
-      vi.stubGlobal("window", { webkitSpeechRecognition: recognition });
-      expect(webSpeechAvailable()).toBe(true);
-    }
-    const track = { stop: vi.fn() };
-    vi.stubGlobal("navigator", {
-      userAgent,
-      mediaDevices: {
-        getUserMedia: vi.fn(async () => ({ getTracks: () => [track] })),
-      },
-      language: "en-US",
-    });
-    const fetchMock = vi.fn(async () => Response.json({ text: "hello" }));
-    vi.stubGlobal("fetch", fetchMock);
-
-    const onFinal = vi.fn();
-    const stopped = vi.fn();
-    class FakeRecorder {
-      state = "inactive";
-      ondataavailable: ((event: { data: Blob }) => void) | null = null;
-      onstop: (() => void) | null = null;
-      start() {
-        this.state = "recording";
-      }
-      stop() {
-        stopped();
-        this.state = "inactive";
-        this.ondataavailable?.({ data: new Blob(["audio"], { type: "audio/webm" }) });
-        this.onstop?.();
-      }
-    }
-    vi.stubGlobal("MediaRecorder", FakeRecorder);
-
-    const dictation = new Dictation();
-    await dictation.listen({
-      mode: "endpoint",
-      transcribe: true,
-      endpointMs,
-      onFinal,
-    });
-    expect(recognition).not.toHaveBeenCalled();
-    expect(dictation.state.status).toBe("listening");
-    await vi.advanceTimersByTimeAsync(80);
-    level.current = 0;
-    await vi.advanceTimersByTimeAsync((endpointMs ?? 1_200) - 80);
-    expect(stopped).not.toHaveBeenCalled();
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(onFinal).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(80);
-    await vi.waitFor(() => expect(onFinal).toHaveBeenCalledExactlyOnceWith("hello"));
-    expect(stopped).toHaveBeenCalledOnce();
-    expect(track.stop).toHaveBeenCalledOnce();
-    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-      "/api/voice/transcribe",
-      expect.objectContaining({ method: "POST" }),
-    );
-    await vi.advanceTimersByTimeAsync(1_200);
-    expect(onFinal).toHaveBeenCalledOnce();
-    expect(fetchMock).toHaveBeenCalledOnce();
-    vi.useRealTimers();
-  });
-
-  it("does not let a replaced recorder tear down the new silence detector", async () => {
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-    const level = { current: 0.6 };
-    class FakeAnalyser {
-      fftSize = 2048;
-      getByteTimeDomainData(data: Uint8Array) {
-        data.fill(Math.round(128 + level.current * 127));
-      }
-    }
-    class FakeContext {
-      state = "running";
-      createMediaStreamSource() {
-        return { connect() {} };
-      }
-      createAnalyser() {
-        return new FakeAnalyser();
-      }
-      close() {
-        return Promise.resolve();
-      }
-      resume() {
-        return Promise.resolve();
-      }
-    }
-    vi.stubGlobal("AudioContext", FakeContext);
-
-    const track = { stop: vi.fn() };
-    vi.stubGlobal("navigator", {
-      mediaDevices: {
-        getUserMedia: vi.fn(async () => ({ getTracks: () => [track] })),
-      },
-      language: "en-US",
-    });
-    const fetchMock = vi.fn(async () => Response.json({ text: "later" }));
-    vi.stubGlobal("fetch", fetchMock);
-
-    const recorders: Array<{
-      onstop: (() => void) | null;
-      stop: () => void;
-    }> = [];
-    class FakeRecorder {
-      state = "inactive";
-      ondataavailable: ((event: { data: Blob }) => void) | null = null;
-      onstop: (() => void) | null = null;
-      constructor() {
-        recorders.push(this);
-      }
-      start() {
-        this.state = "recording";
-      }
-      stop() {
-        this.state = "inactive";
-        this.ondataavailable?.({ data: new Blob(["audio"], { type: "audio/webm" }) });
-        this.onstop?.();
-      }
-    }
-    vi.stubGlobal("MediaRecorder", FakeRecorder);
-
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({
-      mode: "endpoint",
-      transcribe: true,
-      endpointMs: 240,
-      onFinal,
-    });
-    const staleStop = recorders[0]?.onstop;
-    await dictation.listen({
-      mode: "endpoint",
-      transcribe: true,
-      endpointMs: 240,
-      onFinal,
-    });
-    staleStop?.();
-    await vi.advanceTimersByTimeAsync(80);
-    level.current = 0;
-    await vi.advanceTimersByTimeAsync(240);
-    await vi.waitFor(() => expect(onFinal).toHaveBeenCalledWith("later"));
-    vi.useRealTimers();
-  });
-});
-
-describe("combineTranscript", () => {
-  it("joins a short prefix that is not a whole word in the replayed text", () => {
-    expect(combineTranscript("we", "welcome")).toBe("we welcome");
-  });
-
-  it("does not repeat a word when the replayed transcript adds a comma", () => {
-    expect(combineTranscript("hello", "hello, world")).toBe("hello, world");
-    expect(combineTranscript("hello", "Hello, world")).toBe("Hello, world");
-  });
-
-  it.each([
-    ["hello."],
-    ["hello!"],
-    ["hello?"],
-    ["hello; world"],
-    ["hello: world"],
-    ["hello's world"],
-    ["hello-world"],
-    ["hello)"],
-    ['hello"'],
-    ["hello，world"],
-  ])("treats punctuation after the retained word as a boundary (%s)", (speechText) => {
-    expect(combineTranscript("hello", speechText)).toBe(speechText);
-  });
-
-  it("keeps the replayed transcript when whitespace follows the retained words", () => {
-    expect(combineTranscript("call me later", "Call me later and goodbye")).toBe(
-      "Call me later and goodbye",
-    );
-  });
-
-  it("still joins when the replayed text continues the retained token", () => {
-    expect(combineTranscript("hello", "helloworld")).toBe("hello helloworld");
-    expect(combineTranscript("hello", "hello2")).toBe("hello hello2");
-    expect(combineTranscript("hello", "hello_world")).toBe("hello hello_world");
-    expect(combineTranscript("na", "naïve")).toBe("na naïve");
-    expect(combineTranscript("a", "a𐐀")).toBe("a a𐐀");
-    expect(combineTranscript("a𐐀", "a𐐀 more")).toBe("a𐐀 more");
   });
 });
 
@@ -820,333 +571,6 @@ describe("Dictation web speech", () => {
     });
   }
 
-  /** Chrome flips a result to final at its own phrase boundary, mid-sentence. */
-  function done(transcript: string): Part {
-    return { transcript, isFinal: true };
-  }
-
-  it("rides out a pause in the middle of a sentence", async () => {
-    vi.useFakeTimers();
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal });
-    const rec = instances[0];
-    expect(rec?.continuous).toBe(true);
-    expect(rec?.interimResults).toBe(true);
-
-    said(rec, "okay it is based on");
-    await vi.advanceTimersByTimeAsync(1_100);
-    expect(onFinal).not.toHaveBeenCalled();
-
-    said(rec, "okay it is based on", " the new project");
-    await vi.advanceTimersByTimeAsync(1_100);
-    expect(onFinal).not.toHaveBeenCalled();
-
-    await vi.advanceTimersByTimeAsync(200);
-    expect(onFinal).toHaveBeenCalledTimes(1);
-    expect(onFinal).toHaveBeenCalledWith("okay it is based on the new project");
-  });
-
-  it("keeps the window open when Chrome finalises words it already reported", async () => {
-    vi.useFakeTimers();
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal });
-    const rec = instances[0];
-
-    said(rec, "okay tell me");
-    await vi.advanceTimersByTimeAsync(400);
-    // Chrome's phrase boundary: the same words again, this time final. The caller only
-    // took a breath, so the quiet gap starts here, not at the first guess at the phrase.
-    said(rec, done("okay tell me"));
-    await vi.advanceTimersByTimeAsync(900);
-    expect(onFinal).not.toHaveBeenCalled();
-
-    said(rec, done("okay tell me"), " about the projects");
-    await vi.advanceTimersByTimeAsync(1_100);
-    expect(onFinal).not.toHaveBeenCalled();
-
-    await vi.advanceTimersByTimeAsync(200);
-    expect(onFinal).toHaveBeenCalledTimes(1);
-    expect(onFinal).toHaveBeenCalledWith("okay tell me about the projects");
-  });
-
-  it("preserves words repeated in separate final results", async () => {
-    vi.useFakeTimers();
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal });
-    const rec = instances[0];
-
-    said(rec, done("please say no"), done("no"));
-    expect(dictation.state.transcript).toBe("please say no no");
-    await vi.advanceTimersByTimeAsync(1_200);
-    expect(onFinal).toHaveBeenCalledExactlyOnceWith("please say no no");
-  });
-
-  it("replaces interim guesses at the same result index without removing repetitions", async () => {
-    vi.useFakeTimers();
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal });
-    const rec = instances[0];
-
-    said(rec, "no");
-    said(rec, "no no");
-    said(rec, done("no no"));
-    expect(dictation.state.transcript).toBe("no no");
-    await vi.advanceTimersByTimeAsync(1_200);
-    expect(onFinal).toHaveBeenCalledExactlyOnceWith("no no");
-  });
-
-  it("does not repeat what the next session hands back after a restart", async () => {
-    vi.useFakeTimers();
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal });
-    const rec = instances[0];
-
-    said(rec, done("orlando florida international"));
-    rec?.onend?.();
-    // Chrome can replay the same buffer once the session is picked back up.
-    said(rec, "orlando florida international");
-
-    expect(dictation.state.transcript).toBe("orlando florida international");
-  });
-
-  it.each([
-    ["orlando florida", "florida international", "orlando florida international"],
-    ["say no", "no no please", "say no no please"],
-    ["go go now", "go now please", "go go now please"],
-    ["go go", "go go now", "go go now"],
-    ["we", "welcome", "we welcome"],
-    ["hello cat", "catalog", "hello cat catalog"],
-    ["hello scat", "cat now", "hello scat cat now"],
-  ])("merges restarted speech at whole-word overlaps (%s / %s)", async (first, next, expected) => {
-    vi.useFakeTimers();
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal });
-    const rec = instances[0];
-    said(rec, done(first));
-    rec?.onend?.();
-    said(rec, next);
-    expect(dictation.state.transcript).toBe(expected);
-    await vi.advanceTimersByTimeAsync(1_200);
-    expect(onFinal).toHaveBeenCalledExactlyOnceWith(expected);
-  });
-
-  it("backs off for 900 ms after the second consecutive short empty session", async () => {
-    vi.useFakeTimers();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal: vi.fn() });
-    const rec = instances[0];
-    rec?.onend?.();
-    expect(rec?.start).toHaveBeenCalledTimes(2);
-    said(rec, "   ");
-    rec?.onend?.();
-    await vi.advanceTimersByTimeAsync(899);
-    expect(rec?.start).toHaveBeenCalledTimes(2);
-    await vi.advanceTimersByTimeAsync(1);
-    expect(rec?.start).toHaveBeenCalledTimes(3);
-    dictation.stop();
-  });
-
-  it.each([false, true])(
-    "gives up after four short empty sessions (carried speech: %s)",
-    async (hasSpeech) => {
-      vi.useFakeTimers();
-      const onFinal = vi.fn();
-      const dictation = new Dictation();
-      await dictation.listen({ mode: "endpoint", endpointMs: 10_000, onFinal });
-      const rec = instances[0];
-      if (hasSpeech) {
-        said(rec, done("please say no"), done("no"));
-        rec?.onend?.();
-      }
-      const starts = rec?.start.mock.calls.length ?? 0;
-      rec?.onend?.();
-      rec?.onend?.();
-      await vi.advanceTimersByTimeAsync(900);
-      expect(dictation.state.status).toBe("listening");
-      rec?.onend?.();
-      await vi.advanceTimersByTimeAsync(900);
-      expect(dictation.state.status).toBe("listening");
-      const staleEnd = rec?.onend;
-      rec?.onend?.();
-      expect(rec?.abort).toHaveBeenCalledOnce();
-      expect(rec?.onresult).toBeNull();
-      expect(rec?.onend).toBeNull();
-      expect(dictation.state).toEqual({
-        status: "idle",
-        transcript: "",
-        error: "The browser keeps dropping the microphone. Start dictation again to retry.",
-      });
-      staleEnd?.();
-      await vi.advanceTimersByTimeAsync(10_000);
-      expect(rec?.start).toHaveBeenCalledTimes(starts + 3);
-      if (hasSpeech) expect(onFinal).toHaveBeenCalledExactlyOnceWith("please say no no");
-      else expect(onFinal).not.toHaveBeenCalled();
-    },
-  );
-
-  it("hands the microphone to server transcription after four short empty sessions", async () => {
-    vi.useFakeTimers();
-    const fetchMock = vi.fn(async () => Response.json({ text: "from server" }));
-    stubRecorderFallback(fetchMock);
-    vi.stubGlobal(
-      "AudioContext",
-      class {
-        state = "running";
-        createMediaStreamSource() {
-          return { connect() {} };
-        }
-        createAnalyser() {
-          return {
-            fftSize: 2048,
-            getByteTimeDomainData(data: Uint8Array) {
-              data.fill(200);
-            },
-          };
-        }
-        close() {
-          return Promise.resolve();
-        }
-      },
-    );
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", transcribe: true, onFinal });
-    const rec = instances[0];
-    rec?.onend?.();
-    rec?.onend?.();
-    await vi.advanceTimersByTimeAsync(900);
-    rec?.onend?.();
-    await vi.advanceTimersByTimeAsync(900);
-    expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
-    const staleEnd = rec?.onend;
-    rec?.onend?.();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledOnce();
-    expect(rec?.abort).toHaveBeenCalledOnce();
-    expect(dictation.state.status).toBe("listening");
-    expect(dictation.state.error).toBeUndefined();
-    staleEnd?.();
-    await vi.advanceTimersByTimeAsync(900);
-    expect(rec?.start).toHaveBeenCalledTimes(4);
-    dictation.submitHold();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(fetchMock).toHaveBeenCalledOnce();
-    expect(onFinal).toHaveBeenCalledExactlyOnceWith("from server");
-  });
-
-  it.each([false, true])(
-    "resets empty-session limits after speech (final: %s)",
-    async (isFinal) => {
-      vi.useFakeTimers();
-      const dictation = new Dictation();
-      await dictation.listen({ mode: "endpoint", endpointMs: 10_000, onFinal: vi.fn() });
-      const rec = instances[0];
-      rec?.onend?.();
-      rec?.onend?.();
-      await vi.advanceTimersByTimeAsync(900);
-      for (let index = 0; index < 5; index += 1) {
-        said(rec, isFinal ? done("hello") : "hello");
-        // A later empty event must not erase the fact that this session heard speech.
-        said(rec, "");
-        rec?.onend?.();
-        expect(rec?.start).toHaveBeenCalledTimes(4 + index);
-        expect(dictation.state.status).toBe("listening");
-      }
-      rec?.onend?.();
-      expect(rec?.start).toHaveBeenCalledTimes(9);
-      rec?.onend?.();
-      expect(rec?.start).toHaveBeenCalledTimes(9);
-      await vi.advanceTimersByTimeAsync(900);
-      expect(rec?.start).toHaveBeenCalledTimes(10);
-      dictation.stop();
-    },
-  );
-
-  it("resets the count after an empty session lasting at least 400 ms", async () => {
-    vi.useFakeTimers();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal: vi.fn() });
-    const rec = instances[0];
-    rec?.onend?.();
-    rec?.onend?.();
-    await vi.advanceTimersByTimeAsync(900);
-    await vi.advanceTimersByTimeAsync(400);
-    rec?.onend?.();
-    expect(rec?.start).toHaveBeenCalledTimes(4);
-    rec?.onend?.();
-    expect(rec?.start).toHaveBeenCalledTimes(5);
-    rec?.onend?.();
-    expect(rec?.start).toHaveBeenCalledTimes(5);
-    await vi.advanceTimersByTimeAsync(900);
-    expect(rec?.start).toHaveBeenCalledTimes(6);
-    dictation.stop();
-  });
-
-  it("cancels a pending restart when stopped", async () => {
-    vi.useFakeTimers();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal: vi.fn() });
-    const rec = instances[0];
-    rec?.onend?.();
-    rec?.onend?.();
-    dictation.stop();
-    await vi.advanceTimersByTimeAsync(10_000);
-    expect(rec?.start).toHaveBeenCalledTimes(2);
-    expect(rec?.abort).toHaveBeenCalledOnce();
-    expect(dictation.state.status).toBe("idle");
-  });
-
-  it("never ends the turn because the browser ended the session", async () => {
-    vi.useFakeTimers();
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal });
-    const rec = instances[0];
-
-    said(rec, "one of the new projects");
-    rec?.onend?.();
-    expect(onFinal).not.toHaveBeenCalled();
-    expect(rec?.start).toHaveBeenCalledTimes(2);
-
-    // The restarted session numbers its results from zero; the earlier words survive.
-    said(rec, "and the deadlines");
-    await vi.advanceTimersByTimeAsync(1_200);
-    expect(onFinal).toHaveBeenCalledTimes(1);
-    expect(onFinal).toHaveBeenCalledWith("one of the new projects and the deadlines");
-  });
-
-  it("publishes interim words to watchers long before the turn ends", async () => {
-    vi.useFakeTimers();
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    const seen: string[] = [];
-    dictation.subscribe((snapshot) => seen.push(snapshot.transcript));
-    await dictation.listen({ mode: "endpoint", onFinal });
-
-    said(instances[0], "what about the deploy");
-    await vi.advanceTimersByTimeAsync(300);
-
-    // The only signal available while the caller is still talking.
-    expect(seen.at(-1)).toBe("what about the deploy");
-    expect(onFinal).not.toHaveBeenCalled();
-  });
-
-  it("restarts endpoint recognition after a quiet end", async () => {
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", onFinal: () => undefined });
-    const rec = instances[0];
-    expect(rec?.start).toHaveBeenCalledOnce();
-    rec?.onend?.();
-    expect(rec?.start).toHaveBeenCalledTimes(2);
-    expect(dictation.state.status).toBe("listening");
-  });
-
   it("records through the connected voice provider in Electron", async () => {
     const constructed = vi.fn();
     class FakeRecognition {
@@ -1166,7 +590,7 @@ describe("Dictation web speech", () => {
 
     const onFinal = vi.fn();
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal });
+    await dictation.listen({ transcribe: true, onFinal });
     expect(constructed).not.toHaveBeenCalled();
     expect(dictation.state.error).toBeUndefined();
     expect(dictation.state.status).toBe("listening");
@@ -1238,7 +662,7 @@ describe("Dictation web speech", () => {
 
       const onFinal = vi.fn();
       const dictation = new Dictation();
-      await dictation.listen({ mode: "hold", transcribe: true, onFinal });
+      await dictation.listen({ transcribe: true, onFinal });
       const rec = instances[0];
       expect(rec?.start).toHaveBeenCalledOnce();
       const onend = rec?.onend;
@@ -1253,160 +677,6 @@ describe("Dictation web speech", () => {
       expect(onFinal).toHaveBeenCalledOnce();
     },
   );
-
-  it("continues an endpoint turn and joins speech heard before Web Speech failed", async () => {
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-    const level = { current: 0.6 };
-    class FakeAnalyser {
-      fftSize = 2048;
-      getByteTimeDomainData(data: Uint8Array) {
-        data.fill(Math.round(128 + level.current * 127));
-      }
-    }
-    class FakeContext {
-      state = "running";
-      createMediaStreamSource() {
-        return { connect() {} };
-      }
-      createAnalyser() {
-        return new FakeAnalyser();
-      }
-      close() {
-        return Promise.resolve();
-      }
-      resume() {
-        return Promise.resolve();
-      }
-    }
-    vi.stubGlobal("AudioContext", FakeContext);
-
-    type ResultEvent = {
-      resultIndex: number;
-      results: ArrayLike<ArrayLike<{ transcript: string }>>;
-    };
-    const instances: FakeRecognition[] = [];
-    class FakeRecognition {
-      continuous = false;
-      interimResults = false;
-      lang = "";
-      onresult: ((event: ResultEvent) => void) | null = null;
-      onerror: ((event: { error?: string }) => void) | null = null;
-      onend: (() => void) | null = null;
-      start = vi.fn();
-      stop = vi.fn();
-      abort = vi.fn();
-      constructor() {
-        instances.push(this);
-      }
-    }
-    vi.stubGlobal("window", { SpeechRecognition: FakeRecognition });
-    let markRecording: () => void = () => undefined;
-    const recording = new Promise<void>((resolve) => {
-      markRecording = resolve;
-    });
-    const track = { stop: vi.fn() };
-    vi.stubGlobal("navigator", {
-      mediaDevices: {
-        getUserMedia: vi.fn(async () => ({ getTracks: () => [track] })),
-      },
-      language: "en-US",
-    });
-    const fetchMock = vi.fn(async () => Response.json({ text: "  from   server " }));
-    vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal(
-      "MediaRecorder",
-      class {
-        state = "inactive";
-        ondataavailable: ((event: { data: Blob }) => void) | null = null;
-        onstop: (() => void) | null = null;
-        start() {
-          this.state = "recording";
-          markRecording();
-        }
-        stop() {
-          this.state = "inactive";
-          this.ondataavailable?.({ data: new Blob(["audio"], { type: "audio/webm" }) });
-          this.onstop?.();
-        }
-      },
-    );
-
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({
-      mode: "endpoint",
-      transcribe: true,
-      endpointMs: 240,
-      onFinal,
-    });
-    const rec = instances[0];
-    const onend = rec?.onend;
-    rec?.onresult?.({
-      resultIndex: 0,
-      results: [[{ transcript: "call me later" }]],
-    });
-    rec?.onerror?.({ error: "network" });
-    onend?.();
-    await recording;
-
-    expect(onFinal).not.toHaveBeenCalled();
-    expect(dictation.state.status).toBe("listening");
-    expect(dictation.state.transcript).toBe("call me later");
-    expect(dictation.state.error).toBeUndefined();
-    expect(rec?.abort).toHaveBeenCalledOnce();
-    await vi.advanceTimersByTimeAsync(80);
-    level.current = 0;
-    await vi.advanceTimersByTimeAsync(240);
-    await vi.waitFor(() => expect(onFinal).toHaveBeenCalledWith("call me later from server"));
-    expect(onFinal).toHaveBeenCalledOnce();
-    expect(fetchMock).toHaveBeenCalledOnce();
-  });
-
-  it("submits retained speech when the microphone fails after fallback", async () => {
-    type ResultEvent = {
-      resultIndex: number;
-      results: ArrayLike<ArrayLike<{ transcript: string }>>;
-    };
-    const instances: FakeRecognition[] = [];
-    class FakeRecognition {
-      continuous = false;
-      interimResults = false;
-      lang = "";
-      onresult: ((event: ResultEvent) => void) | null = null;
-      onerror: ((event: { error?: string }) => void) | null = null;
-      onend: (() => void) | null = null;
-      start = vi.fn();
-      stop = vi.fn();
-      abort = vi.fn();
-      constructor() {
-        instances.push(this);
-      }
-    }
-    vi.stubGlobal("window", { SpeechRecognition: FakeRecognition });
-    vi.stubGlobal("navigator", {
-      mediaDevices: {
-        getUserMedia: vi.fn(async () => {
-          throw new Error("Microphone denied");
-        }),
-      },
-      language: "en-US",
-    });
-
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({ mode: "endpoint", transcribe: true, onFinal });
-    const rec = instances[0];
-    rec?.onresult?.({
-      resultIndex: 0,
-      results: [[{ transcript: "call me later" }]],
-    });
-    rec?.onerror?.({ error: "service-not-allowed" });
-
-    await vi.waitFor(() => expect(onFinal).toHaveBeenCalledWith("call me later"));
-    expect(onFinal).toHaveBeenCalledOnce();
-    expect(dictation.state.status).toBe("idle");
-    expect(dictation.state.error).toBeUndefined();
-  });
 
   it("submits retained speech when transcription fails after fallback", async () => {
     type ResultEvent = {
@@ -1462,7 +732,7 @@ describe("Dictation web speech", () => {
 
     const onFinal = vi.fn();
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal });
+    await dictation.listen({ transcribe: true, onFinal });
     const rec = instances[0];
     rec?.onresult?.({
       resultIndex: 0,
@@ -1492,7 +762,7 @@ describe("Dictation web speech", () => {
       stubRecorderFallback(fetchMock);
       const onFinal = vi.fn();
       const dictation = new Dictation();
-      await dictation.listen({ mode: "hold", transcribe: true, onFinal });
+      await dictation.listen({ transcribe: true, onFinal });
       said(instances[0], prefix);
       instances[0]?.onerror?.({ error: "network" });
       await vi.waitFor(() => expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledOnce());
@@ -1502,107 +772,6 @@ describe("Dictation web speech", () => {
       expect(fetchMock).toHaveBeenCalledOnce();
     },
   );
-
-  it("stops an endpoint fallback on silence without new microphone energy", async () => {
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-    class FakeAnalyser {
-      fftSize = 2048;
-      getByteTimeDomainData(data: Uint8Array) {
-        data.fill(128);
-      }
-    }
-    class FakeContext {
-      state = "running";
-      createMediaStreamSource() {
-        return { connect() {} };
-      }
-      createAnalyser() {
-        return new FakeAnalyser();
-      }
-      close() {
-        return Promise.resolve();
-      }
-      resume() {
-        return Promise.resolve();
-      }
-    }
-    vi.stubGlobal("AudioContext", FakeContext);
-
-    type ResultEvent = {
-      resultIndex: number;
-      results: ArrayLike<ArrayLike<{ transcript: string }>>;
-    };
-    const instances: FakeRecognition[] = [];
-    class FakeRecognition {
-      continuous = false;
-      interimResults = false;
-      lang = "";
-      onresult: ((event: ResultEvent) => void) | null = null;
-      onerror: ((event: { error?: string }) => void) | null = null;
-      onend: (() => void) | null = null;
-      start = vi.fn();
-      stop = vi.fn();
-      abort = vi.fn();
-      constructor() {
-        instances.push(this);
-      }
-    }
-    vi.stubGlobal("window", { SpeechRecognition: FakeRecognition });
-    let markRecording: () => void = () => undefined;
-    const recording = new Promise<void>((resolve) => {
-      markRecording = resolve;
-    });
-    const track = { stop: vi.fn() };
-    vi.stubGlobal("navigator", {
-      mediaDevices: {
-        getUserMedia: vi.fn(async () => ({ getTracks: () => [track] })),
-      },
-      language: "en-US",
-    });
-    const fetchMock = vi.fn(async () => Response.json({ text: "still there" }));
-    vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal(
-      "MediaRecorder",
-      class {
-        state = "inactive";
-        ondataavailable: ((event: { data: Blob }) => void) | null = null;
-        onstop: (() => void) | null = null;
-        start() {
-          this.state = "recording";
-          markRecording();
-        }
-        stop() {
-          this.state = "inactive";
-          this.ondataavailable?.({ data: new Blob(["audio"], { type: "audio/webm" }) });
-          this.onstop?.();
-        }
-      },
-    );
-
-    const onFinal = vi.fn();
-    const dictation = new Dictation();
-    await dictation.listen({
-      mode: "endpoint",
-      transcribe: true,
-      endpointMs: 240,
-      onFinal,
-    });
-    instances[0]?.onresult?.({
-      resultIndex: 0,
-      results: [[{ transcript: "call me later" }]],
-    });
-    instances[0]?.onerror?.({ error: "network" });
-    await recording;
-
-    expect(onFinal).not.toHaveBeenCalled();
-    expect(dictation.state.transcript).toBe("call me later");
-    await vi.advanceTimersByTimeAsync(80);
-    expect(onFinal).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(160);
-    await vi.waitFor(() => expect(onFinal).toHaveBeenCalledWith("call me later still there"));
-    expect(onFinal).toHaveBeenCalledOnce();
-    expect(fetchMock).toHaveBeenCalledOnce();
-  });
 
   it("keeps a Web Speech permission error when no server fallback applies", async () => {
     const instances: Array<{
@@ -1635,13 +804,13 @@ describe("Dictation web speech", () => {
     );
 
     const dictation = new Dictation();
-    await dictation.listen({ mode: "hold", transcribe: true, onFinal: () => undefined });
+    await dictation.listen({ transcribe: true, onFinal: () => undefined });
     instances[0]?.onerror?.({ error: "not-allowed" });
     expect(dictation.state.error).toBe("Dictation failed: not-allowed");
     expect(started).not.toHaveBeenCalled();
 
     const offline = new Dictation();
-    await offline.listen({ mode: "hold", onFinal: () => undefined });
+    await offline.listen({ onFinal: () => undefined });
     instances[1]?.onerror?.({ error: "network" });
     expect(offline.state.error).toBe("Dictation failed: network");
     expect(started).not.toHaveBeenCalled();

@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  narrateTool,
-  speakable,
-  speechFromBlocks,
-  spokenDecision,
-  toUtterances,
-} from "./speech-text.js";
+import { narrateTool, speakable, speechFromBlocks, toUtterances } from "./speech-text.js";
 
 describe("speakable", () => {
   it("names a code block instead of reading it", () => {
@@ -153,14 +147,5 @@ describe("narrateTool", () => {
   it("falls back to naming an unknown tool, without reading its argv", () => {
     expect(narrateTool("deploy_thing")).toBe("running deploy_thing");
     expect(narrateTool('curl -X POST "https://x/y" --data @{}')).toBeNull();
-  });
-});
-
-describe("spokenDecision", () => {
-  it("accepts a clear yes or no and refuses a sentence that merely contains one", () => {
-    expect(spokenDecision("yes")).toBe("yes");
-    expect(spokenDecision("No thanks")).toBe("no");
-    expect(spokenDecision("I'm sure that's fine, go look at the logs")).toBeNull();
-    expect(spokenDecision("")).toBeNull();
   });
 });

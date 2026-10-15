@@ -8,9 +8,7 @@ import VoiceSettings from "../app/(settings)/voice";
 
 const mocks = vi.hoisted(() => ({
   calls: vi.fn(),
-  waiting: vi.fn(),
   saveCalls: vi.fn(),
-  saveWaiting: vi.fn(),
   cue: vi.fn(),
   focused: true,
   t: (text: string) => text,
@@ -24,9 +22,7 @@ vi.mock("expo-router", () => ({
 }));
 vi.mock("./call-sounds", () => ({
   loadCallSoundsEnabled: mocks.calls,
-  loadWaitSoundEnabled: mocks.waiting,
   saveCallSoundsEnabled: mocks.saveCalls,
-  saveWaitSoundEnabled: mocks.saveWaiting,
   playCallCue: mocks.cue,
 }));
 vi.mock("./api", () => ({
@@ -87,9 +83,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.focused = true;
   mocks.calls.mockResolvedValue(true);
-  mocks.waiting.mockResolvedValue(true);
   mocks.saveCalls.mockResolvedValue(undefined);
-  mocks.saveWaiting.mockResolvedValue(undefined);
   mocks.cue.mockResolvedValue(undefined);
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -107,16 +101,11 @@ function toggle(label: string) {
   return container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
 }
 
-it.each([
-  ["Call sounds", "calls", "Waiting sound"],
-  ["Waiting sound", "waiting", "Call sounds"],
-] as const)("keeps %s off and disabled when its read fails", async (label, read, other) => {
-  mocks[read].mockRejectedValue(new Error("Could not load voice settings"));
+it("keeps call sounds off and disabled when its read fails", async () => {
+  mocks.calls.mockRejectedValue(new Error("Could not load voice settings"));
   await render();
-  expect(toggle(label).checked).toBe(false);
-  expect(toggle(label).disabled).toBe(true);
-  expect(toggle(other).checked).toBe(true);
-  expect(toggle(other).disabled).toBe(false);
+  expect(toggle("Call sounds").checked).toBe(false);
+  expect(toggle("Call sounds").disabled).toBe(true);
   expect(container.textContent).toContain("Could not load voice settings");
 });
 

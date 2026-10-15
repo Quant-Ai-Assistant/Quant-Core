@@ -513,8 +513,24 @@ describe("stack settings", () => {
       OPENROUTER_API_KEY: "sk-saved",
       SANDBOX_PROVIDER: "desktop",
       SECRET_STORE: "encrypted",
+      PHONE_CALLS_ENABLED: "true",
     });
     expect(env).not.toHaveProperty("AWS_SECRET_ACCESS_KEY");
+  });
+
+  it("lets the stack .env turn calls off", () => {
+    const env = serverProcessEnv({
+      platform: "linux",
+      inherited: {},
+      stackEnv: { PHONE_CALLS_ENABLED: "false" },
+      databaseUrl: "postgres://db",
+      apiPort: 1,
+      webUrl: "http://127.0.0.1:2",
+      dataDir: "/data",
+      stackToken: "t",
+      version: "0.1.50",
+    });
+    expect(env.PHONE_CALLS_ENABLED).toBe("false");
   });
 
   it("keeps a bounded output tail and leaves terminal phases only through prepare", () => {
