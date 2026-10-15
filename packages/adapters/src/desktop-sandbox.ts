@@ -17,6 +17,7 @@ import path from "node:path";
 import type {
   AdapterContext,
   CommandRequest,
+  ComputerAction,
   ComputerActionRequest,
   ComputerFileEntry,
   ComputerInput,
@@ -45,6 +46,7 @@ import {
   type Win32FileHandle,
   win32NtRelativeAvailable,
 } from "./desktop-sandbox-win32-path.js";
+import type { MacScreen } from "./mac-screen.js";
 import { sandboxCommandEnvironment } from "./sandbox-command-environment.js";
 
 const O_NOFOLLOW = constants.O_NOFOLLOW ?? 0;
@@ -62,7 +64,14 @@ interface DesktopBox {
 export class DesktopSandboxProvider implements SandboxProvider {
   readonly boxes = new Map<string, DesktopBox>();
 
-  constructor(private readonly opts: { root?: string; hostRoots?: string[] } = {}) {}
+  /** The host display, keyboard and mouse. Without it the screen is a placeholder. */
+  private readonly screen: MacScreen | undefined;
+
+  constructor(
+    private readonly opts: { root?: string; hostRoots?: string[]; screen?: MacScreen } = {},
+  ) {
+    this.screen = opts.screen;
+  }
 
   describe() {
     return {
@@ -70,12 +79,13 @@ export class DesktopSandboxProvider implements SandboxProvider {
       contractVersion: "1",
       adapterVersion: "0.1.0",
       capabilities: {
-        graphical: false,
+        graphical: Boolean(this.screen),
         pty: true,
         snapshots: true,
         takeover: false,
         persistentHome: true,
         multiScreen: false,
+        elements: Boolean(this.screen),
       },
     };
   }
@@ -168,13 +178,23 @@ export class DesktopSandboxProvider implements SandboxProvider {
     if (box) applyPlaceholderAction(box, input);
   }
 
-  async observe(computer: ComputerRef) {
-    return placeholderObservation(this.requiredBox(computer).screen);
+  async observe(computer: ComputerRef, context?: AdapterContext) {
+    const box = this.requiredBox(computer);
+    if (this.screen) return this.screen.observe(box.ref.id, context?.signal);
+    return placeholderObservation(box.screen);
   }
 
-  async act(computer: ComputerRef, request: ComputerActionRequest, _context: AdapterContext) {
+  async act(computer: ComputerRef, request: ComputerActionRequest, context: AdapterContext) {
     const box = this.requiredBox(computer);
     const actions = boundedComputerActions(request.actions);
+    if (this.screen) {
+      return this.screen.act(
+        box.ref.id,
+        actions.map((action) => this.hostAction(box, action)),
+        { observe: request.observe !== false, settleMs: request.settleMs },
+        context.signal,
+      );
+    }
     for (const action of actions) applyPlaceholderAction(box, action);
     return {
       completed: actions.length,
@@ -293,6 +313,16 @@ export class DesktopSandboxProvider implements SandboxProvider {
     };
     this.boxes.set(computer.id, box);
     return box;
+  }
+
+  /** Workspace paths open from the bot's home; anything outside the allowed roots is refused. */
+  private hostAction(box: DesktopBox, action: ComputerAction): ComputerAction {
+    if (action.kind !== "open" || /^[a-z][a-z0-9+.-]*:/i.test(action.path)) return action;
+    const target = path.resolve(box.home, action.path);
+    if (!isAllowedDesktopPath(target, this.allowedRoots(box.home))) {
+      throw new Error("path is outside this computer's home");
+    }
+    return { ...action, path: target };
   }
 
   private requiredBox(computer: ComputerRef): DesktopBox {

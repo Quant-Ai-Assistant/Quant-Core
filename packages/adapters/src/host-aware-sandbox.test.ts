@@ -112,6 +112,15 @@ describe("host-aware sandbox", () => {
     await sandbox.destroy(computer, ctx);
   });
 
+  it("describes the provider that serves a computer", () => {
+    const isolated = new FakeSandboxProvider();
+    const host = new DesktopSandboxProvider();
+    const sandbox = new HostAwareSandbox(isolated, host, async () => true);
+    const desktop = { id: "d", botId: "b", kind: "desktop" as const, providerRef: "/tmp/d" };
+    expect(sandbox.describe(desktop).id).toBe("desktop");
+    expect(sandbox.describe().id).toBe(isolated.describe().id);
+  });
+
   it("provisions on the isolated provider when this-mac is off", async () => {
     const isolated = new FakeSandboxProvider();
     const host = new DesktopSandboxProvider();

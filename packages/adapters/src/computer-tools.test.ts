@@ -61,7 +61,7 @@ describe("computer tool bridge", () => {
     };
     const items = schema?.properties?.actions?.items ?? {};
     const focus = items.oneOf?.find((branch) => branch.properties?.kind?.enum?.includes("focus"));
-    const other = items.oneOf?.find((branch) => branch !== focus);
+    const other = items.oneOf?.find((branch) => branch.properties?.kind?.enum?.includes("click"));
     expect(focus?.required).toEqual(["kind", "application"]);
     expect(focus?.properties?.application).toMatchObject({ minLength: 1, pattern: "\\S" });
     expect(other?.required).toEqual(["kind"]);
@@ -269,5 +269,82 @@ describe("computer tool bridge", () => {
     expect(unchangedVisualStreakAfterPageBrowser(engaged, "browser_act", { ok: false })).toEqual(
       engaged,
     );
+  });
+});
+
+describe("computer element actions", () => {
+  it("turns element clicks, fills, presses, hovers, and menus into provider actions", () => {
+    expect(
+      parseComputerActions(
+        [
+          { kind: "click", element: 4 },
+          { kind: "click", element: 4, double: true },
+          { kind: "click", element: 5, button: "right" },
+          { kind: "fill", element: 6, text: "milk" },
+          { kind: "press", element: 7 },
+          { kind: "hover", element: 8 },
+          { kind: "menu", path: [" File ", "Export…"], application: "Notes" },
+          { kind: "click", x: 1, y: 2 },
+        ],
+        { elements: true },
+      ),
+    ).toEqual([
+      { kind: "element", element: 4, action: "click" },
+      { kind: "element", element: 4, action: "double_click" },
+      { kind: "element", element: 5, action: "right_click" },
+      { kind: "element", element: 6, action: "fill", text: "milk" },
+      { kind: "element", element: 7, action: "press" },
+      { kind: "element", element: 8, action: "hover" },
+      { kind: "menu", path: ["File", "Export…"], application: "Notes" },
+      { kind: "pointer", x: 1, y: 2, type: "click", button: "left" },
+    ]);
+  });
+
+  it("refuses element and menu actions where the computer cannot read elements", () => {
+    expect(() => parseComputerActions([{ kind: "click", element: 1 }])).toThrow(/x\/y/);
+    expect(() => parseComputerActions([{ kind: "menu", path: ["File"] }])).toThrow(/x\/y/);
+  });
+
+  it("rejects malformed element ids and menu paths", () => {
+    expect(() =>
+      parseComputerActions([{ kind: "press", element: "x" }], { elements: true }),
+    ).toThrow(/element id/);
+    expect(() => parseComputerActions([{ kind: "menu", path: [] }], { elements: true })).toThrow(
+      /menu titles/,
+    );
+  });
+
+  it("lists elements under a changed frame only", () => {
+    const observation = computerObservation(new Uint8Array([1, 2, 3]), {
+      mimeType: "image/jpeg",
+      width: 100,
+      height: 80,
+      elements: [
+        { id: 1, role: "button", label: "Save", x: 10, y: 20, width: 30, height: 12 },
+        {
+          id: 2,
+          role: "text field",
+          value: "hi",
+          x: 5,
+          y: 40,
+          width: 60,
+          height: 14,
+          focused: true,
+        },
+      ],
+    });
+    const fresh = observationToolResult(observation);
+    const text = fresh.content[0]?.type === "text" ? fresh.content[0].text : "";
+    expect(text).toContain('1 button "Save" at 10,20 30x12');
+    expect(text).toContain('2 text field value="hi" focused at 5,40 60x14');
+    const repeat = observationToolResult(observation, "observed", observation.frameId);
+    const repeatText = repeat.content[0]?.type === "text" ? repeat.content[0].text : "";
+    expect(repeatText).not.toContain("UI elements");
+  });
+
+  it("advertises element and menu actions in the tool schema", () => {
+    const act = builtinAgentTools.find((tool) => tool.name === "computer_act");
+    expect(JSON.stringify(act?.inputSchema)).toContain('"menu"');
+    expect(JSON.stringify(act?.inputSchema)).toContain('"element"');
   });
 });

@@ -14,6 +14,7 @@ import type {
 } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
 import { DesktopSandboxProvider } from "./desktop-sandbox.js";
+import { MacScreen } from "./mac-screen.js";
 import { createSandboxProvider, type SandboxProviderOptions } from "./sandbox-factory.js";
 
 export function sandboxKindForBot(envKind: string, computerHost: string | null | undefined) {
@@ -29,6 +30,7 @@ export function createRunSandbox(
     return new DesktopSandboxProvider({
       root: opts.dataDir,
       hostRoots: [homedir()],
+      screen: hostScreen(),
     });
   }
   const primary = createSandboxProvider(kind, opts);
@@ -38,6 +40,7 @@ export function createRunSandbox(
     new DesktopSandboxProvider({
       root: opts.dataDir,
       hostRoots: [homedir()],
+      screen: hostScreen(),
     }),
     async () => {
       const settings = await opts.prisma!.deploymentSettings.findUnique({
@@ -46,6 +49,11 @@ export function createRunSandbox(
       return settings?.computerHost === "this-mac";
     },
   );
+}
+
+/** This Mac's own display. Other host platforms have no screen driver yet. */
+function hostScreen(): MacScreen | undefined {
+  return process.platform === "darwin" ? new MacScreen() : undefined;
 }
 
 export class HostAwareSandbox implements SandboxProvider {
@@ -71,8 +79,8 @@ export class HostAwareSandbox implements SandboxProvider {
     }
   }
 
-  describe() {
-    return this.isolated.describe();
+  describe(computer?: ComputerRef) {
+    return computer ? this.route(computer).describe() : this.isolated.describe();
   }
 
   private route(computer: ComputerRef) {

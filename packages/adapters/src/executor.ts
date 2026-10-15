@@ -3763,8 +3763,11 @@ export function createRunExecutor(deps: ExecutorDeps) {
           throw error;
         }
         const attachedFilesPrompt = currentTurnFilesInstruction(currentTurnFiles);
-        const graphical =
-          computer.kind !== "desktop" && deps.sandbox.describe().capabilities.graphical;
+        const computerCapabilities = deps.sandbox.describe(computer).capabilities;
+        // A graphical sandbox desktop (Xvfb and friends) carries lifecycle guards; the host
+        // Mac's own screen does not, and it never offers the sandbox page browser.
+        const graphical = computer.kind !== "desktop" && computerCapabilities.graphical;
+        const hostScreen = computer.kind === "desktop" && computerCapabilities.graphical;
         // Gate on the model this run will actually call — the pair written to the run row
         // above. Deriving it a second time here dropped the deployment fallback, so a
         // vision-capable default was gated as "scripted" and lost its screenshot tools.
@@ -3815,7 +3818,8 @@ export function createRunExecutor(deps: ExecutorDeps) {
         const callEndRun = run.trigger === "call_end";
         const callClientNonceForRun = callEndRun ? run.clientNonce : sourceClientNonce;
         const voiceCall = callEndRun || isCallClientNonce(sourceClientNonce);
-        const graphicalToolsAllowed = graphical && acceptsImages && !heldForTakeover;
+        const graphicalToolsAllowed =
+          (graphical || hostScreen) && acceptsImages && !heldForTakeover;
         const pageBrowserAllowed =
           graphical && browser.describe().capabilities.page && !heldForTakeover;
         const disabledBuiltinTools = disabledBuiltinToolSet(bot.disabledBuiltinTools);
@@ -3886,15 +3890,16 @@ export function createRunExecutor(deps: ExecutorDeps) {
         const baseComputerInstruction = persistentComputerInstruction({
           heldForTakeover,
           graphicalToolsAllowed,
-          graphical,
+          graphical: graphical || hostScreen,
           disabled: disabledBuiltinTools,
         });
-        const dockerToolInstruction = dockerComputerToolInstruction(
-          computer.kind,
-          disabledBuiltinTools,
-        );
-        const computerInstruction = dockerToolInstruction
-          ? `${baseComputerInstruction} ${dockerToolInstruction}`
+        const computerToolInstruction =
+          dockerComputerToolInstruction(computer.kind, disabledBuiltinTools) ??
+          (hostScreen && graphicalToolsAllowed
+            ? hostScreenToolInstruction(disabledBuiltinTools)
+            : undefined);
+        const computerInstruction = computerToolInstruction
+          ? `${baseComputerInstruction} ${computerToolInstruction}`
           : baseComputerInstruction;
         const workspaceInstruction =
           computerMode === "team"
@@ -4692,7 +4697,9 @@ export function createRunExecutor(deps: ExecutorDeps) {
                 error: "Teaching is in progress. Stop teaching before using the computer.",
               };
             }
-            const actions = parseComputerActions(args.actions);
+            const actions = parseComputerActions(args.actions, {
+              elements: computerCapabilities.elements === true,
+            });
             const visualActionKey = computerVisualActionKey(actions);
             if (unchangedVisualActionBlocked(unchangedVisualStreak, actions)) {
               return finish(unchangedVisualLoopToolResult(unchangedVisualStreak));
@@ -7671,6 +7678,20 @@ export function dockerComputerToolInstruction(
     );
   }
   parts.push("Never use `--with-token` or inject a token through the environment.");
+  return parts.join(" ");
+}
+
+/** The host Mac is the user's own machine: the shell goes first, the screen when it must. */
+export function hostScreenToolInstruction(disabled?: ReadonlySet<string>): string {
+  const parts = ["This computer is the user's own Mac, and they may be using it right now."];
+  if (builtinOffered(disabled, "shell")) {
+    parts.push(
+      "Try the shell first: open apps, files, and URLs with `open`, script apps with `osascript`, and use command-line tools. Use computer_observe and computer_act only when the shell cannot do the task or you must see or operate an app's interface.",
+    );
+  }
+  parts.push(
+    "computer_observe lists the frontmost app's controls with numbered ids that match the marks on the screenshot. Prefer element actions and menu paths over x/y coordinates. Never close, quit, or overwrite the user's windows or unsaved work unless asked.",
+  );
   return parts.join(" ");
 }
 

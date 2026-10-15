@@ -29,6 +29,7 @@ import {
   computerObservation,
   normalizeWorkspacePath,
   shellQuote,
+  UNSUPPORTED_ELEMENT_ACTION,
   workspacePath,
 } from "./computer-support.js";
 import {
@@ -1108,6 +1109,9 @@ print(json.dumps(out))
       }
       await this.postJson(`${root}/open?${query}`, { target }, context);
       return;
+    }
+    if (action.kind === "element" || action.kind === "menu") {
+      throw new Error(UNSUPPORTED_ELEMENT_ACTION);
     }
     if (isBrowserApplication(action.application)) {
       await this.launchBrowser(computer, action.uri ?? "about:blank", context);

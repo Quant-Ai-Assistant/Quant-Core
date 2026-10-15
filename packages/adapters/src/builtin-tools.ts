@@ -147,13 +147,13 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "computer_observe",
     description:
-      "Capture the current screen of this bot's computer. Returns frame metadata and an image. Observe before coordinate-based actions and whenever another actor may have changed the desktop.",
+      "Capture the current screen of this bot's computer. Returns frame metadata and an image, and on computers that support it a numbered list of the frontmost app's controls matching marks on the image. Observe before coordinate-based actions and whenever another actor may have changed the desktop.",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "computer_act",
     description:
-      "Perform up to 24 ordered desktop actions on this bot's computer and return the resulting screen. Batch only predictable actions; stop before an outcome you need to inspect. Action kinds: click, move, down, up, type, key, scroll, wait, focus (raises the application's window, launching it if absent).",
+      'Perform up to 24 ordered desktop actions on this bot\'s computer and return the resulting screen. Batch only predictable actions; stop before an outcome you need to inspect. Action kinds: click, move, down, up, type, key, scroll, wait, focus (raises the application\'s window, launching it if absent). When computer_observe listed elements: click takes element instead of x/y; press (accessibility press), fill (replace a field\'s text), and hover take element; menu presses a menu bar item by its titles, e.g. path ["File", "Export"].',
     inputSchema: {
       type: "object",
       properties: {
@@ -173,10 +173,32 @@ export const builtinAgentTools: ConnectorTool[] = [
               {
                 type: "object",
                 properties: {
+                  kind: { type: "string", enum: ["menu"] },
+                  path: { type: "array", items: { type: "string" }, minItems: 1 },
+                  application: { type: "string" },
+                },
+                required: ["kind", "path"],
+              },
+              {
+                type: "object",
+                properties: {
                   kind: {
                     type: "string",
-                    enum: ["click", "move", "down", "up", "type", "key", "scroll", "wait"],
+                    enum: [
+                      "click",
+                      "move",
+                      "down",
+                      "up",
+                      "type",
+                      "key",
+                      "scroll",
+                      "wait",
+                      "press",
+                      "fill",
+                      "hover",
+                    ],
                   },
+                  element: { type: "integer", minimum: 1 },
                   x: { type: "number" },
                   y: { type: "number" },
                   button: { type: "string", enum: ["left", "right"] },

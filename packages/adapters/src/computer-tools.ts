@@ -1,8 +1,11 @@
 import type {
   AgentToolExecutionResult,
   ComputerAction,
+  ComputerElement,
+  ComputerElementAction,
   ComputerObservation,
 } from "@rakazo/adapter-kit";
+import { UNSUPPORTED_ELEMENT_ACTION } from "./computer-support.js";
 
 /** Identical visual actions that leave the frame unchanged before computer_act stops repeating them. */
 export const MAX_CONSECUTIVE_UNCHANGED_VISUAL_ACTIONS = 3;
@@ -23,7 +26,15 @@ export type ObservationToolOptions = {
   unchangedVisualCount?: number;
 };
 
-export function parseComputerActions(value: unknown): ComputerAction[] {
+const ELEMENT_ONLY_KINDS = new Set(["press", "fill", "hover"]);
+
+/** Elements listed in a tool result. More would crowd the context without helping a click. */
+const MAX_LISTED_ELEMENTS = 200;
+
+export function parseComputerActions(
+  value: unknown,
+  options: { elements?: boolean } = {},
+): ComputerAction[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error("computer_act requires at least one action");
   }
@@ -32,6 +43,42 @@ export function parseComputerActions(value: unknown): ComputerAction[] {
     if (!raw || typeof raw !== "object") throw new Error("computer action must be an object");
     const action = raw as Record<string, unknown>;
     const kind = String(action.kind ?? "");
+    const usesElements =
+      kind === "menu" ||
+      ELEMENT_ONLY_KINDS.has(kind) ||
+      (kind === "click" && action.element !== undefined);
+    if (usesElements && !options.elements) {
+      throw new Error(UNSUPPORTED_ELEMENT_ACTION);
+    }
+    if (kind === "click" && action.element !== undefined) {
+      const elementAction: ComputerElementAction =
+        action.button === "right"
+          ? "right_click"
+          : action.double === true
+            ? "double_click"
+            : "click";
+      return [{ kind: "element", element: elementId(action.element), action: elementAction }];
+    }
+    if (ELEMENT_ONLY_KINDS.has(kind)) {
+      return [
+        {
+          kind: "element",
+          element: elementId(action.element),
+          action: kind as ComputerElementAction,
+          ...(kind === "fill" ? { text: String(action.text ?? "") } : {}),
+        },
+      ];
+    }
+    if (kind === "menu") {
+      const path = Array.isArray(action.path)
+        ? action.path.map((title) => String(title).trim())
+        : [];
+      if (path.length === 0 || path.some((title) => !title)) {
+        throw new Error("computer action menu requires a path of menu titles");
+      }
+      const application = String(action.application ?? "").trim();
+      return [{ kind: "menu", path, ...(application ? { application } : {}) }];
+    }
     if (kind === "click" || kind === "move" || kind === "down" || kind === "up") {
       const x = finiteCoordinate(action.x, "x");
       const y = finiteCoordinate(action.y, "y");
@@ -110,12 +157,17 @@ export function observationToolResult(
       ? ` (screen unchanged). ${PREVIOUS_SCREENSHOT_VALID} ${visualLoopGuidance(unchangedVisualCount)}`
       : ` (screen unchanged). ${PREVIOUS_SCREENSHOT_VALID}`
     : "";
+  const elementLines =
+    !unchanged && observation.elements?.length ? computerElementLines(observation.elements) : [];
+  const elementsText = elementLines.length
+    ? `\nUI elements (use ids with computer_act):\n${elementLines.join("\n")}`
+    : "";
   return {
     kind: "agent_tool_result",
     content: [
       {
         type: "text",
-        text: `${note}${status}\n${JSON.stringify(details)}`,
+        text: `${note}${status}\n${JSON.stringify(details)}${elementsText}`,
       },
       ...(unchanged
         ? []
@@ -230,6 +282,28 @@ function unchangedScreenDetails(frameId: string | undefined, unchangedVisualCoun
 
 function visualLoopGuidance(count: number) {
   return `The same visual action has left the screen unchanged ${count} times. Stop repeating it and use browser_snapshot or a different action.`;
+}
+
+function elementId(value: unknown) {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id < 1) {
+    throw new Error("computer action element must be an element id from computer_observe");
+  }
+  return id;
+}
+
+/** One line per control, e.g. `12 button "Save" at 640,410 120x28`. */
+export function computerElementLines(elements: readonly ComputerElement[]): string[] {
+  return elements.slice(0, MAX_LISTED_ELEMENTS).map((element) => {
+    const parts = [String(element.id), element.role];
+    if (element.label) parts.push(JSON.stringify(element.label));
+    if (element.value !== undefined) parts.push(`value=${JSON.stringify(element.value)}`);
+    if (element.secure) parts.push("secure");
+    if (element.disabled) parts.push("disabled");
+    if (element.focused) parts.push("focused");
+    parts.push(`at ${element.x},${element.y} ${element.width}x${element.height}`);
+    return parts.join(" ");
+  });
 }
 
 function finiteCoordinate(value: unknown, name: string) {

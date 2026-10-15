@@ -8,6 +8,7 @@ import {
   createRunExecutor,
   createRunWorkspaceCheckpoint,
   dockerComputerToolInstruction,
+  hostScreenToolInstruction,
   isTerminalModelSetupError,
   loadCurrentTurnImages,
   missingTurnImagesInstruction,
@@ -1286,6 +1287,19 @@ describe("userTurnInstructions", () => {
     expect(instructions.join("\n")).not.toContain(
       "Never ask for a raw credential in chat or inject it into shell commands.",
     );
+  });
+});
+
+describe("hostScreenToolInstruction", () => {
+  it("sends the bot to the shell before the screen on the user's own Mac", () => {
+    const instruction = hostScreenToolInstruction();
+    expect(instruction).toContain("user's own Mac");
+    expect(instruction).toMatch(/Try the shell first.*computer_observe and computer_act only when/);
+    expect(instruction).toContain("Prefer element actions and menu paths");
+  });
+
+  it("drops the shell advice when the shell is turned off", () => {
+    expect(hostScreenToolInstruction(new Set(["shell"]))).not.toContain("shell");
   });
 });
 

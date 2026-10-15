@@ -63,3 +63,12 @@ To change the username, password or port, open **Change Quant Server…**, choos
 Closing the window keeps Quant running in the menu bar (the system tray on Windows and Linux), so phones can still connect. **Quit Quant** in its menu stops the server too; it starts again with the app.
 
 The server keeps its database and files in the app's data folder. An earlier version ran this server in Docker: the first start of this version moves that data into the app, so Docker must be running once for that move. The Docker containers are stopped afterwards, and their volumes are left in place.
+
+## Bots on this Mac
+
+When bots run on this Mac, they do the work in the terminal first and use the screen only when the terminal cannot do it: they see the screen, click the controls of the frontmost app by name, fill fields and choose menu items. macOS asks for two permissions the first time a bot needs the screen:
+
+- **Screen Recording**, so bots can see the screen. Allow Quant in **System Settings → Privacy & Security → Screen Recording**, then reopen Quant.
+- **Accessibility**, so bots can read the app's controls and use the mouse and keyboard. Allow Quant in **System Settings → Privacy & Security → Accessibility**.
+
+Until then, bots keep working in the terminal. Bots use the same screen, mouse and keyboard as you, so avoid typing while a bot is working on the screen.
