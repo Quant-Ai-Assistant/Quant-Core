@@ -9,14 +9,9 @@ import {
   CALL_REQUEST_RING_MS,
   callRequestBlock,
   callRequestClientNonce,
-  LIVE_CALL_VOICE_PROVIDER,
 } from "@rakazo/core";
 import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
-import {
-  appendEventInTransaction,
-  createThreadMessageInTransaction,
-  findVoiceCredential,
-} from "@rakazo/db";
+import { appendEventInTransaction, createThreadMessageInTransaction, hasCallKey } from "@rakazo/db";
 
 const REASON_MAX = 120;
 const OPENING_MAX = 240;
@@ -25,16 +20,12 @@ export type CallRequestStatus = CallRequestBlock["status"];
 
 /** Why the bot may not ring the user right now, or null when it may. */
 export async function callRequestRefusal(
-  prisma: Pick<PrismaClient, "message" | "userVoiceCredential">,
+  prisma: Pick<PrismaClient, "message" | "userCallSettings">,
   input: { userId: string; threadId: string; groupChat: boolean; now?: number },
 ): Promise<string | null> {
   if (input.groupChat) return "Calls work in a one-to-one chat only. Send a message instead.";
-  const voice = await prisma.userVoiceCredential.findFirst({
-    where: { userId: input.userId },
-    select: { id: true },
-  });
-  if (!voice) {
-    return "The user has not connected a voice provider, so they cannot take a call. Send a message instead.";
+  if (!(await hasCallKey(prisma, input.userId))) {
+    return "The user has not set up calls. Send a message instead.";
   }
   const since = new Date((input.now ?? Date.now()) - CALL_REQUEST_COOLDOWN_MS);
   const recent = await prisma.message.findFirst({
@@ -152,10 +143,6 @@ export async function requestUserCall(
   input: { reason: string; opening: string },
 ) {
   if (!deps.phoneCallsEnabled) return { error: "Calls are disabled." };
-  // Calls are live conversations, which need the user's OpenAI voice connection.
-  if (!(await findVoiceCredential(deps.prisma, run, LIVE_CALL_VOICE_PROVIDER))) {
-    return { error: "The user has not set up calls. Send a message instead." };
-  }
   const request = newCallRequest(input);
   if ("error" in request) return request;
   const result = await deps.prisma.$transaction(async (tx) => {

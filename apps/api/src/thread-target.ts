@@ -616,6 +616,8 @@ export async function sendThreadMessage(
     replyToMessageId?: string;
     replyQuote?: string;
     clientNonce?: string;
+    /** The model a new run keeps, e.g. the one chosen for tasks from a call. */
+    modelPin?: { modelProvider: string; modelId: string; thinkingLevel: string | null };
   },
 ) {
   const existing = await replayExistingSend(deps, target.threadId, input.clientNonce);
@@ -768,6 +770,7 @@ export async function sendThreadMessage(
               botId: target.botId,
               userId: actor.userId,
               runId: steersUserMessage(active) ? active.id : null,
+              ...(input.modelPin ?? {}),
             },
           });
           await tx.message.update({ where: { id: message.id }, data: { runId: active.id } });
@@ -810,6 +813,7 @@ export async function sendThreadMessage(
             trigger: "user",
             clientNonce: sendRunClientNonce(input.clientNonce, message.id),
             sourceMessageId: message.id,
+            ...(input.modelPin ? { ...input.modelPin, modelPinned: true } : {}),
           },
         });
         await tx.message.update({ where: { id: message.id }, data: { runId: run.id } });

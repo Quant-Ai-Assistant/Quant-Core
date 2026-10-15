@@ -232,6 +232,12 @@ import {
 import type { BillingService } from "./billing.js";
 import { botProfileLabelsChanged, commitBotUpdate } from "./bot-update.js";
 import {
+  connectCallKey,
+  disconnectCallKey,
+  loadCallSettings,
+  setCallModel,
+} from "./call-settings.js";
+import {
   executionBlocksUserTakeover,
   resolveBusyBotName,
   toComputerStatus,
@@ -6093,6 +6099,20 @@ export function createRouter(deps: RouterDeps) {
       list: authed.runs.list.handler(async ({ context, input }) => ({
         runs: await listSpaceRuns(deps.prisma, context.actor, input.filter),
       })),
+    },
+    calls: {
+      settings: callsEnabled.calls.settings.handler(async ({ context }) =>
+        loadCallSettings(deps, context.actor),
+      ),
+      connect: callsEnabled.calls.connect.handler(async ({ context, input, signal }) =>
+        connectCallKey(deps, context.actor, { apiKey: input.apiKey, signal }),
+      ),
+      disconnect: callsEnabled.calls.disconnect.handler(async ({ context }) =>
+        disconnectCallKey(deps, context.actor),
+      ),
+      setModel: callsEnabled.calls.setModel.handler(async ({ context, input }) =>
+        setCallModel(deps, context.actor, input),
+      ),
     },
     voice: {
       catalog: authed.voice.catalog.handler(async () => listVoiceCatalog()),

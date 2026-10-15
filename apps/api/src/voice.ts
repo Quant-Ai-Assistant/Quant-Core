@@ -112,7 +112,7 @@ export async function loadVoiceCredential(deps: VoiceDeps, actor: Actor, provide
 export async function resolveVoiceTarget(
   deps: VoiceDeps,
   actor: Actor,
-  input: { botId?: string; voiceId?: string },
+  input: { botId?: string; voiceId?: string; provider?: string },
 ) {
   let botVoiceId: string | null = null;
   if (input.botId) {
@@ -123,9 +123,10 @@ export async function resolveVoiceTarget(
     if (!bot) throw new IsolationError();
     botVoiceId = bot.voiceId;
   }
-  const loaded = await loadDefaultVoiceCredential(deps, actor);
+  // A sample names the provider being set up; everything else speaks with the default one.
+  const loaded = await loadVoiceCredential(deps, actor, input.provider);
   if (!loaded) throw new NoVoiceConfigured("key");
-  const voiceId = input.voiceId || botVoiceId || loaded.cred.voiceId;
+  const voiceId = input.voiceId || (input.provider ? "" : botVoiceId) || loaded.cred.voiceId;
   if (!voiceId) throw new NoVoiceConfigured("voice");
   return { ...loaded, voiceId };
 }
@@ -328,7 +329,7 @@ export async function updateVoiceSpeechModel(
 export async function prepareVoice(
   deps: VoiceDeps,
   actor: Actor,
-  input: { text: string; voiceId?: string; botId?: string },
+  input: { text: string; voiceId?: string; botId?: string; provider?: string },
 ) {
   try {
     await resolveVoiceTarget(deps, actor, input);
@@ -344,7 +345,13 @@ export async function prepareVoice(
 export async function synthesizeVoice(
   deps: VoiceDeps,
   actor: Actor,
-  input: { text: string; voiceId?: string; botId?: string; signal?: AbortSignal },
+  input: {
+    text: string;
+    voiceId?: string;
+    botId?: string;
+    provider?: string;
+    signal?: AbortSignal;
+  },
 ) {
   const target = await resolveVoiceTarget(deps, actor, input);
   const text = input.text.trim();
@@ -409,6 +416,7 @@ export function mountVoiceHttpRoutes(
         text: String((body as { text?: unknown }).text ?? ""),
         voiceId: optionalString((body as { voiceId?: unknown }).voiceId),
         botId: optionalString((body as { botId?: unknown }).botId),
+        provider: optionalString((body as { provider?: unknown }).provider),
         signal: AbortSignal.any(
           [c.req.raw.signal, AbortSignal.timeout(SPEAK_TIMEOUT_MS)].filter(
             Boolean,

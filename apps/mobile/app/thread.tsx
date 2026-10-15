@@ -1841,7 +1841,7 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
   }
 
   /** `switchedHere`: the caller asked another bot to put them through, so this bot answers. */
-  /** Calls are live conversations; the button only shows once the OpenAI voice key is set up. */
+  /** Calls are live conversations; the button only shows once the calls OpenAI key is set up. */
   async function startVoiceCall(switchedHere = false) {
     if (readOnly) return;
     const targetBotId = botId;
@@ -1854,7 +1854,7 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
       ]);
       if (activeBotId.current !== targetBotId) return;
       if (!status?.live) {
-        router.push("/voice");
+        router.push("/calls");
         return;
       }
       const botName = displayName ?? t("Bot");

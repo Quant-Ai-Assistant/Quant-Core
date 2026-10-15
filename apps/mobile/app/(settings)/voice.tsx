@@ -18,7 +18,6 @@ import { mobileTokens } from "../../lib/appearance";
 import { loadCallSoundsEnabled, playCallCue, saveCallSoundsEnabled } from "../../lib/call-sounds";
 import { loadDeviceVoiceEnabled, saveDeviceVoiceEnabled } from "../../lib/device-voice";
 import { useI18n } from "../../lib/i18n";
-import { syncIncomingCalls } from "../../lib/incoming-calls";
 import { native, useThemedStyles } from "../../lib/native";
 import { errorText } from "../../lib/user-error";
 import { speakText } from "../../lib/voice";
@@ -239,8 +238,6 @@ export default function VoiceSettings() {
       });
       setApiKey("");
       await load(selected.id);
-      // Connecting OpenAI is what lets bots call, so the phone starts ringing for them.
-      void syncIncomingCalls().catch(() => undefined);
     } catch (err) {
       setError(errorText(err, t("Could not connect")));
     } finally {
@@ -256,7 +253,6 @@ export default function VoiceSettings() {
       await rpc("voice/disconnect", { provider: credential.provider });
       setApiKey("");
       await load(credential.provider);
-      void syncIncomingCalls().catch(() => undefined);
     } catch (err) {
       setError(errorText(err, t("Could not disconnect")));
     } finally {

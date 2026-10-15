@@ -826,4 +826,10 @@ export const RU_MESSAGES: Record<string, string> = {
   "Incoming call": "Входящий звонок",
   "Let bots' calls show on the lock screen?": "Показывать звонки ботов на экране блокировки?",
   "This call is no longer ringing.": "Этот звонок уже не активен.",
+  Calls: "Звонки",
+  "Could not load call settings": "Не удалось загрузить настройки звонков",
+  "Could not save call settings": "Не удалось сохранить настройки звонков",
+  "OpenAI API key": "API-ключ OpenAI",
+  "Model for tasks": "Модель для задач",
+  "Bot's model": "Модель бота",
 };

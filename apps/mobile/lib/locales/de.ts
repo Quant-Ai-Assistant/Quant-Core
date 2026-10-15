@@ -825,4 +825,10 @@ export const DE_MESSAGES: Record<string, string> = {
   "Incoming call": "Eingehender Anruf",
   "Let bots' calls show on the lock screen?": "Anrufe von Bots auf dem Sperrbildschirm anzeigen?",
   "This call is no longer ringing.": "Dieser Anruf klingelt nicht mehr.",
+  Calls: "Anrufe",
+  "Could not load call settings": "Anrufeinstellungen konnten nicht geladen werden",
+  "Could not save call settings": "Anrufeinstellungen konnten nicht gespeichert werden",
+  "OpenAI API key": "OpenAI-API-Schlüssel",
+  "Model for tasks": "Modell für Aufgaben",
+  "Bot's model": "Modell des Bots",
 };

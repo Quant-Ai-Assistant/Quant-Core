@@ -538,6 +538,15 @@ export default function Account() {
             onPress={() => router.push("/voice")}
             title={t("Voice")}
           />
+          {me?.phoneCallsEnabled ? (
+            <SettingsRow
+              accessibilityRole="button"
+              chevron="right"
+              disabled={pending}
+              onPress={() => router.push("/calls")}
+              title={t("Calls")}
+            />
+          ) : null}
           <SettingsRow
             accessibilityRole="button"
             chevron="right"

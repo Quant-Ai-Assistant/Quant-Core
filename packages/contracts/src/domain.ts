@@ -1236,10 +1236,23 @@ export const VoiceStatusSchema = z.object({
   transcribe: z.boolean(),
   provider: z.string().nullable(),
   voiceId: z.string(),
-  /** Calls can be live conversations rather than turn by turn. */
+  /** Calls are available: the calls OpenAI key is connected. */
   live: z.boolean().optional(),
 });
 export type VoiceStatus = z.infer<typeof VoiceStatusSchema>;
+
+/**
+ * Phone calls. The call key is separate from the voice provider that speaks and transcribes,
+ * and may be the same OpenAI key or another one. The model runs the tasks the voice model
+ * hands to the bot during a call; null keeps the bot's own model.
+ */
+export const CallSettingsSchema = z.object({
+  connected: z.boolean(),
+  modelProvider: z.string().nullable(),
+  modelId: z.string().nullable(),
+  thinkingLevel: ThinkingLevelSchema.nullable(),
+});
+export type CallSettings = z.infer<typeof CallSettingsSchema>;
 
 export const DeploymentSettingsSchema = z.object({
   ownerUserId: Id.nullable(),
