@@ -39,7 +39,7 @@ The incoming call rings on any open Quant screen, shows why the bot is calling, 
 
 Limits:
 
-- one call per chat every 10 minutes;
+- one call at a time: a bot can ring again as soon as the previous call stops ringing;
 - no calls in group chats, from messaging channels or during another call;
 - a call rings for 45 seconds before it counts as missed;
 - an app or tab that is closed cannot ring: the missed call waits in the chat.

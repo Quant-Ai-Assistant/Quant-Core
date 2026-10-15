@@ -3,8 +3,6 @@ import { CALL_CLIENT_NONCE_PREFIX } from "./call-nonce.js";
 
 /** How long the bot's call rings before it counts as missed. */
 export const CALL_REQUEST_RING_MS = 45_000;
-/** Bots share this cooldown across every chat owned by the recipient. */
-export const CALL_REQUEST_COOLDOWN_MS = 10 * 60_000;
 
 export type CallRequestBlock = Extract<MessageBlock, { kind: "call_request" }>;
 

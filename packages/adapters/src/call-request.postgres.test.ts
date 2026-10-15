@@ -8,7 +8,7 @@ import { reconcileCallRequests, requestUserCall, settleCallRequest } from "./cal
 const postgres =
   process.env.VERIFY_DATABASE === "1" && process.env.DATABASE_URL ? describe : describe.skip;
 
-postgres("call isolation and cooldown (PostgreSQL)", () => {
+postgres("call isolation and one ring at a time (PostgreSQL)", () => {
   it("serializes concurrent rings, rejects other owners and spaces, and recovers expiry", async () => {
     const { prisma, pool } = createDb(process.env.DATABASE_URL!);
     const id = `call-test-${randomUUID()}`;

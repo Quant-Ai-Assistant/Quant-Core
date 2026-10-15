@@ -5,10 +5,10 @@ import type { MessageBlock } from "@rakazo/contracts";
 import type { CallRequestBlock } from "@rakazo/core";
 import {
   CALL_CLIENT_NONCE_PREFIX,
-  CALL_REQUEST_COOLDOWN_MS,
   CALL_REQUEST_RING_MS,
   callRequestBlock,
   callRequestClientNonce,
+  ringingCall,
 } from "@rakazo/core";
 import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
 import { appendEventInTransaction, createThreadMessageInTransaction, hasCallKey } from "@rakazo/db";
@@ -27,18 +27,19 @@ export async function callRequestRefusal(
   if (!(await hasCallKey(prisma, input.userId))) {
     return "The user has not set up calls. Send a message instead.";
   }
-  const since = new Date((input.now ?? Date.now()) - CALL_REQUEST_COOLDOWN_MS);
-  const recent = await prisma.message.findFirst({
+  // One call at a time: a bot may ring again as soon as the previous call stopped ringing.
+  const now = input.now ?? Date.now();
+  const recent = await prisma.message.findMany({
     where: {
       thread: { userId: input.userId },
       role: "bot",
       clientNonce: { startsWith: CALL_CLIENT_NONCE_PREFIX, endsWith: ":request" },
-      createdAt: { gt: since },
+      createdAt: { gt: new Date(now - CALL_REQUEST_RING_MS) },
     },
-    select: { id: true },
+    select: { role: true, blocks: true },
   });
-  if (recent) {
-    return "You already called the user in the last 10 minutes. Send a message instead of calling again.";
+  if (ringingCall(recent, now)) {
+    return "The user's devices are already ringing. Wait for that call to end before calling again.";
   }
   return null;
 }

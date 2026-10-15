@@ -33,7 +33,7 @@ function prismaWith(options: {
       findFirst: vi.fn(async () => (options.callKey === false ? null : { userId: "user-1" })),
     },
     message: {
-      findFirst: vi.fn(async () => (options.recent ? { id: "earlier" } : null)),
+      findMany: vi.fn(async () => (options.recent ? [{ role: "bot", blocks }] : [])),
       findUnique: vi.fn(async () => ({
         id: "message-1",
         blocks,
@@ -48,12 +48,12 @@ function prismaWith(options: {
     $transaction: vi.fn(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)),
   } as unknown as PrismaClient & {
     event: { create: ReturnType<typeof vi.fn> };
-    message: { updateMany: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn> };
+    message: { updateMany: ReturnType<typeof vi.fn>; findMany: ReturnType<typeof vi.fn> };
   };
 }
 
 describe("call_user", () => {
-  it("only rings a one-to-one chat once calls are set up, once per cooldown", async () => {
+  it("only rings a one-to-one chat once calls are set up, one call at a time", async () => {
     const input = { userId: "user-1", threadId: "thread-1", groupChat: false };
     await expect(callRequestRefusal(prismaWith({}), input)).resolves.toBeNull();
     await expect(
@@ -63,11 +63,15 @@ describe("call_user", () => {
       /not set up calls/,
     );
     await expect(callRequestRefusal(prismaWith({ recent: true }), input)).resolves.toMatch(
-      /last 10 minutes/,
+      /already ringing/,
     );
+    // A call that stopped ringing does not hold the next one back.
+    await expect(
+      callRequestRefusal(prismaWith({ recent: true, status: "declined" }), input),
+    ).resolves.toBeNull();
   });
 
-  it("limits calls across every chat owned by the recipient", async () => {
+  it("checks calls ringing in every chat owned by the recipient", async () => {
     const prisma = prismaWith({});
     await callRequestRefusal(prisma, {
       userId: "user-1",
@@ -75,12 +79,12 @@ describe("call_user", () => {
       groupChat: false,
       now: Date.parse("2026-10-14T18:30:00Z"),
     });
-    expect(prisma.message.findFirst).toHaveBeenCalledWith(
+    expect(prisma.message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           thread: { userId: "user-1" },
           clientNonce: { startsWith: "call:", endsWith: ":request" },
-          createdAt: { gt: new Date("2026-10-14T18:20:00Z") },
+          createdAt: { gt: new Date("2026-10-14T18:29:15Z") },
         }),
       }),
     );
@@ -208,6 +212,7 @@ describe("requestUserCall security", () => {
       },
       message: {
         findFirst: vi.fn(async () => saved),
+        findMany: vi.fn(async () => (saved ? [{ role: "bot", blocks: saved.blocks }] : [])),
         create: vi.fn(async ({ data }: { data: { blocks: unknown } }) => {
           saved = {
             id: "message-1",
