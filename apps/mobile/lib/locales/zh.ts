@@ -519,6 +519,8 @@ export const ZH_MESSAGES: Record<string, string> = {
   Team: "团队",
   "Team Computer": "团队电脑",
   "That doesn’t look like a URL": "这看起来不像 URL",
+  "The address answers, but the Quant server behind it is not running":
+    "该地址有响应，但其后的 Quant 服务器未运行",
   "That URL did not look like a Quant server": "该地址看起来不是 Quant 服务器",
   "That URL is missing a host": "该地址缺少主机名",
   "The server changed while starting the request": "请求开始时服务器已更改",

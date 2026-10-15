@@ -538,6 +538,8 @@ export const RU_MESSAGES: Record<string, string> = {
   Team: "Команда",
   "Team Computer": "Командный компьютер",
   "That doesn’t look like a URL": "Это не похоже на URL",
+  "The address answers, but the Quant server behind it is not running":
+    "Адрес отвечает, но сервер Quant за ним не запущен",
   "That URL did not look like a Quant server": "Этот адрес не похож на сервер Quant",
   "That URL is missing a host": "Для этого URL-адреса отсутствует хост",
   "The server changed while starting the request": "Сервер изменился при запуске запроса",
