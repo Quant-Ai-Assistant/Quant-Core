@@ -17,26 +17,35 @@
     </header>
 
     <main class="shell">
-      <h1 class="heading">Welcome to Quant</h1>
-      <p class="subheading">Choose which server this app should use.</p>
-
       <form id="setup" novalidate>
-        <fieldset class="choices">
-          <legend class="sr-only">Instance</legend>
+        <p id="step-count" class="step-count"></p>
 
-          <label class="choice" for="mode-new">
-            <input id="mode-new" type="radio" name="mode" value="new" checked />
-            <span class="choice-title">This computer</span>
-          </label>
+        <section id="step-choose" class="step">
+          <h1 class="heading">Where will Quant run?</h1>
+          <fieldset class="choices">
+            <legend class="sr-only">Instance</legend>
 
-          <label class="choice" for="mode-existing">
-            <input id="mode-existing" type="radio" name="mode" value="existing" />
-            <span class="choice-title">Existing instance</span>
-          </label>
-        </fieldset>
+            <label class="choice" for="mode-new">
+              <input id="mode-new" type="radio" name="mode" value="new" checked />
+              <span>
+                <span class="choice-title">This computer</span>
+                <span class="choice-hint">Server inside the app</span>
+              </span>
+            </label>
 
-        <section id="panel-new" class="panel">
-          <label class="field-label" for="gate-username">Username for other devices</label>
+            <label class="choice" for="mode-existing">
+              <input id="mode-existing" type="radio" name="mode" value="existing" />
+              <span>
+                <span class="choice-title">Another server</span>
+                <span class="choice-hint">Connect by address</span>
+              </span>
+            </label>
+          </fieldset>
+        </section>
+
+        <section id="step-access" class="step" hidden>
+          <h1 class="heading">Sign-in from other devices</h1>
+          <label class="field-label" for="gate-username">Username</label>
           <input
             id="gate-username"
             class="field"
@@ -47,47 +56,65 @@
           />
           <label class="field-label" for="gate-password">Password</label>
           <input id="gate-password" class="field" type="password" autocomplete="new-password" />
-          <p id="gate-address" class="field-hint" hidden></p>
-          <div id="stack" hidden>
-            <div class="stack-head">
-              <p id="stack-phase" class="stack-phase" role="status" aria-live="polite"></p>
-              <button
-                id="stack-details"
-                class="icon-button"
-                type="button"
-                aria-controls="stack-output"
-                aria-expanded="false"
-                aria-label="Technical details"
-                title="Technical details"
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                  <path d="M3.5 4.5 7 8l-3.5 3.5M8.5 11.5H13" />
-                </svg>
-              </button>
-            </div>
-            <div
-              id="stack-progress"
-              class="progress"
-              role="progressbar"
-              aria-label="Setup progress"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-              hidden
+          <p class="field-hint">Phones and browsers ask for these when they connect.</p>
+        </section>
+
+        <section id="step-port" class="step" hidden>
+          <h1 class="heading">Port</h1>
+          <label class="field-label" for="gate-port">Port</label>
+          <input
+            id="gate-port"
+            class="field field-port"
+            type="text"
+            inputmode="numeric"
+            spellcheck="false"
+            autocomplete="off"
+          />
+          <p id="gate-address" class="field-hint"></p>
+        </section>
+
+        <section id="step-install" class="step" hidden>
+          <h1 class="heading">Installing Quant</h1>
+          <div class="stack-head">
+            <p id="stack-phase" class="stack-phase" role="status" aria-live="polite"></p>
+            <button
+              id="stack-details"
+              class="icon-button"
+              type="button"
+              aria-controls="stack-output"
+              aria-expanded="false"
+              aria-label="Technical details"
+              title="Technical details"
             >
-              <div id="stack-progress-fill" class="progress-fill"></div>
-            </div>
-            <p id="stack-detail" class="stack-detail"></p>
-            <pre id="stack-output" class="stack-output" hidden></pre>
-            <div id="stack-docker-help" class="stack-help" hidden>
-              <button class="link" type="button" data-link="docker-desktop">Docker Desktop</button>
-              <button class="link" type="button" data-link="orbstack">OrbStack</button>
-              <button class="link" type="button" data-link="docker-engine">Docker Engine</button>
-            </div>
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="M3.5 4.5 7 8l-3.5 3.5M8.5 11.5H13" />
+              </svg>
+            </button>
+          </div>
+          <div
+            id="stack-progress"
+            class="progress"
+            role="progressbar"
+            aria-label="Setup progress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            hidden
+          >
+            <div id="stack-progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="stack-detail" class="stack-detail"></p>
+          <p id="install-address" class="field-hint"></p>
+          <pre id="stack-output" class="stack-output" hidden></pre>
+          <div id="stack-docker-help" class="stack-help" hidden>
+            <button class="link" type="button" data-link="docker-desktop">Docker Desktop</button>
+            <button class="link" type="button" data-link="orbstack">OrbStack</button>
+            <button class="link" type="button" data-link="docker-engine">Docker Engine</button>
           </div>
         </section>
 
-        <section id="panel-existing" class="panel" hidden>
+        <section id="step-existing" class="step" hidden>
+          <h1 class="heading">Connect to a server</h1>
           <label class="field-label" for="server-url">Server address</label>
           <input
             id="server-url"
@@ -112,8 +139,13 @@
         <p id="status" class="status" role="status" aria-live="polite"></p>
 
         <div class="actions">
-          <button id="check" class="button button-secondary" type="button">Check connection</button>
-          <button id="continue" class="button button-primary" type="submit">Continue</button>
+          <button id="back" class="button button-secondary actions-back" type="button" hidden>
+            Back
+          </button>
+          <button id="check" class="button button-secondary" type="button" hidden>
+            Check connection
+          </button>
+          <button id="continue" class="button button-primary" type="submit">Next</button>
         </div>
       </form>
     </main>

@@ -4,7 +4,13 @@ import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { type ElectronApplication, _electron as electron, expect, test } from "@playwright/test";
+import {
+  type ElectronApplication,
+  _electron as electron,
+  expect,
+  type Page,
+  test,
+} from "@playwright/test";
 
 const APP_MARKER = "Existing Quant instance ready";
 const execFileAsync = promisify(execFile);
@@ -76,6 +82,13 @@ function launch(extraEnv: Record<string, string> = {}) {
   });
 }
 
+/** Picks Another server on the first step and moves on to its address. */
+async function chooseExisting(setup: Page) {
+  await setup.getByRole("radio", { name: /Another server/ }).check();
+  await setup.getByRole("button", { name: "Next" }).click();
+  await expect(setup.getByRole("heading", { name: "Connect to a server" })).toBeVisible();
+}
+
 test("first run asks whether to use a local or existing instance", async () => {
   app = await launch();
   if (process.env.RAKAZO_E2E_EXECUTABLE) {
@@ -83,19 +96,19 @@ test("first run asks whether to use a local or existing instance", async () => {
   }
   const setup = await app.firstWindow();
 
-  await expect(setup.getByRole("heading", { name: "Welcome to Quant" })).toBeVisible();
-  await expect(setup.getByText("Choose which server this app should use.")).toBeVisible();
+  await expect(setup.getByRole("heading", { name: "Where will Quant run?" })).toBeVisible();
+  await expect(setup.getByText("Step 1 of 3")).toBeVisible();
   await expect(setup.getByText("This computer")).toBeVisible();
-  await expect(setup.getByText("Existing instance")).toBeVisible();
+  await expect(setup.getByText("Another server")).toBeVisible();
   await expect(setup.locator(".card")).toHaveCount(0);
 
-  // A new instance is the default: the app runs the stack itself at the local address.
+  // A new instance is the default, and choosing it starts nothing until the last step.
   await expect(setup.getByRole("radio", { name: /This computer/ })).toBeChecked();
-  // The panel is empty until a start begins, so check the attribute rather than the box.
-  await expect(setup.locator("#panel-new")).toHaveJSProperty("hidden", false);
-  await expect(setup.locator("#stack")).toBeHidden();
+  await expect(setup.getByRole("button", { name: "Back" })).toBeHidden();
   await expect(setup.getByRole("button", { name: "Check connection" })).toBeHidden();
-  await expect(setup.locator("#panel-existing")).toBeHidden();
+  await setup.getByRole("radio", { name: /Another server/ }).check();
+  await expect(setup.getByText("Step 1 of 2")).toBeVisible();
+  await setup.getByRole("radio", { name: /This computer/ }).check();
 
   await setup.screenshot({
     path: path.join(import.meta.dirname, "screenshots", "01-setup-new-instance.png"),
@@ -134,8 +147,9 @@ test("connecting to an existing instance verifies, saves, and opens it", async (
   app = await launch();
   const setup = await app.firstWindow();
 
-  await setup.getByRole("radio", { name: /Existing instance/ }).check();
-  await expect(setup.locator("#panel-new")).toBeHidden();
+  await chooseExisting(setup);
+  await expect(setup.getByText("Step 2 of 2")).toBeVisible();
+  await expect(setup.locator("#gate-username")).toBeHidden();
 
   await setup.locator("#server-url").fill(serverUrl);
   await setup.getByRole("button", { name: "Check connection" }).click();
@@ -171,7 +185,7 @@ test("connecting to an existing instance verifies, saves, and opens it", async (
 test("Continue verifies and remembers the instance so setup does not run again", async () => {
   app = await launch();
   const setup = await app.firstWindow();
-  await setup.getByRole("radio", { name: /Existing instance/ }).check();
+  await chooseExisting(setup);
   await setup.locator("#server-url").fill(serverUrl);
   const firstRun = await Promise.all([
     app.waitForEvent("window"),
@@ -200,7 +214,7 @@ test("an unreachable address is reported instead of being saved", async () => {
   app = await launch();
   const setup = await app.firstWindow();
 
-  await setup.getByRole("radio", { name: /Existing instance/ }).check();
+  await chooseExisting(setup);
   await setup.locator("#server-url").fill(closedUrl);
   await setup.getByRole("button", { name: "Check connection" }).click();
 
@@ -233,7 +247,7 @@ test("an HTTP error document is not accepted after a healthy probe", async () =>
   try {
     app = await launch();
     const setup = await app.firstWindow();
-    await setup.getByRole("radio", { name: /Existing instance/ }).check();
+    await chooseExisting(setup);
     await setup.locator("#server-url").fill(`http://127.0.0.1:${address.port}`);
     await setup.getByRole("button", { name: "Continue" }).click();
 
@@ -268,7 +282,7 @@ test("a session-pending shell skeleton is not accepted as a ready app", async ()
   try {
     app = await launch();
     const setup = await app.firstWindow();
-    await setup.getByRole("radio", { name: /Existing instance/ }).check();
+    await chooseExisting(setup);
     await setup.locator("#server-url").fill(`http://127.0.0.1:${address.port}`);
     await setup.getByRole("button", { name: "Continue" }).click();
 
@@ -320,7 +334,7 @@ for (const { name, surface } of [
     try {
       app = await launch();
       const setup = await app.firstWindow();
-      await setup.getByRole("radio", { name: /Existing instance/ }).check();
+      await chooseExisting(setup);
       await setup.locator("#server-url").fill(`http://127.0.0.1:${address.port}`);
       const appWindow = await Promise.all([
         app.waitForEvent("window"),
@@ -368,7 +382,7 @@ test("a shell mount before workspace bootstrap is not accepted", async () => {
   try {
     app = await launch();
     const setup = await app.firstWindow();
-    await setup.getByRole("radio", { name: /Existing instance/ }).check();
+    await chooseExisting(setup);
     await setup.locator("#server-url").fill(`http://127.0.0.1:${address.port}`);
     await setup.getByRole("button", { name: "Continue" }).click();
 
@@ -405,7 +419,7 @@ test("a session-ready marker without a route surface is not accepted", async () 
   try {
     app = await launch();
     const setup = await app.firstWindow();
-    await setup.getByRole("radio", { name: /Existing instance/ }).check();
+    await chooseExisting(setup);
     await setup.locator("#server-url").fill(`http://127.0.0.1:${address.port}`);
     await setup.getByRole("button", { name: "Continue" }).click();
 
@@ -426,7 +440,7 @@ test("a malformed address is rejected before anything is written", async () => {
   app = await launch();
   const setup = await app.firstWindow();
 
-  await setup.getByRole("radio", { name: /Existing instance/ }).check();
+  await chooseExisting(setup);
   await setup.locator("#server-url").fill("not a server");
   await setup.getByRole("button", { name: "Continue" }).click();
 
@@ -448,7 +462,7 @@ test("a generic web page is not accepted as a Quant server", async () => {
   try {
     app = await launch();
     const setup = await app.firstWindow();
-    await setup.getByRole("radio", { name: /Existing instance/ }).check();
+    await chooseExisting(setup);
     await setup.locator("#server-url").fill(`http://127.0.0.1:${address.port}`);
     await setup.getByRole("button", { name: "Continue" }).click();
 
@@ -479,7 +493,7 @@ test("the setup probe refuses redirects instead of following them", async () => 
   try {
     app = await launch();
     const setup = await app.firstWindow();
-    await setup.getByRole("radio", { name: /Existing instance/ }).check();
+    await chooseExisting(setup);
     await setup.locator("#server-url").fill(`http://127.0.0.1:${address.port}`);
     await setup.getByRole("button", { name: "Continue" }).click();
 
@@ -506,8 +520,8 @@ test("an unreachable saved server falls back to setup with a recovery message", 
   app = await launch();
   const setup = await app.firstWindow();
 
-  await expect(setup.getByRole("heading", { name: "Welcome to Quant" })).toBeVisible();
-  await expect(setup.getByRole("radio", { name: /Existing instance/ })).toBeChecked();
+  // The saved address is where the fix goes, so setup opens on it.
+  await expect(setup.getByRole("heading", { name: "Connect to a server" })).toBeVisible();
   await expect(setup.locator("#server-url")).toHaveValue(closedUrl);
   await expect(setup.locator("#status")).toContainText("Could not reconnect to the saved server.");
   await setup.screenshot({
@@ -528,7 +542,7 @@ test("the native application menu can reopen setup without exposing setup IPC to
   });
   const setup = await setupPromise;
 
-  await expect(setup.getByRole("heading", { name: "Welcome to Quant" })).toBeVisible();
+  await expect(setup.getByRole("heading", { name: "Where will Quant run?" })).toBeVisible();
   await expect(setup.locator("#status")).toBeEmpty();
 
   // Closing setup without saving restores the connected instance.

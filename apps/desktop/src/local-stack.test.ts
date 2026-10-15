@@ -8,11 +8,13 @@ import {
   ensureStackEnv,
   ensureStackToken,
   envValue,
+  GATE_DEFAULT_PORT,
   gateFromEnv,
   initialStackState,
   LocalStackController,
   type LocalStackDeps,
   parseGateChange,
+  parseGatePort,
   readStackGate,
   readStackToken,
   reduceStackState,
@@ -326,6 +328,14 @@ describe("gate settings", () => {
     expect(gateFromEnv("QUANT_BASIC_USER=me\nQUANT_BASIC_HASH='h'\nQUANT_PORT=0")).toBeNull();
   });
 
+  it("accepts only an unprivileged whole port number", () => {
+    expect(parseGatePort(8080)).toBe(8080);
+    expect(parseGatePort(1023)).toBeNull();
+    expect(parseGatePort(65536)).toBeNull();
+    expect(parseGatePort(8080.5)).toBeNull();
+    expect(parseGatePort("8080")).toBeNull();
+  });
+
   it("keeps the gate when nothing is sent and refuses malformed credentials", () => {
     expect(parseGateChange(undefined)).toEqual({ kind: "keep" });
     expect(parseGateChange(null)).toEqual({ kind: "off" });
@@ -390,12 +400,12 @@ describe("LocalStackController", () => {
   };
 
   it("opens the gate with hashed credentials on its own port and the gate profile", async () => {
-    const stack = controller({ allocateGatePort: async () => 8081 }, withHash);
+    const stack = controller({}, withHash);
 
-    const state = await stack.start({
-      kind: "set",
-      access: { username: "me", password: "hunter2-pw" },
-    });
+    const state = await stack.start(
+      { kind: "set", access: { username: "me", password: "hunter2-pw" } },
+      8081,
+    );
     expect(state.phase).toBe("ready");
 
     const stackPath = path.join(root, "stack");
@@ -435,13 +445,13 @@ describe("LocalStackController", () => {
   });
 
   it("keeps the gate and its port on a plain restart, and closes it on request", async () => {
-    await controller({ allocateGatePort: async () => 8081 }, withHash).start({
-      kind: "set",
-      access: { username: "me", password: "hunter2-pw" },
-    });
+    await controller({}, withHash).start(
+      { kind: "set", access: { username: "me", password: "hunter2-pw" } },
+      8081,
+    );
     calls.length = 0;
 
-    await controller({ allocateGatePort: async () => 9999 }, withHash).start();
+    await controller({}, withHash).start();
     expect(calls.some((call) => call.args[7] === "run")).toBe(false);
     expect(calls.find((call) => call.args[7] === "up")?.env.COMPOSE_PROFILES).toBe("gate");
     await expect(readStackGate(path.join(root, "stack"))).resolves.toEqual({
@@ -459,8 +469,39 @@ describe("LocalStackController", () => {
     await expect(readStackGate(path.join(root, "stack"))).resolves.toBeNull();
   });
 
+  it("opens the gate on the suggested port when none is chosen", async () => {
+    await controller({}, withHash).start({
+      kind: "set",
+      access: { username: "me", password: "hunter2-pw" },
+    });
+    await expect(readStackGate(path.join(root, "stack"))).resolves.toEqual({
+      username: "me",
+      port: GATE_DEFAULT_PORT,
+    });
+  });
+
+  it("moves the gate to a new port without asking for the password again", async () => {
+    await controller({}, withHash).start(
+      { kind: "set", access: { username: "me", password: "hunter2-pw" } },
+      8081,
+    );
+    const stackPath = path.join(root, "stack");
+    const token = envValue(
+      await readFile(path.join(stackPath, STACK_ENV_FILE), "utf8"),
+      "QUANT_GATE_TOKEN",
+    );
+    calls.length = 0;
+
+    await controller({}, withHash).start({ kind: "keep" }, 9090);
+    expect(calls.some((call) => call.args[7] === "run")).toBe(false);
+    await expect(readStackGate(stackPath)).resolves.toEqual({ username: "me", port: 9090 });
+    // Devices the gate remembered stay signed in: only the port moved.
+    const env = await readFile(path.join(stackPath, STACK_ENV_FILE), "utf8");
+    expect(envValue(env, "QUANT_GATE_TOKEN")).toBe(token);
+  });
+
   it("fails without touching .env when Caddy does not return a hash", async () => {
-    const stack = controller({ allocateGatePort: async () => 8081 }, (args) =>
+    const stack = controller({}, (args) =>
       args[7] === "run" ? { code: 1, stderr: "boom" } : ok(args),
     );
 

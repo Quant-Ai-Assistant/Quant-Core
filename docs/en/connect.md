@@ -52,10 +52,10 @@ chmod +x Quant-*.AppImage
 
 The desktop app can run the Quant server itself on the same computer with Docker:
 
-1. In the setup window choose **This computer**.
-2. To reach it from a phone or another computer, fill in **Username for other devices** and **Password**. Leave them empty to keep the server to this computer.
-3. Click **Continue**. The app downloads and starts Quant, then opens it.
+1. In the setup window choose **This computer** and click **Next**.
+2. Enter the **Username** and **Password** that phones and other computers will use, and click **Next**.
+3. Enter the **Port** the server listens on, `8080` by default, and click **Install**. A busy port is refused before anything is installed. The app downloads and starts Quant, then opens it.
 
-With a username set, the setup window shows a tunnel address such as `http://localhost:8080`: the gate that asks other devices for that username and password. Point a tunnel (Cloudflare Tunnel, ngrok, Tailscale Funnel) at it and use the tunnel's public `https://` address on the phone, together with the same username and password. Devices on the same network can also use `http://<this computer's address>:8080`.
+The port step shows the tunnel address, for example `http://localhost:8080`: the gate that asks other devices for that username and password. Point a tunnel (Cloudflare Tunnel, ngrok, Tailscale Funnel) at it and use the tunnel's public `https://` address on the phone, together with the same username and password. Devices on the same network can also use `http://<this computer's address>:8080`. The port stays the same on every launch, so the tunnel keeps working.
 
-To change the username or password, or to close access, open **Change Quant Server…**, edit the fields under **This computer** and click **Continue**. Leave the password empty to keep the current one. A new password signs the other devices out of the gate.
+To change the username, password or port, open **Change Quant Server…**, choose **This computer** and go through the steps again. Leave the password empty to keep the current one. A new password signs the other devices out of the gate.

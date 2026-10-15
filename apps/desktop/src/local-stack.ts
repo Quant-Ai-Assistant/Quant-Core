@@ -21,8 +21,10 @@ export const STACK_ENV_FILE = ".env";
 export const STACK_WEB_URL_FILE = ".desktop-web-url";
 export const STACK_TOKEN_FILE = ".desktop-stack-token";
 export const STACK_GATE_FILE = "Caddyfile.gate";
-/** The gate's preferred host port; a busy one falls back to any free port. */
+/** The port setup suggests for the gate; the person may choose another one. */
 export const GATE_DEFAULT_PORT = 8080;
+export const GATE_PORT_MIN = 1024;
+export const GATE_PORT_MAX = 65535;
 export const STACK_OUTPUT_LINES = 20;
 export const STACK_HEALTH_TIMEOUT_MS = 120_000;
 export const COMPOSE_WAIT_TIMEOUT_S = 300;
@@ -41,13 +43,24 @@ export async function allocateLoopbackPort(): Promise<number> {
   return listenOnce(0, "127.0.0.1");
 }
 
-/** The gate listens on every interface, so the preferred port must be free on all of them. */
-export async function allocateGatePort(): Promise<number> {
+/** The gate listens on every interface, so its port must be free on all of them. */
+export async function gatePortFree(port: number): Promise<boolean> {
   try {
-    return await listenOnce(GATE_DEFAULT_PORT, "0.0.0.0");
+    await listenOnce(port, "0.0.0.0");
+    return true;
   } catch {
-    return allocateLoopbackPort();
+    return false;
   }
+}
+
+/** A port the gate may use: unprivileged, so binding it needs no administrator rights. */
+export function parseGatePort(value: unknown): number | null {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= GATE_PORT_MIN &&
+    value <= GATE_PORT_MAX
+    ? value
+    : null;
 }
 
 function listenOnce(port: number, host: string): Promise<number> {
@@ -371,7 +384,6 @@ export interface LocalStackDeps {
   resourceDir: string;
   localWebUrl: string;
   allocatePort?: () => Promise<number>;
-  allocateGatePort?: () => Promise<number>;
   imageTag: string;
   /** Returns the authenticated running image tag, or null for any other listener. */
   probe: (url: string, signal: AbortSignal, token: string) => Promise<string | null>;
@@ -408,6 +420,8 @@ export class LocalStackController {
   private inFlight: AbortController | null = null;
   private ticket = 0;
   private gateChange: GateChange = { kind: "keep" };
+  /** The gate port the next attempt applies; null keeps the saved one. */
+  private gatePort: number | null = null;
   /** Whether the current attempt runs the gate profile. */
   private gateOn = false;
   /** Starts ticketed at or below this were superseded by a later stop and must not run. */
@@ -445,9 +459,13 @@ export class LocalStackController {
    * Idempotent while a start is in flight; otherwise begins a fresh attempt from any
    * phase, after any stop still running so `compose up` and `compose stop` never overlap.
    */
-  start(gate: GateChange = { kind: "keep" }): Promise<DesktopLocalStackState> {
+  start(
+    gate: GateChange = { kind: "keep" },
+    port: number | null = null,
+  ): Promise<DesktopLocalStackState> {
     if (this.running !== null) return this.running;
     this.gateChange = gate;
+    this.gatePort = port;
     const ticket = ++this.ticket;
     const attempt = (this.stopping ?? Promise.resolve())
       .then(() => (ticket <= this.voidBefore ? this.current : this.run()))
@@ -572,6 +590,8 @@ export class LocalStackController {
     this.currentStackToken = stackToken;
     const gate = this.gateChange;
     this.gateChange = { kind: "keep" };
+    const requestedPort = this.gatePort;
+    this.gatePort = null;
     const envPath = path.join(this.deps.stackDir, STACK_ENV_FILE);
     const env = await readFile(envPath, "utf8");
     const existingGate = gateFromEnv(env);
@@ -595,8 +615,8 @@ export class LocalStackController {
       return;
     }
 
+    const port = requestedPort ?? existingGate?.port ?? GATE_DEFAULT_PORT;
     if (gate.kind === "set") {
-      const port = existingGate?.port ?? (await (this.deps.allocateGatePort ?? allocateGatePort)());
       const hash = await this.hashGatePassword(binary, gate.access.password, signal);
       if (signal.aborted) return this.push({ type: "failed", message: START_INTERRUPTED });
       if (hash === null) {
@@ -617,6 +637,8 @@ export class LocalStackController {
           QUANT_HTTPS_BIND: "127.0.0.1:",
         }),
       );
+    } else if (gate.kind === "keep" && existingGate !== null && port !== existingGate.port) {
+      await writePrivateFile(envPath, withEnvValues(env, { QUANT_PORT: String(port) }));
     } else if (gate.kind === "off" && existingGate !== null) {
       await writePrivateFile(
         envPath,
