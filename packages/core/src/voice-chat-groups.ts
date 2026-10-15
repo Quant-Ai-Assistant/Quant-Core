@@ -54,7 +54,12 @@ export function groupVoiceChats<T extends VoiceChatMessage>(messages: T[]): Thre
           open = undefined;
           continue;
         }
-        if (message.callId === open.callId && message.runId) openRunIds.add(message.runId);
+        if (
+          message.callId === open.callId &&
+          message.runId &&
+          message.blocks[0]?.kind !== "call_request"
+        )
+          openRunIds.add(message.runId);
         continue;
       }
       open = undefined;
@@ -68,30 +73,16 @@ export function groupVoiceChats<T extends VoiceChatMessage>(messages: T[]): Thre
         callId: message.callId,
         messages: [message],
       };
-      openRunIds = new Set(message.runId ? [message.runId] : []);
+      // A request belongs to the calling run, not to a spoken turn.
+      openRunIds = new Set(
+        message.runId && message.blocks[0]?.kind !== "call_request" ? [message.runId] : [],
+      );
       items.push(open);
       continue;
     }
     items.push({ kind: "message", message });
   }
   return items;
-}
-
-/** Newest bot turn still inside this call's open card. Typed turns and wrap-up sit outside. */
-export function latestSpokenCallReply<T extends VoiceChatMessage>(
-  messages: T[],
-  callId: string,
-): T | undefined {
-  const groups = groupVoiceChats(messages).filter(
-    (item): item is VoiceChatGroup<T> => item.kind === "voiceChat" && item.callId === callId,
-  );
-  const group = groups.at(-1);
-  if (!group || group.marker) return undefined;
-  for (let index = group.messages.length - 1; index >= 0; index -= 1) {
-    const message = group.messages[index];
-    if (message?.role === "bot") return message;
-  }
-  return undefined;
 }
 
 function isCallMarker(message: VoiceChatMessage): boolean {

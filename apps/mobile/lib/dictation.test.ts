@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpeechRecognizer } from "./dictation";
-import { ENDPOINT_SILENCE_MS, listen, setSpeechRecognizer, stop } from "./dictation";
+import { listen, setSpeechRecognizer, stop, submit } from "./dictation";
 
 type Listener = (payload: never) => void;
 
@@ -58,29 +58,20 @@ afterEach(() => {
 });
 
 describe("mobile dictation", () => {
-  it("ends the turn only after the silence window, not on the recognizer's own final", async () => {
+  it("keeps a held session open through pauses until it is submitted", async () => {
     const onFinal = vi.fn();
-    const interims: string[] = [];
-    await listen({ onFinal, onInterim: (text) => interims.push(text) });
-    expect(fake.start).toHaveBeenCalledWith({
-      lang: "en-US",
-      interimResults: true,
-      continuous: true,
-    });
-
-    fake.hear("how is the");
-    fake.hear("how is the", true);
-    vi.advanceTimersByTime(ENDPOINT_SILENCE_MS - 400);
+    await listen({ onFinal });
+    fake.hear("remind me");
+    vi.advanceTimersByTime(10_000);
     expect(onFinal).not.toHaveBeenCalled();
-
-    fake.hear("deploy going");
-    vi.advanceTimersByTime(ENDPOINT_SILENCE_MS - 1);
+    for (let index = 0; index < 8; index += 1) {
+      fake.end();
+      vi.advanceTimersByTime(RESTART_CAP_MS);
+    }
     expect(onFinal).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(1);
-
-    expect(onFinal).toHaveBeenCalledTimes(1);
-    expect(onFinal).toHaveBeenCalledWith("how is the deploy going");
-    expect(interims).toEqual(["how is the", "how is the", "how is the deploy going"]);
+    fake.hear("tomorrow");
+    submit();
+    expect(onFinal).toHaveBeenCalledWith("remind me tomorrow");
   });
 
   it("restarts a session that ended mid-turn and carries the words already heard", async () => {
@@ -94,20 +85,8 @@ describe("mobile dictation", () => {
     expect(fake.start).toHaveBeenCalledTimes(2);
 
     fake.hear("friend");
-    vi.advanceTimersByTime(ENDPOINT_SILENCE_MS);
+    submit();
     expect(onFinal).toHaveBeenCalledWith("hello there friend");
-  });
-
-  it("gives up after restarts that hear nothing", async () => {
-    const onFinal = vi.fn();
-    await listen({ onFinal });
-    fake.hear("half a sentence");
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      fake.end();
-      vi.advanceTimersByTime(RESTART_CAP_MS);
-    }
-    expect(onFinal).toHaveBeenCalledTimes(1);
-    expect(onFinal).toHaveBeenCalledWith("half a sentence");
   });
 
   it("never finalizes an aborted session", async () => {

@@ -1,7 +1,7 @@
 import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 import { getItemAsync } from "expo-secure-store";
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
-import { playCallCue, releaseWaitSound, startWaitSound } from "./call-sounds";
+import { playCallCue, stopCallCues } from "./call-sounds";
 
 // Metro resolves bundled audio assets to numeric IDs.
 const assets = await vi.hoisted(async () => {
@@ -24,7 +24,6 @@ const player = {
   play: vi.fn(),
   pause: vi.fn(),
   remove: vi.fn(),
-  seekTo: vi.fn(async () => undefined),
   addListener: vi.fn(() => ({ remove: vi.fn() })),
 };
 
@@ -37,7 +36,7 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
-  releaseWaitSound();
+  stopCallCues();
   vi.useRealTimers();
 });
 afterAll(() => {
@@ -58,16 +57,6 @@ it.each(["start", "end"] as const)(
   },
 );
 
-it("plays waiting audio without changing the active recognition audio mode", async () => {
-  const playing = startWaitSound();
-  await vi.advanceTimersByTimeAsync(0);
-  expect(player.play).toHaveBeenCalledOnce();
-  expect(setAudioModeAsync).not.toHaveBeenCalled();
-
-  releaseWaitSound();
-  await playing;
-});
-
 it("cancels a cue pending its settings read at hang-up", async () => {
   let resolve!: (value: string | null) => void;
   vi.mocked(getItemAsync).mockReturnValueOnce(
@@ -76,7 +65,7 @@ it("cancels a cue pending its settings read at hang-up", async () => {
     }),
   );
   const playing = playCallCue("start");
-  releaseWaitSound();
+  stopCallCues();
   resolve(null);
   await playing;
   expect(createAudioPlayer).not.toHaveBeenCalled();
@@ -86,7 +75,7 @@ it("stops and removes a playing cue immediately at hang-up", async () => {
   const playing = playCallCue("end");
   await vi.advanceTimersByTimeAsync(0);
   expect(player.play).toHaveBeenCalledOnce();
-  releaseWaitSound();
+  stopCallCues();
   expect(player.pause).toHaveBeenCalledOnce();
   expect(player.remove).toHaveBeenCalledOnce();
   await playing;
@@ -95,7 +84,7 @@ it("stops and removes a playing cue immediately at hang-up", async () => {
 });
 
 it("still plays a settings preview after call cleanup", async () => {
-  releaseWaitSound();
+  stopCallCues();
   const playing = playCallCue("start");
   await vi.advanceTimersByTimeAsync(1600);
   await playing;
@@ -122,7 +111,7 @@ it("cancels a cue pending its audio import at hang-up", async () => {
     const sounds = await import("./call-sounds");
     const playing = sounds.playCallCue("start");
     await started;
-    sounds.releaseWaitSound();
+    sounds.stopCallCues();
     finishImport();
     await playing;
     expect(createAudioPlayer).not.toHaveBeenCalled();

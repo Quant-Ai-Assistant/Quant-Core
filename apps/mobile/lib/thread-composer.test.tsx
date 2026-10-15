@@ -60,6 +60,39 @@ vi.mock("../components/glass-surface", () => ({
 vi.mock("../components/native-symbol", () => ({ NativeSymbol: () => null }));
 vi.mock("./native", () => ({ useMobileTokens: () => ({}), useResolvedAppearance: () => "light" }));
 vi.mock("./i18n", () => ({ useI18n: () => ({ t: (text: string) => text }) }));
+vi.mock("react-native-gesture-handler", () => {
+  const chain: Record<string, () => unknown> = {};
+  for (const name of ["runOnJS", "minDistance", "shouldCancelWhenOutside", "onBegin", "onUpdate"]) {
+    chain[name] = () => chain;
+  }
+  chain.onFinalize = () => chain;
+  return {
+    Gesture: { Pan: () => chain },
+    GestureDetector: ({ children }: { children?: ReactNode }) => children,
+  };
+});
+const hold = vi.hoisted(() => ({
+  onText: (_text: string) => {},
+  disabled: false as boolean | undefined,
+}));
+vi.mock("./hold-to-talk", () => ({
+  useHoldToTalk: (options: { onText: (text: string) => void; disabled?: boolean }) => {
+    hold.onText = options.onText;
+    hold.disabled = options.disabled;
+    return {
+      recording: null,
+      transcribing: false,
+      transcript: "",
+      lift: 0,
+      notice: null,
+      press: () => {},
+      move: () => {},
+      release: () => {},
+      submit: () => {},
+      cancel: () => {},
+    };
+  },
+}));
 
 const skill = {
   id: "skill-1",
@@ -75,7 +108,6 @@ const props: Omit<ComponentProps<typeof ThreadComposer>, "ref"> = {
   composerPrompt: "Message…",
   replyQuote: null,
   attachmentIds: [],
-  botId: "bot-1",
   onCall: false,
   working: false,
   sending: false,
@@ -84,7 +116,7 @@ const props: Omit<ComponentProps<typeof ThreadComposer>, "ref"> = {
   attachFrom: vi.fn(),
   send: vi.fn(async () => {}),
   stop: vi.fn(async () => {}),
-  startVoiceCall: vi.fn(async () => {}),
+  holdToTalk: { transcribe: false },
   onSlashAction: vi.fn(),
 };
 
@@ -192,13 +224,26 @@ describe("thread composer isolation", () => {
     expect(composer.current!.snapshot().skill).toBeNull();
   });
 
-  it("clears a slash query before routing and uses the call control for an empty draft", () => {
+  it("clears a slash query before routing and offers hold-to-talk for an empty draft", () => {
     type("/settings");
     press("Chat Settings");
     expect(props.onSlashAction).toHaveBeenCalledWith("chat-settings");
     expect(container.querySelector("input")!.value).toBe("");
     expect(container.querySelector('[data-testid="slash-picker"]')).toBeNull();
-    press("Call");
-    expect(props.startVoiceCall).toHaveBeenCalledOnce();
+    expect(container.querySelector('[aria-label="Call"]')).toBeNull();
+    expect(container.querySelector('[data-testid="hold-to-talk"]')).not.toBeNull();
+  });
+
+  it("sends dictated text through the draft, so a refused send keeps the words", () => {
+    act(() => hold.onText("hello there"));
+    expect(container.querySelector("input")!.value).toBe("hello there");
+    expect(props.send).toHaveBeenCalled();
+    expect(composer.current!.snapshot().promptText).toBe("hello there");
+  });
+
+  it("shows Send instead of the microphone where hold-to-talk is unavailable", () => {
+    render({ holdToTalk: null });
+    expect(container.querySelector('[data-testid="hold-to-talk"]')).toBeNull();
+    expect(container.querySelector('button[aria-label="Send"]')).not.toBeNull();
   });
 });

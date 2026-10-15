@@ -9,9 +9,12 @@ import {
   truncateSlashDescription,
 } from "@rakazo/core";
 import type { Ref } from "react";
-import { useImperativeHandle, useMemo, useState } from "react";
+import { useEffect, useImperativeHandle, useMemo, useState } from "react";
 import type { ViewStyle } from "react-native";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import type { HoldToTalk } from "../lib/hold-to-talk";
+import { useHoldToTalk } from "../lib/hold-to-talk";
 import { useI18n } from "../lib/i18n";
 import { useMobileTokens, useResolvedAppearance } from "../lib/native";
 import type { ComposerSnapshot } from "../lib/thread-feedback";
@@ -31,7 +34,6 @@ type ThreadComposerProps = {
   replyTargetId?: string;
   replyQuote: string | null;
   attachmentIds: string[];
-  botId?: string;
   onCall: boolean;
   working: boolean;
   sending: boolean;
@@ -40,7 +42,8 @@ type ThreadComposerProps = {
   attachFrom: (source: string) => void;
   send: () => Promise<void>;
   stop: () => Promise<void>;
-  startVoiceCall: () => Promise<void>;
+  /** Hold-to-talk is available in this thread; `transcribe` sends the audio to the voice provider. */
+  holdToTalk: { transcribe: boolean } | null;
   onSlashAction: (action: SlashActionId) => void;
 };
 
@@ -52,7 +55,6 @@ export function ThreadComposer({
   replyTargetId,
   replyQuote,
   attachmentIds,
-  botId,
   onCall,
   working,
   sending,
@@ -61,7 +63,7 @@ export function ThreadComposer({
   attachFrom,
   send,
   stop,
-  startVoiceCall,
+  holdToTalk,
   onSlashAction,
 }: ThreadComposerProps) {
   const tokens = useMobileTokens();
@@ -72,6 +74,22 @@ export function ThreadComposer({
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const [selectedMentions, setSelectedMentions] = useState<ComposerMention[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<AgentSkillCatalogEntry | null>(null);
+  /** Dictated text landed in the draft and goes out as soon as the snapshot sees it. */
+  const [sendDictated, setSendDictated] = useState(false);
+  const talk = useHoldToTalk({
+    transcribe: holdToTalk?.transcribe ?? false,
+    disabled: !holdToTalk || onCall || sending,
+    // A refused send keeps the words in the field to edit or retry.
+    onText: (text) => {
+      setDraft((current) => (current.trim() ? `${current.trimEnd()} ${text}` : text));
+      setSendDictated(true);
+    },
+  });
+  useEffect(() => {
+    if (!sendDictated) return;
+    setSendDictated(false);
+    void send();
+  }, [sendDictated, send]);
   useImperativeHandle(ref, () => ({
     snapshot: () => ({
       promptText: serializeComposerPrompt(draft, selectedSkill, selectedMentions),
@@ -325,8 +343,10 @@ export function ThreadComposer({
           }}
           fallbackStyle={styles.composerFill}
         >
+          {talk.recording ? <HoldToTalkStrip talk={talk} /> : null}
           <View
             style={{
+              display: talk.recording ? "none" : "flex",
               flex: 1,
               flexDirection: "row",
               flexWrap: "wrap",
@@ -466,27 +486,10 @@ export function ThreadComposer({
               />
             </View>
           </View>
-          {!canSend && botId && !onCall ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t("Call")}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-              onPress={() => void startVoiceCall()}
-              style={{ marginBottom: 8 }}
-            >
-              <GlassSurface
-                tint={tokens.primary}
-                style={composerPillStyle}
-                fallbackStyle={{ backgroundColor: tokens.primary }}
-              >
-                <NativeSymbol
-                  ios="waveform"
-                  android="pulse-outline"
-                  size={15}
-                  color={tokens.primaryForeground}
-                />
-              </GlassSurface>
-            </Pressable>
+          {talk.recording?.locked ? (
+            <HoldToTalkLockedActions talk={talk} pillStyle={composerPillStyle} />
+          ) : !canSend && holdToTalk && !onCall ? (
+            <HoldToTalkButton talk={talk} pillStyle={composerPillStyle} />
           ) : (
             <Pressable
               accessibilityRole="button"
@@ -637,5 +640,193 @@ function MentionChipIcon({ mention }: { mention: ComposerMention }) {
         backgroundColor: mention.color ?? tokens.mutedForeground,
       }}
     />
+  );
+}
+
+type PillStyle = ViewStyle;
+
+function useSeconds(since: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(timer);
+  }, []);
+  return Math.max(0, Math.floor((now - since) / 1000));
+}
+
+/** Takes the text field's place while recording: a live dot, the time, and what was heard. */
+function HoldToTalkStrip({ talk }: { talk: HoldToTalk }) {
+  const tokens = useMobileTokens();
+  const { t } = useI18n();
+  const seconds = useSeconds(talk.recording?.startedAt ?? Date.now());
+  const hint = talk.transcribing
+    ? t("Transcribing…")
+    : talk.recording?.locked
+      ? t("Listening…")
+      : t("Slide up to lock");
+  return (
+    <View
+      testID="hold-to-talk-strip"
+      style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}
+    >
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tokens.destructive }} />
+      <Text style={{ color: tokens.foreground, fontSize: 15, fontVariant: ["tabular-nums"] }}>
+        {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+      </Text>
+      <Text
+        numberOfLines={1}
+        accessibilityLiveRegion="polite"
+        style={{
+          flex: 1,
+          fontSize: 15,
+          color: talk.transcript ? tokens.foreground : tokens.mutedForeground,
+        }}
+      >
+        {talk.transcript || hint}
+      </Text>
+    </View>
+  );
+}
+
+/** The microphone: hold to talk, slide up to lock. A tap only explains the gesture. */
+function HoldToTalkButton({ talk, pillStyle }: { talk: HoldToTalk; pillStyle: PillStyle }) {
+  const tokens = useMobileTokens();
+  const { t } = useI18n();
+  const gesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .minDistance(0)
+        .shouldCancelWhenOutside(false)
+        .onBegin(() => talk.press())
+        .onUpdate((event) => talk.move(-event.translationY))
+        .onFinalize(() => talk.release()),
+    [talk.press, talk.move, talk.release],
+  );
+  const recording = talk.recording !== null;
+  return (
+    <View style={{ marginBottom: 8 }}>
+      {recording ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            bottom: 44,
+            start: 4,
+            alignItems: "center",
+            gap: 2,
+            paddingVertical: 8,
+            width: 28,
+            borderRadius: 14,
+            backgroundColor: tokens.card,
+            borderColor: tokens.border,
+            borderWidth: 1,
+            transform: [{ translateY: -talk.lift }],
+          }}
+        >
+          <NativeSymbol
+            ios="lock"
+            android="lock-closed-outline"
+            size={13}
+            color={tokens.mutedForeground}
+          />
+          <NativeSymbol
+            ios="chevron.up"
+            android="chevron-up"
+            size={12}
+            color={tokens.mutedForeground}
+          />
+        </View>
+      ) : null}
+      {talk.notice && !recording ? (
+        <View
+          pointerEvents="none"
+          accessibilityLiveRegion="polite"
+          style={{
+            position: "absolute",
+            bottom: 40,
+            end: 0,
+            width: 220,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 10,
+            backgroundColor: tokens.card,
+            borderColor: tokens.border,
+            borderWidth: 1,
+          }}
+        >
+          <Text style={{ color: tokens.foreground, fontSize: 13 }}>{talk.notice}</Text>
+        </View>
+      ) : null}
+      <GestureDetector gesture={gesture}>
+        <View
+          testID="hold-to-talk"
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={t("Hold to talk")}
+          accessibilityHint={t("Hold to talk, release to send")}
+          style={{ transform: [{ scale: recording ? 1.25 : 1 }] }}
+        >
+          <GlassSurface
+            tint={recording ? tokens.destructive : tokens.primary}
+            style={pillStyle}
+            fallbackStyle={{ backgroundColor: recording ? tokens.destructive : tokens.primary }}
+          >
+            <NativeSymbol
+              ios="mic.fill"
+              android="mic"
+              size={15}
+              color={recording ? tokens.destructiveForeground : tokens.primaryForeground}
+            />
+          </GlassSurface>
+        </View>
+      </GestureDetector>
+    </View>
+  );
+}
+
+/** A locked recording: discard it, or send what was said. */
+function HoldToTalkLockedActions({ talk, pillStyle }: { talk: HoldToTalk; pillStyle: PillStyle }) {
+  const tokens = useMobileTokens();
+  const { t } = useI18n();
+  return (
+    <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("Discard recording")}
+        hitSlop={6}
+        onPress={talk.cancel}
+      >
+        <View style={pillStyle}>
+          <NativeSymbol
+            ios="trash"
+            android="trash-outline"
+            size={15}
+            color={tokens.mutedForeground}
+          />
+        </View>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("Send recording")}
+        disabled={talk.transcribing}
+        hitSlop={6}
+        onPress={talk.submit}
+        style={{ opacity: talk.transcribing ? 0.5 : 1 }}
+      >
+        <GlassSurface
+          tint={tokens.primary}
+          style={pillStyle}
+          fallbackStyle={{ backgroundColor: tokens.primary }}
+        >
+          <NativeSymbol
+            ios="arrow.up"
+            android="arrow-up"
+            size={15}
+            color={tokens.primaryForeground}
+          />
+        </GlassSurface>
+      </Pressable>
+    </View>
   );
 }

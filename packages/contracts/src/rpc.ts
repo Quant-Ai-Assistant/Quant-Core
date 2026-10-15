@@ -403,6 +403,39 @@ export const appContract = {
         }),
       )
       .output(z.object({ ok: z.literal(true) })),
+    /**
+     * Opens a live, full-duplex call from the client's WebRTC offer. Audio flows between the
+     * client and the voice provider; the server follows the transcript and runs the tasks the
+     * voice model hands to the bot. Hang up with endCall.
+     */
+    startLiveCall: oc
+      .input(
+        botId.safeExtend({
+          callId: z
+            .string()
+            .min(1)
+            .max(200)
+            .regex(/^[^:]+$/),
+          offerSdp: z.string().min(1).max(100_000),
+          /** Said before the caller speaks, e.g. the bot's opening when it rang the user. */
+          greeting: z.string().max(2_000).optional(),
+          /** The caller's interface language, which the call starts in. */
+          language: z.string().max(40).optional(),
+        }),
+      )
+      .output(z.object({ answerSdp: z.string() })),
+    /** Bots ringing the user now, for a phone that rings in the background. */
+    ringingCalls: oc.output(
+      z.array(
+        z.object({
+          botId: z.string(),
+          botName: z.string(),
+          botColor: z.string(),
+          callId: z.string(),
+          expiresAt: z.string(),
+        }),
+      ),
+    ),
     /** The user picked up the bot's call: returns what the bot opens with. */
     answerCall: oc
       .input(
@@ -424,7 +457,7 @@ export const appContract = {
             .min(1)
             .max(200)
             .regex(/^[^:]+$/),
-          outcome: z.enum(["declined", "later", "missed"]),
+          outcome: z.enum(["declined", "missed"]),
         }),
       )
       .output(z.object({ ok: z.literal(true) })),

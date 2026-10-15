@@ -17,6 +17,7 @@
     "test:e2e": "maestro test .maestro/smoke.yaml"
   },
   "dependencies": {
+    "@config-plugins/react-native-webrtc": "15.0.2",
     "@expo/metro-runtime": "57.0.17",
     "@expo/ui": "57.0.24",
     "@rakazo/chat-ui": "workspace:*",
@@ -61,6 +62,7 @@
     "react-native-screens": "4.26.2",
     "react-native-svg": "15.15.4",
     "react-native-web": "0.21.2",
+    "react-native-webrtc": "124.0.8",
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.1"
   },

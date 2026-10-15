@@ -975,6 +975,7 @@ export type MobileMe = Pick<
   | "needsModel"
   | "avatarStyle"
   | "isDeploymentOwner"
+  | "phoneCallsEnabled"
 >;
 
 export type MobileModel = ModelCatalogEntry;

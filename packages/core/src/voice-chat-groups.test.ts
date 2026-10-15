@@ -1,11 +1,6 @@
 import type { ThreadMessage } from "@rakazo/contracts";
 import { describe, expect, it } from "vitest";
-import {
-  groupVoiceChats,
-  latestSpokenCallReply,
-  voiceChatDuration,
-  voiceChatSummary,
-} from "./voice-chat-groups.js";
+import { groupVoiceChats, voiceChatDuration, voiceChatSummary } from "./voice-chat-groups.js";
 
 let seq = 0;
 function message(fields: Partial<ThreadMessage> & { role: ThreadMessage["role"] }): ThreadMessage {
@@ -21,6 +16,33 @@ function message(fields: Partial<ThreadMessage> & { role: ThreadMessage["role"] 
 }
 
 describe("groupVoiceChats", () => {
+  it.each(["ringing", "missed", "answered"] as const)(
+    "keeps the calling run's chat reply outside a %s request",
+    (status) => {
+      const request = message({
+        role: "bot",
+        callId: "call-1",
+        runId: "request-run",
+        blocks: [
+          {
+            kind: "call_request",
+            callId: "call-1",
+            status,
+            reason: "Review",
+            opening: "Ready?",
+            expiresAt: "2026-10-15T00:00:45Z",
+          },
+        ],
+      });
+      const reply = message({ role: "bot", runId: "request-run" });
+      const spoken = message({ role: "user", callId: "call-1", runId: "voice-run" });
+      const spokenReply = message({ role: "bot", runId: "voice-run" });
+      expect(
+        groupVoiceChats([request, reply, spoken, spokenReply]).map((item) => item.kind),
+      ).toEqual(["voiceChat", "message", "voiceChat"]);
+    },
+  );
+
   it("keeps two calls in separate groups", () => {
     const items = groupVoiceChats([
       message({ role: "user", callId: "call-1" }),
@@ -42,40 +64,6 @@ describe("groupVoiceChats", () => {
     ]);
 
     expect(items.map((item) => item.kind)).toEqual(["voiceChat", "message", "voiceChat"]);
-  });
-
-  it("does not speak a typed concurrent reply into the call", () => {
-    const callTurn = message({ role: "user", callId: "call-1", runId: "run-1" });
-    const callReply = message({ role: "bot", runId: "run-1" });
-    const typed = message({ role: "user", runId: "run-1" });
-    const typedReply = message({
-      role: "bot",
-      runId: "run-1",
-      blocks: [{ kind: "text", text: "Typed answer" }],
-    });
-
-    expect(latestSpokenCallReply([callTurn, callReply], "call-1")?.id).toBe(callReply.id);
-    expect(latestSpokenCallReply([callTurn, callReply, typed, typedReply], "call-1")?.id).toBe(
-      callReply.id,
-    );
-  });
-
-  it("stops offering a spoken reply once the hang-up marker closed the card", () => {
-    const callTurn = message({ role: "user", callId: "call-1", runId: "run-1" });
-    const callReply = message({ role: "bot", runId: "run-1" });
-    const marker = message({
-      role: "bot",
-      runId: "run-1",
-      callId: "call-1",
-      blocks: [{ kind: "voice_call", callId: "call-1", title: "Done", farewell: "Bye" }],
-    });
-    const wrapUp = message({
-      role: "bot",
-      runId: "run-1",
-      blocks: [{ kind: "text", text: "Here is the list" }],
-    });
-
-    expect(latestSpokenCallReply([callTurn, callReply, marker, wrapUp], "call-1")).toBeUndefined();
   });
 
   it("numbers the segments a typed message split a call into, and keeps them across pages", () => {

@@ -55,7 +55,6 @@ import {
   computerSupportsUpdate,
   computerUpdateView,
   createFaviconResolver,
-  createScheduleFromTool,
   createTicket,
   createVoiceProvider,
   defaultCatalogModelId,
@@ -154,7 +153,6 @@ import {
   ACTIVE_RUN_STATUSES,
   AttachmentValidationError,
   CALL_CLIENT_NONCE_PREFIX,
-  CALL_REQUEST_LATER_MS,
   callClientNonce,
   clampCatalogThinkingLevel,
   containsSecret,
@@ -239,6 +237,7 @@ import {
   toComputerStatus,
 } from "./computer-status.js";
 import { searchIntegrationCatalog } from "./integration-catalog.js";
+import { finishLiveCall, liveCallAvailable, startLiveCall } from "./live-call.js";
 import {
   dismissMcpServerApprovals,
   resolveMcpApprovalCards,
@@ -258,6 +257,7 @@ import {
   promptFocus,
   startOnboarding,
 } from "./onboarding.js";
+import { listRingingCalls } from "./ringing-calls.js";
 import { listRoutineRuns } from "./routine-runs.js";
 import { listSpaceRuns } from "./runs.js";
 import { addScreenProxyCapability } from "./screen-proxy.js";
@@ -587,6 +587,7 @@ export interface RouterDeps {
   billing?: BillingService;
   env: {
     ticketBoardEnabled?: boolean;
+    phoneCallsEnabled?: boolean;
     agentRuntime: string;
     teamChatJudgeProvider?: string;
     teamChatJudgeModel?: string;
@@ -762,7 +763,7 @@ export function createRouter(deps: RouterDeps) {
     /** Re-runs the request's auth so a long-lived stream notices sign-out and revocation. */
     stillAuthorized?: () => Promise<boolean>;
   }>();
-  const repos = createRepos(deps.prisma);
+  const repos = createRepos(deps.prisma, { phoneCallsEnabled: deps.env?.phoneCallsEnabled });
   const onboardingDeps = { prisma: deps.prisma, events: deps.events, connectors: deps.connectors };
   const mcpOAuth = deps.mcpOAuth ?? new McpOAuthBroker(deps.prisma, deps.secrets);
   const codexCatalog = deps.codexCatalog ?? new CodexCatalogCache();
@@ -785,6 +786,11 @@ export function createRouter(deps: RouterDeps) {
   const authed = os.use(async ({ context, next }) => {
     if (!context.actor) throw new ORPCError("UNAUTHORIZED");
     return next({ context: { ...context, actor: context.actor } });
+  });
+
+  const callsEnabled = authed.use(async ({ next }) => {
+    if (!deps.env?.phoneCallsEnabled) throw new ORPCError("NOT_FOUND");
+    return next();
   });
 
   const boardEnabled = os
@@ -2355,7 +2361,10 @@ export function createRouter(deps: RouterDeps) {
         }
         return { ok: true as const };
       }),
-      answerCall: authed.threads.answerCall.handler(async ({ context, input }) => {
+      ringingCalls: callsEnabled.threads.ringingCalls.handler(async ({ context }) =>
+        listRingingCalls(deps.prisma, context.actor),
+      ),
+      answerCall: callsEnabled.threads.answerCall.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         if (target.kind !== "bot") throw new IsolationError();
         const answered = await settleCallRequest(deps, {
@@ -2364,37 +2373,36 @@ export function createRouter(deps: RouterDeps) {
           from: ["ringing"],
           status: "answered",
         });
-        if (!answered)
+        if (answered?.status !== "answered")
           throw new ORPCError("CONFLICT", { message: "This call is no longer ringing." });
         return { opening: answered.opening, reason: answered.reason };
       }),
-      declineCall: authed.threads.declineCall.handler(async ({ context, input }) => {
+      declineCall: callsEnabled.threads.declineCall.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         if (target.kind !== "bot") throw new IsolationError();
-        const declined = await settleCallRequest(deps, {
+        await settleCallRequest(deps, {
           threadId: target.threadId,
           callId: input.callId,
           from: ["ringing"],
           status: input.outcome,
         });
-        if (declined && input.outcome === "later") {
-          // "Remind me later" is the bot's next try: a one-shot reminder in this chat.
-          await createScheduleFromTool(deps, {
-            spaceId: context.actor.spaceId,
-            botId: target.botId,
-            userId: context.actor.userId,
-            threadId: target.threadId,
-            name: `Call back: ${declined.reason}`.slice(0, 80),
-            prompt: `The user asked you to call back later about: ${declined.reason}. Call them now with call_user.`,
-            schedule: { delayMinutes: CALL_REQUEST_LATER_MS / 60_000 },
-          });
-        }
         return { ok: true as const };
       }),
-      endCall: authed.threads.endCall.handler(async ({ context, input }) => {
+      startLiveCall: callsEnabled.threads.startLiveCall.handler(async ({ context, input }) => {
+        if ((await modelSetup(deps, context.actor)).needsModel) {
+          throw new ORPCError("BAD_REQUEST", { message: "Connect a model to start a run." });
+        }
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         if (target.kind !== "bot") throw new IsolationError();
         await assertTeachingSendAllowed(deps.prisma, context.actor.spaceId, target.botId);
+        return startLiveCall(deps, context.actor, target, input);
+      }),
+      endCall: callsEnabled.threads.endCall.handler(async ({ context, input }) => {
+        const target = await resolveThreadTarget(deps.prisma, context.actor, input);
+        if (target.kind !== "bot") throw new IsolationError();
+        await assertTeachingSendAllowed(deps.prisma, context.actor.spaceId, target.botId);
+        // A live call files its last words before the card closes over them.
+        await finishLiveCall(context.actor, input.callId);
         const { botId, threadId } = target;
         // The bot's own call: its card keeps how long the user stayed on.
         await settleCallRequest(deps, {
@@ -6089,8 +6097,13 @@ export function createRouter(deps: RouterDeps) {
     voice: {
       catalog: authed.voice.catalog.handler(async () => listVoiceCatalog()),
       status: authed.voice.status.handler(async ({ context }) => {
-        const cred = await findDefaultVoiceCredential(deps.prisma, context.actor);
-        return toVoiceStatus(cred);
+        const [cred, live] = await Promise.all([
+          findDefaultVoiceCredential(deps.prisma, context.actor),
+          deps.env?.phoneCallsEnabled
+            ? liveCallAvailable(deps, context.actor)
+            : Promise.resolve(false),
+        ]);
+        return { ...toVoiceStatus(cred), live };
       }),
       credentials: authed.voice.credentials.handler(async ({ context }) => {
         const rows = await deps.prisma.userVoiceCredential.findMany({
@@ -6381,6 +6394,7 @@ async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
   ]);
   return {
     ticketBoardEnabled: deps.env.ticketBoardEnabled === true,
+    phoneCallsEnabled: deps.env.phoneCallsEnabled === true,
     userId: actor.userId,
     email: user.email,
     name: user.name,

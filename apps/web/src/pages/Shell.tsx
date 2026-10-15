@@ -574,18 +574,9 @@ export function ShellPage() {
   >(undefined);
   const memoryProviderConfigRevision = useRef(0);
   const call = useCallSession();
-  /** Calls a bot, or opens voice settings first when no voice is connected. */
   const callBot = (bot: Bot) => {
-    if (!voiceStatus?.ready) {
-      openSettings("voice");
-      return;
-    }
-    startCall({
-      botId: bot.id,
-      botName: bot.name,
-      botColor: bot.color,
-      transcribe: Boolean(voiceStatus?.transcribe),
-    });
+    if (!callsAvailable) return;
+    startCall({ botId: bot.id, botName: bot.name, botColor: bot.color });
   };
   const [voiceStatus, setVoiceStatus] = useState<VoiceStatus | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
@@ -679,6 +670,12 @@ export function ShellPage() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [initialBotsLoaded, setInitialBotsLoaded] = useState(false);
   const [bootstrapMe, setBootstrapMe] = useState<Me | null>();
+  /** Calls are live conversations: offered only once the OpenAI voice connection is set up. */
+  const callsAvailable = Boolean(bootstrapMe?.phoneCallsEnabled && voiceStatus?.live);
+  const callsEnabledRef = useRef(false);
+  useEffect(() => {
+    callsEnabledRef.current = bootstrapMe?.phoneCallsEnabled === true;
+  }, [bootstrapMe?.phoneCallsEnabled]);
   const [keepComputerRecovery, setKeepComputerRecovery] = useState(false);
   const recoveryHoldTimer = useRef<number | undefined>(undefined);
   const showComputerRecoveryHint =
@@ -1250,7 +1247,7 @@ export function ShellPage() {
       });
     let refreshTimer: number | undefined;
     const refreshVisibleBots = () => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" && !callsEnabledRef.current) return;
       window.clearTimeout(refreshTimer);
       refreshTimer = window.setTimeout(() => void refreshBots().catch(() => undefined), 50);
     };
@@ -3646,7 +3643,7 @@ export function ShellPage() {
             </button>
           </div>
           <div className="flex items-center gap-1">
-            {!inGroup && active ? (
+            {callsAvailable && !inGroup && active ? (
               <button
                 type="button"
                 data-testid="call-button"
@@ -3707,7 +3704,7 @@ export function ShellPage() {
             answerableAskMessageId={answerableAskMessageId}
             running={transcriptRunning}
             workingBots={workingBots}
-            onCallBack={!inGroup && active ? () => callBot(active) : undefined}
+            onCallBack={callsAvailable && !inGroup && active ? () => callBot(active) : undefined}
             onLoadOlder={loadOlder}
             onOpenBot={openBot}
             onAnswer={answerMessage}
@@ -3759,7 +3756,8 @@ export function ShellPage() {
             onRemoveAttachment={removeAttachment}
             onSend={sendMessage}
             onStop={stopRun}
-            dictationTranscribe={Boolean(voiceStatus?.transcribe)}
+            phoneCallsEnabled={bootstrapMe?.phoneCallsEnabled === true}
+            dictationTranscribe={voiceStatus ? Boolean(voiceStatus.transcribe) : undefined}
             artifactTarget={transcriptArtifactTarget}
             replyTarget={activeReplyTarget}
             replyQuote={activeReplyQuote}
@@ -3787,8 +3785,7 @@ export function ShellPage() {
 
       <CallCard onSettings={() => openSettings("voice")} />
       <IncomingCall
-        bots={bots}
-        transcribe={Boolean(voiceStatus?.transcribe)}
+        bots={callsAvailable ? bots : []}
         onAnswered={(botId) => navigate(`/app/${botId}`)}
       />
 
@@ -5441,6 +5438,7 @@ export const Composer = memo(function Composer({
   onRemoveAttachment,
   onSend,
   onStop,
+  phoneCallsEnabled,
   dictationTranscribe,
   replyTarget,
   replyQuote,
@@ -5467,7 +5465,8 @@ export const Composer = memo(function Composer({
   onRemoveAttachment: (attachment: PendingAttachment) => void;
   onSend: (text: string, mentions: ComposerMention[], clientNonce: string) => Promise<boolean>;
   onStop: () => Promise<void>;
-  /** Hold-to-talk falls back to the voice provider's transcription when it has one. */
+  phoneCallsEnabled?: boolean;
+  /** Hold-to-talk falls back to the voice provider's transcription; undefined while unknown. */
   dictationTranscribe?: boolean;
   artifactTarget: ArtifactTarget;
   replyTarget?: ThreadMessage | null;
@@ -5483,15 +5482,15 @@ export const Composer = memo(function Composer({
   const [draft, setDraft] = useState("");
   const onCall = useCallSession() !== null;
   const talk = useHoldToTalk({
-    transcribe: Boolean(dictationTranscribe),
-    disabled: disabled || onCall,
+    transcribe: dictationTranscribe,
+    disabled: disabled || onCall || !phoneCallsEnabled,
     onText: (text) => {
       // A refused send keeps the words: they land in the field to edit or retry.
       void onSend(text, [], newClientNonce())
         .then((accepted) => {
-          if (accepted === false) setDraft((current) => current || text);
+          if (accepted === false) setDraft((current) => (current ? `${current} ${text}` : text));
         })
-        .catch(() => undefined);
+        .catch(() => setDraft((current) => (current ? `${current} ${text}` : text)));
     },
   });
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -6258,7 +6257,7 @@ export const Composer = memo(function Composer({
             <HoldToTalkControls talk={talk} />
           ) : running ? (
             <>
-              {draft.trim().length === 0 ? (
+              {phoneCallsEnabled && draft.trim().length === 0 ? (
                 <HoldToTalkControls talk={talk} disabled={disabled || onCall} />
               ) : null}
               <Button
@@ -6283,7 +6282,7 @@ export const Composer = memo(function Composer({
             </>
           ) : (
             <>
-              {draft.trim().length === 0 ? (
+              {phoneCallsEnabled && draft.trim().length === 0 ? (
                 <HoldToTalkControls talk={talk} disabled={disabled || onCall} />
               ) : null}
               <Button

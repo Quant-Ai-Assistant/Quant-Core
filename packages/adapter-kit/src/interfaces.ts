@@ -369,6 +369,53 @@ export interface VoiceProvider {
   listVoices(apiKey: string, context: AdapterContext): Promise<VoiceInfo[]>;
   synthesize(request: VoiceSynthesizeRequest, context: AdapterContext): Promise<SpeechClip>;
   transcribe?(request: VoiceTranscribeRequest, context: AdapterContext): Promise<{ text: string }>;
+  /**
+   * Starts a full-duplex voice conversation from the client's WebRTC offer and attaches
+   * the server to it. Audio flows between the client and the provider; the server only
+   * sees transcripts and the tasks the voice model hands back.
+   */
+  startLiveCall?(request: LiveCallRequest, context: AdapterContext): Promise<LiveCallSession>;
+}
+
+export interface LiveCallRequest {
+  apiKey: string;
+  offerSdp: string;
+  /** How the voice model talks and when it hands work to the bot. */
+  instructions: string;
+  /** Recent conversation, oldest first, so the call continues the chat. */
+  history: { role: "user" | "assistant"; text: string }[];
+  /** What the voice model says before the caller speaks. */
+  greeting?: string;
+  /** Stable, privacy-preserving caller id for the provider's abuse checks. */
+  safetyId: string;
+}
+
+export type LiveCallEvent =
+  /** A fragment of what the caller said. */
+  | { type: "heard"; text: string }
+  /** A fragment of what the voice model said. */
+  | { type: "said"; text: string }
+  /** The voice model asks the bot for help; the task is in the caller's recent words. */
+  | { type: "delegation"; id: string }
+  | { type: "closed"; reason: string }
+  | { type: "error"; message: string };
+
+export interface LiveCallControl {
+  events: AsyncIterable<LiveCallEvent>;
+  /** The bot's result for a delegated task, for the voice model to say. */
+  answer(delegationId: string, text: string): void;
+  /** Progress or facts the voice model may use without saying them now. */
+  note(delegationId: string | null, text: string): void;
+  /** Ends the conversation; events keep arriving until `closed`. */
+  close(): void;
+  /** Drops the server connection without ending the conversation. */
+  disconnect(): void;
+}
+
+export interface LiveCallSession {
+  sessionId: string;
+  answerSdp: string;
+  control: LiveCallControl;
 }
 
 /**

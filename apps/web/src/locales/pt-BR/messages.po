@@ -822,10 +822,6 @@ msgstr ""
 msgid "Call with {0}"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "Calling back in 10 min"
-msgstr ""
-
 #: src/components/call/IncomingCall.tsx
 msgid "Calling you"
 msgstr ""
@@ -836,10 +832,6 @@ msgstr ""
 
 #: src/components/call/CallCard.tsx
 msgid "Calling…"
-msgstr ""
-
-#: src/lib/call-session.ts
-msgid "Camera failed"
 msgstr ""
 
 #: src/App.tsx
@@ -1377,6 +1369,10 @@ msgstr "Não foi possível conectar"
 msgid "Could not connect {0}"
 msgstr "Não foi possível conectar o {0}"
 
+#: src/lib/call-session.ts
+msgid "Could not connect the call."
+msgstr "Não foi possível conectar a chamada."
+
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Could not connect this provider"
 msgstr "Não foi possível conectar este provedor"
@@ -1712,7 +1708,7 @@ msgstr ""
 msgid "Could not send reset email"
 msgstr "Não foi possível enviar o e-mail de redefinição"
 
-#: src/lib/call-session.ts
+#: src/components/call/IncomingCall.tsx
 msgid "Could not send that"
 msgstr "Não foi possível enviar"
 
@@ -2400,14 +2396,6 @@ msgstr ""
 msgid "Hang up"
 msgstr "Desligar"
 
-#: src/lib/call-session.ts
-msgid "Hang up first, then enter the code on screen."
-msgstr ""
-
-#: src/lib/call-session.ts
-msgid "Hang up, then enter the code on screen."
-msgstr ""
-
 #: src/pages/RoutineEditor.tsx
 msgid "header"
 msgstr ""
@@ -2896,10 +2884,6 @@ msgstr "Enviou mensagem para {peer}"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Messaging"
 msgstr ""
-
-#: src/lib/call-session.ts
-msgid "Microphone failed"
-msgstr "Falha no microfone"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -3669,10 +3653,6 @@ msgstr "Liberar o controle"
 msgid "Release interrupted computer?"
 msgstr ""
 
-#: src/components/call/IncomingCall.tsx
-msgid "Remind me in 10 minutes"
-msgstr ""
-
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3997,14 +3977,6 @@ msgstr ""
 msgid "Saving…"
 msgstr "Salvando..."
 
-#: src/lib/call-session.ts
-msgid "Say yes or no, or answer in a sentence."
-msgstr "Diga sim ou não, ou responda em uma frase."
-
-#: src/lib/call-session.ts
-msgid "Screen sharing failed"
-msgstr ""
-
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/Shell.tsx
@@ -4148,10 +4120,6 @@ msgstr "Ajuda"
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Shape"
 msgstr "Forma"
-
-#: src/components/call/CallCard.tsx
-msgid "Share screen"
-msgstr ""
 
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -4358,14 +4326,9 @@ msgstr ""
 msgid "Steps"
 msgstr "Passos"
 
-#: src/components/call/CallCard.tsx
 #: src/pages/Shell.tsx
 msgid "Stop"
 msgstr "Parar"
-
-#: src/components/call/CallCard.tsx
-msgid "Stop sharing screen"
-msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Stop speaking"
@@ -4680,14 +4643,6 @@ msgstr "Tentar novamente"
 msgid "Try the test again."
 msgstr "Tente o teste novamente."
 
-#: src/components/call/CallCard.tsx
-msgid "Turn camera off"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
-msgid "Turn camera on"
-msgstr ""
-
 #: src/pages/shell/bot-credentials.tsx
 msgid "Type"
 msgstr ""
@@ -4990,14 +4945,6 @@ msgstr ""
 #: src/pages/Shell.tsx
 msgid "You have control"
 msgstr "Você tem o controle"
-
-#: src/components/call/CallCard.tsx
-msgid "You're sharing your screen"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
-msgid "Your camera"
-msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Your email address"

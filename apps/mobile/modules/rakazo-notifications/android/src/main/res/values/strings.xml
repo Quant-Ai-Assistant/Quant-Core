@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="quant_calls_ready">Ready for calls</string>
+  <string name="quant_calls_incoming">Incoming call</string>
+  <string name="quant_calls_answer">Answer</string>
+  <string name="quant_calls_decline">Decline</string>
+  <string name="quant_calls_channel_incoming">Incoming calls</string>
+  <string name="quant_calls_channel_service">Call connection</string>
+</resources>

@@ -10,7 +10,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { Platform, View } from "react-native";
+import { AppState, Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,6 +32,7 @@ import { loadAppearancePreference, mobileTokens } from "../lib/appearance";
 import { replaceWithSignIn } from "../lib/auth-routing";
 import { loadAvatarStyle } from "../lib/avatar-style";
 import { bootstrapI18n, useI18n } from "../lib/i18n";
+import { syncIncomingCalls } from "../lib/incoming-calls";
 import { loadLinkFavicon } from "../lib/link-favicons";
 import {
   configureForegroundNotifications,
@@ -162,6 +163,17 @@ export default function Layout() {
     ]).finally(() => setReady(true));
   }, []);
 
+  // Android rings for bots' calls in the background while the server offers calls.
+  useEffect(() => {
+    if (!ready) return;
+    const sync = () => void syncIncomingCalls().catch(() => undefined);
+    sync();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") sync();
+    });
+    return () => subscription.remove();
+  }, [ready]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
@@ -197,6 +209,15 @@ export default function Layout() {
                       }}
                     />
                     <Stack.Screen name="server" options={{ title: t("Server") }} />
+                    <Stack.Screen
+                      name="incoming-call"
+                      options={{
+                        headerShown: false,
+                        presentation: "fullScreenModal",
+                        animation: "fade",
+                        gestureEnabled: false,
+                      }}
+                    />
                     <Stack.Screen
                       name="new"
                       options={{

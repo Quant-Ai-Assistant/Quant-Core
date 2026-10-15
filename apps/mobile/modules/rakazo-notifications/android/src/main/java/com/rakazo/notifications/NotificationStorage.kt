@@ -59,28 +59,42 @@ internal class NotificationStorage(context: Context) {
     set(value) = commit { putString(SPACE_ID, value) }
 
   var token: String
-    get() {
-      val encoded = preferences.getString(TOKEN, null) ?: return ""
-      return runCatching {
-        val bytes = Base64.decode(encoded, Base64.NO_WRAP)
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, bytes, 0, IV_SIZE))
-        String(cipher.doFinal(bytes, IV_SIZE, bytes.size - IV_SIZE), Charsets.UTF_8)
-      }.getOrElse {
-        commit { remove(TOKEN) }
-        ""
-      }
-    }
-    set(value) {
-      if (value.isEmpty()) {
-        commit { remove(TOKEN) }
-        return
-      }
+    get() = readSecret(TOKEN)
+    set(value) = writeSecret(TOKEN, value)
+
+  /** The Quant gate's `X-Quant-Auth` value for `endpoint`, or empty when it has no gate. */
+  var gateAuth: String
+    get() = readSecret(GATE_AUTH)
+    set(value) = writeSecret(GATE_AUTH, value)
+
+  /** Keep the always-on call service running, so a bot's call rings with the app closed. */
+  var callsEnabled: Boolean
+    get() = preferences.getBoolean(CALLS, false)
+    set(value) = commit { putBoolean(CALLS, value) }
+
+  private fun readSecret(name: String): String {
+    val encoded = preferences.getString(name, null) ?: return ""
+    return runCatching {
+      val bytes = Base64.decode(encoded, Base64.NO_WRAP)
       val cipher = Cipher.getInstance(TRANSFORMATION)
-      cipher.init(Cipher.ENCRYPT_MODE, key())
-      val encrypted = cipher.iv + cipher.doFinal(value.toByteArray(Charsets.UTF_8))
-      commit { putString(TOKEN, Base64.encodeToString(encrypted, Base64.NO_WRAP)) }
+      cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, bytes, 0, IV_SIZE))
+      String(cipher.doFinal(bytes, IV_SIZE, bytes.size - IV_SIZE), Charsets.UTF_8)
+    }.getOrElse {
+      commit { remove(name) }
+      ""
     }
+  }
+
+  private fun writeSecret(name: String, value: String) {
+    if (value.isEmpty()) {
+      commit { remove(name) }
+      return
+    }
+    val cipher = Cipher.getInstance(TRANSFORMATION)
+    cipher.init(Cipher.ENCRYPT_MODE, key())
+    val encrypted = cipher.iv + cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+    commit { putString(name, Base64.encodeToString(encrypted, Base64.NO_WRAP)) }
+  }
 
   private fun key(): SecretKey {
     val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -112,6 +126,8 @@ internal class NotificationStorage(context: Context) {
     const val ENDPOINT = "endpoint"
     const val SPACE_ID = "space_id"
     const val TOKEN = "token"
+    const val GATE_AUTH = "gate_auth"
+    const val CALLS = "calls_enabled"
     const val KEY_ALIAS = "rakazo.notifications.session"
     const val TRANSFORMATION = "AES/GCM/NoPadding"
     const val IV_SIZE = 12

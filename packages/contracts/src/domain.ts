@@ -1236,6 +1236,8 @@ export const VoiceStatusSchema = z.object({
   transcribe: z.boolean(),
   provider: z.string().nullable(),
   voiceId: z.string(),
+  /** Calls can be live conversations rather than turn by turn. */
+  live: z.boolean().optional(),
 });
 export type VoiceStatus = z.infer<typeof VoiceStatusSchema>;
 
@@ -1353,6 +1355,7 @@ export type ServerUpdateRequest = z.infer<typeof ServerUpdateRequestSchema>;
 
 export const MeSchema = z.object({
   ticketBoardEnabled: z.boolean(),
+  phoneCallsEnabled: z.boolean().default(false),
   userId: Id,
   email: z.string().email(),
   name: z.string(),

@@ -24,6 +24,7 @@ vi.mock("./call-sounds", () => ({
   playCallCue: vi.fn(),
 }));
 vi.mock("./voice", () => ({ speakText: vi.fn() }));
+vi.mock("./incoming-calls", () => ({ syncIncomingCalls: vi.fn(async () => undefined) }));
 vi.mock("./appearance", () => ({ mobileTokens: () => ({}) }));
 vi.mock("./native", () => ({ native: {}, useThemedStyles: (factory: () => unknown) => factory() }));
 vi.mock("./i18n", () => ({ t: (text: string) => text, useI18n: () => ({ t }) }));

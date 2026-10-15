@@ -64,7 +64,7 @@ describe("Android mobile platform contract", () => {
     expect(allowlist).toContain("isLanOrLocalHost");
     expect(live).toContain("normalizeApiBase(endpoint)");
     expect(live).toMatch(
-      /export async function resumeLiveNotifications[\s\S]*normalizeApiBase\(endpoint\)[\s\S]*nativeNotifications\.resume\(parsed\.url/,
+      /export async function resumeLiveNotifications[\s\S]*normalizeApiBase\(endpoint\)[\s\S]*nativeNotifications\.resume\(\s*parsed\.url/,
     );
     expect(service).toContain('connection.setRequestProperty("x-rakazo-space-id", spaceId)');
     expect(service).toContain("storage.spaceId.isBlank()");
@@ -325,5 +325,33 @@ describe("Android mobile platform contract", () => {
     expect(avatar).toContain('accessibilityLabel={t("Notifications silenced")}');
     expect(avatar).toContain('android="notifications-off"');
     expect(thread.match(/muted=\{/g)).toHaveLength(1);
+  });
+
+  it("rings bots' calls from an always-on service that passes the Quant gate", () => {
+    const native = resolve(mobileRoot, "modules/rakazo-notifications/android/src/main");
+    const manifest = readFileSync(resolve(native, "AndroidManifest.xml"), "utf8");
+    const calls = readFileSync(
+      resolve(native, "java/com/rakazo/notifications/QuantCallService.kt"),
+      "utf8",
+    );
+    const notifications = readFileSync(
+      resolve(native, "java/com/rakazo/notifications/RakazoNotificationService.kt"),
+      "utf8",
+    );
+    expect(manifest).toContain("android.permission.USE_FULL_SCREEN_INTENT");
+    expect(manifest).toContain("android.permission.RECEIVE_BOOT_COMPLETED");
+    expect(manifest).toContain('android:name=".QuantCallService"');
+    expect(manifest).toContain("android.intent.action.BOOT_COMPLETED");
+    expect(calls).toContain("Notification.CallStyle.forIncomingCall");
+    expect(calls).toContain("setFullScreenIntent(screen, true)");
+    expect(calls).toContain('"threads/ringingCalls"');
+    expect(calls).toContain("isAllowedNotificationEndpoint(storage.endpoint)");
+    expect(calls).toContain("START_STICKY");
+    expect(notifications).toContain('connection.setRequestProperty("X-Quant-Auth", gateAuth)');
+    for (const locale of ["values", "values-ru"]) {
+      expect(readFileSync(resolve(native, `res/${locale}/strings.xml`), "utf8")).toContain(
+        "quant_calls_incoming",
+      );
+    }
   });
 });

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="quant_calls_ready">Bereit für Anrufe</string>
+  <string name="quant_calls_incoming">Eingehender Anruf</string>
+  <string name="quant_calls_answer">Annehmen</string>
+  <string name="quant_calls_decline">Ablehnen</string>
+  <string name="quant_calls_channel_incoming">Eingehende Anrufe</string>
+  <string name="quant_calls_channel_service">Verbindung für Anrufe</string>
+</resources>
