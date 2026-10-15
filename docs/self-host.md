@@ -406,7 +406,9 @@ The Electron desktop app is a client of the same API. Docker and E2B still apply
 - **Desktop provider** / **This Mac** runs commands on the API/worker host. Docker stays the default.
   The Electron app asks once; if you choose This Mac, bots can use working directories under your home
   folder. Do not enable it on a public or shared service. macOS does not show its own permission
-  dialog for this.
+  dialog for this. On macOS, bots also get the screen (screenshots with numbered UI elements,
+  element and menu actions) once Quant has Screen Recording and Accessibility permission; they
+  still try the shell first.
 - **Fake** is only an emulator for verification.
 - **None** boots the product without a computer host (fallback when Docker/supervisor is not
   configured, or when a remote provider is selected without its API key).

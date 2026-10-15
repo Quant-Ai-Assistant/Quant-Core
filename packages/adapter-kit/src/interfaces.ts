@@ -87,7 +87,8 @@ import type {
 } from "./types.js";
 
 export interface SandboxProvider {
-  describe(): AdapterDescriptor<SandboxCapabilities>;
+  /** With a computer, describes the provider that serves it when one routes to several. */
+  describe(computer?: ComputerRef): AdapterDescriptor<SandboxCapabilities>;
   /** Optional live browser on the same leased screen as observe/act. */
   pageBrowser?(
     computer: ComputerRef,

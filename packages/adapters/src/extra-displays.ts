@@ -1,5 +1,5 @@
 import type { ComputerAction, ComputerInput } from "@rakazo/adapter-kit";
-import { clampRounded, shellQuote } from "./computer-support.js";
+import { clampRounded, shellQuote, UNSUPPORTED_ELEMENT_ACTION } from "./computer-support.js";
 export interface ExtraDisplayLayout {
   display: string;
   displayNumber: number;
@@ -71,6 +71,9 @@ export function extraDisplayActionCommand(
   }
   if (action.kind === "open") {
     return `DISPLAY=${layout.display} xdg-open ${shellQuote(action.path)}`;
+  }
+  if (action.kind === "element" || action.kind === "menu") {
+    throw new Error(UNSUPPORTED_ELEMENT_ACTION);
   }
   return `DISPLAY=${layout.display} ${shellQuote(action.application)}${action.uri ? ` ${shellQuote(action.uri)}` : ""}`;
 }

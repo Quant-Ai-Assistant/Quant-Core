@@ -53,6 +53,10 @@ export function applyPlaceholderAction(box: { screen: string }, action: Computer
   else box.screen = action.kind;
 }
 
+/** Element and menu actions need a provider that reads UI elements. */
+export const UNSUPPORTED_ELEMENT_ACTION =
+  "element and menu actions are unavailable on this computer; use x/y coordinates";
+
 export function boundedComputerActions(actions: readonly ComputerAction[]): ComputerAction[] {
   if (actions.length > 24) throw new Error("computer action batch exceeds 24 actions");
   return [...actions];

@@ -141,7 +141,35 @@ export type ComputerAction =
   | { kind: "wait"; ms: number }
   | { kind: "open"; path: string }
   | { kind: "launch"; application: string; uri?: string }
-  | { kind: "focus"; application: string; uri?: string };
+  | { kind: "focus"; application: string; uri?: string }
+  /** Acts on an element listed by the last observation. Needs `capabilities.elements`. */
+  | { kind: "element"; element: number; action: ComputerElementAction; text?: string }
+  /** Presses a menu bar item by its titles, e.g. ["File", "Export"]. Needs `capabilities.elements`. */
+  | { kind: "menu"; path: string[]; application?: string };
+
+export type ComputerElementAction =
+  | "click"
+  | "double_click"
+  | "right_click"
+  | "press"
+  | "fill"
+  | "focus"
+  | "hover";
+
+/** An interactive control on screen, in observation image pixels. */
+export interface ComputerElement {
+  id: number;
+  role: string;
+  label?: string;
+  value?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  disabled?: boolean;
+  focused?: boolean;
+  secure?: boolean;
+}
 
 export interface ComputerObservation {
   frameId: string;
@@ -152,6 +180,8 @@ export interface ComputerObservation {
   height: number;
   cursor?: { x: number; y: number };
   activeWindow?: { id: string; title?: string };
+  /** Interactive elements of the frontmost application, when the provider can read them. */
+  elements?: ComputerElement[];
 }
 
 export interface ComputerActionRequest {
@@ -223,6 +253,8 @@ export interface SandboxCapabilities {
   persistentHome: boolean;
   /** Distinct graphical screens for concurrent Team bots on one computer. */
   multiScreen?: boolean;
+  /** Observations list UI elements, and element and menu actions work. */
+  elements?: boolean;
 }
 
 export interface ConnectorTool {
