@@ -21,7 +21,7 @@ import { useMobileTokens } from "../lib/native";
 import { currentServerAccess } from "../lib/server-access";
 import { saveServerAccess } from "../lib/server-access-store";
 
-const EXAMPLE_SERVER = "http://192.168.1.10:8080";
+const EXAMPLE_SERVER = "https://quant.example.com";
 
 /** Connects the app to a Quant server: check it first, then continue to sign-in. */
 export default function ServerScreen() {

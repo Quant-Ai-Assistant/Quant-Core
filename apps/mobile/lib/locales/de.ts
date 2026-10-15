@@ -676,6 +676,8 @@ export const DE_MESSAGES: Record<string, string> = {
   "Enter a server URL": "Gib eine Server-URL ein",
   "Public servers need https://. HTTP only works on your local network.":
     "Öffentliche Server brauchen https://. HTTP funktioniert nur im lokalen Netzwerk.",
+  "The address answers, but the Quant server behind it is not running":
+    "Die Adresse antwortet, aber der Quant-Server dahinter läuft nicht",
   "That URL did not look like a Quant server": "Diese URL sieht nicht nach einem Quant-Server aus",
   "That URL is missing a host": "Dieser URL fehlt ein Host",
   "That doesn’t look like a URL": "Das sieht nicht nach einer URL aus",

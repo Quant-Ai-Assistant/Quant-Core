@@ -7,6 +7,7 @@ const LOCAL_API = "http://127.0.0.1:3100";
 const DEFAULT_API = process.env.EXPO_PUBLIC_API_URL ?? LOCAL_API;
 export const API_PROBE_TIMEOUT_MS = 8_000;
 export const MAX_API_PROBE_RESPONSE_BYTES = 64 * 1024;
+const GATEWAY_STATUSES = new Set([502, 503, 504, 530]);
 
 export type EndpointResult = { ok: true; url: string } | { ok: false; error: string };
 type HealthResponse = { json?: { ok?: boolean }; error?: { message?: string } };
@@ -111,6 +112,14 @@ async function probeOrigin(
         error: access
           ? t("The server did not accept that username and password")
           : t("This server asks for a username and password"),
+      };
+    }
+    if (GATEWAY_STATUSES.has(res.status)) {
+      cancelResponseBody(res);
+      // A tunnel or proxy answered, but nothing behind it did.
+      return {
+        ok: false,
+        error: t("The address answers, but the Quant server behind it is not running"),
       };
     }
     if (!res.ok) {

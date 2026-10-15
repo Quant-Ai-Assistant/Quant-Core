@@ -32,6 +32,11 @@ describe("normalizeApiBase", () => {
       ok: true,
       url: "http://192.168.1.20:3100",
     });
+    // A Cloudflare tunnel exposes the server as a plain https domain.
+    expect(normalizeApiBase("https://quant-assistant.example.com/")).toEqual({
+      ok: true,
+      url: "https://quant-assistant.example.com",
+    });
     // Self-hosted servers without a domain answer on http://address:port.
     expect(normalizeApiBase("http://203.0.113.24:8080")).toEqual({
       ok: true,
@@ -132,6 +137,17 @@ describe("probeApiBase", () => {
     await expect(probeApiBase("https://app.example.com", fetchImpl)).resolves.toEqual({
       ok: false,
       error: "Could not reach that server",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("says the server is down when a tunnel or proxy answers 502", async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response("Bad Gateway", { status: 502 }),
+    ) as unknown as typeof fetch;
+    await expect(probeApiBase("https://quant.example.com/", fetchImpl)).resolves.toEqual({
+      ok: false,
+      error: "The address answers, but the Quant server behind it is not running",
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
