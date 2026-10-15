@@ -4,6 +4,7 @@ import type { ContractRouterClient } from "@orpc/contract";
 import type { AppContract } from "@rakazo/contracts";
 import { LOCAL_SETTINGS_PAGE, LOCAL_SETTINGS_RPC } from "@rakazo/contracts";
 import { desktopBridge } from "./desktop";
+import { reportError } from "./diagnostics";
 
 const SPACE_STORAGE_KEY = "rakazo:space-id";
 
@@ -69,11 +70,28 @@ const link = new RPCLink<RpcClientContext>({
     }
     const spaceId =
       options.context.spaceId === undefined ? selectedSpaceId() : options.context.spaceId;
-    return fetch(request, {
+    const response = await fetch(request, {
       headers: withSpaceHeaders(request.headers, spaceId),
       credentials: "include",
     });
+    if (!response.ok && response.status !== 401) reportRpcFailure(request.url, response);
+    return response;
   },
 });
+
+/** A failed call goes to the server's daily log with the reason the server gave. */
+function reportRpcFailure(url: string, response: Response) {
+  const procedure = new URL(url).pathname.replace(/^\/rpc\//, "");
+  void response
+    .clone()
+    .json()
+    .catch(() => null)
+    .then((body: { json?: { message?: unknown; data?: { issues?: unknown } } } | null) => {
+      reportError("rpc.failed", `${procedure} ${response.status}`, {
+        message: body?.json?.message,
+        issues: body?.json?.data?.issues,
+      });
+    });
+}
 
 export const rpc: ContractRouterClient<AppContract, RpcClientContext> = createORPCClient(link);

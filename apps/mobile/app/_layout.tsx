@@ -31,6 +31,7 @@ import {
 import { loadAppearancePreference, mobileTokens } from "../lib/appearance";
 import { replaceWithSignIn } from "../lib/auth-routing";
 import { loadAvatarStyle } from "../lib/avatar-style";
+import { reportUncaughtErrors } from "../lib/diagnostics";
 import { bootstrapI18n, useI18n } from "../lib/i18n";
 import { syncIncomingCalls } from "../lib/incoming-calls";
 import { loadLinkFavicon } from "../lib/link-favicons";
@@ -93,6 +94,7 @@ function ChatContentProviders({
 }
 
 export default function Layout() {
+  useEffect(() => reportUncaughtErrors(), []);
   useEffect(() => {
     // The app is portrait-only; the computer screen unlocks rotation while it is open.
     void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(

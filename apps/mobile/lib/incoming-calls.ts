@@ -66,6 +66,9 @@ async function askToRingWhenLocked(): Promise<void> {
   ]);
 }
 
+/** The shape the server accepts for a call id. */
+const CALL_ID = /^[^:]{1,200}$/;
+
 export type RingingCall = {
   botId: string;
   botName: string;
@@ -77,6 +80,8 @@ export type RingingCall = {
 export type AnswerDeps = {
   selectedSpaceId: () => string | null;
   selectSpace: (spaceId: string) => Promise<unknown>;
+  /** Who is ringing now, to recover the call when the notification's link lost its id. */
+  ringing?: () => Promise<RingingCall[]>;
   answer: (botId: string, callId: string) => Promise<{ opening: string }>;
   dismiss: (callId: string) => Promise<void>;
   start: (call: { botId: string; botName: string; greeting?: string; callId: string }) => void;
@@ -88,13 +93,19 @@ export async function answerIncomingCall(
   deps: AnswerDeps,
 ): Promise<void> {
   if (call.spaceId && call.spaceId !== deps.selectedSpaceId()) await deps.selectSpace(call.spaceId);
-  const { opening } = await deps.answer(call.botId, call.callId);
-  await deps.dismiss(call.callId).catch(() => undefined);
+  let callId = call.callId.trim();
+  if (!CALL_ID.test(callId) && deps.ringing) {
+    callId = (await deps.ringing()).find((ringing) => ringing.botId === call.botId)?.callId ?? "";
+  }
+  if (!CALL_ID.test(callId)) throw new Error(t("This call is no longer ringing."));
+  const { opening } = await deps.answer(call.botId, callId);
+  await deps.dismiss(callId).catch(() => undefined);
+  if (callId !== call.callId) await deps.dismiss(call.callId).catch(() => undefined);
   deps.start({
     botId: call.botId,
     botName: call.botName,
     greeting: opening.trim() || undefined,
-    callId: call.callId,
+    callId,
   });
 }
 

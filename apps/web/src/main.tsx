@@ -5,6 +5,7 @@ import { App } from "./App";
 import { DesktopUpdatesProvider } from "./components/DesktopUpdates";
 import { I18nBootstrap } from "./components/I18nBootstrap";
 import { applyUiDirection } from "./lib/apply-ui-direction";
+import { reportUncaughtErrors } from "./lib/diagnostics";
 import { markAfterPaint, markOnce } from "./lib/performance";
 import { installPreloadRecovery } from "./lib/preload-recovery";
 import { applyUiAppearance, watchSystemAppearance } from "./lib/ui-appearance";
@@ -13,6 +14,7 @@ import "./styles.css";
 
 markOnce("rk:renderer:module-evaluated");
 installPreloadRecovery();
+reportUncaughtErrors();
 applyUiDirection(resolveUiLocale());
 applyUiAppearance();
 
