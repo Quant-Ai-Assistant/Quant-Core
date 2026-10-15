@@ -120,7 +120,7 @@ describe("setup preload bridge", () => {
       "state",
       "test",
     ]);
-    expect(Object.keys(bridge.stack).sort()).toEqual(["onChange", "start", "state"]);
+    expect(Object.keys(bridge.stack).sort()).toEqual(["checkPort", "onChange", "start", "state"]);
 
     await bridge.state();
     await bridge.test("http://127.0.0.1:5173");
@@ -129,6 +129,7 @@ describe("setup preload bridge", () => {
     await bridge.openLink("orbstack");
     await bridge.stack.state();
     await bridge.stack.start();
+    await bridge.stack.checkPort(8080);
     expect(invoke.mock.calls.map(([channel]) => channel)).toEqual([
       "desktop.setup.state",
       "desktop.setup.test",
@@ -137,6 +138,7 @@ describe("setup preload bridge", () => {
       "desktop.setup.openLink",
       "desktop.setup.stack.state",
       "desktop.setup.stack.start",
+      "desktop.setup.stack.checkPort",
     ]);
     expect(invoke).toHaveBeenCalledWith("desktop.setup.openLink", "orbstack");
 

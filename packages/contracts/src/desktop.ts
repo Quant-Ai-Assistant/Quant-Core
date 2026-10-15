@@ -77,6 +77,10 @@ export interface DesktopSetup {
 
 export interface DesktopSetupState {
   defaultLocalUrl: string;
+  /** The port setup suggests for the gate before one is saved. */
+  defaultPort: number;
+  /** The gate this computer's server already has: who signs in and the port it listens on. */
+  gate: { username: string; port: number } | null;
   saved: DesktopSetup | null;
   /** Present when a saved or newly selected server could not be reopened. */
   error?: string;
@@ -143,8 +147,16 @@ export interface RakazoSetup {
   /** The Docker Compose stack this app installs and runs for mode `new`. */
   stack: {
     state: () => Promise<DesktopLocalStackState>;
-    /** Starts (or retries) the stack; a no-op while a start is already in flight. */
-    start: () => Promise<DesktopLocalStackState>;
+    /**
+     * Starts (or retries) the stack; a no-op while a start is already in flight. Credentials
+     * replace the gate's, a port moves it; leaving either out keeps what is saved.
+     */
+    start: (request?: {
+      access?: { username: string; password: string };
+      port?: number;
+    }) => Promise<DesktopLocalStackState>;
+    /** Whether the gate can listen on this port; its own saved port always can. */
+    checkPort: (port: number) => Promise<{ ok: boolean; busy?: boolean }>;
     /** Fires on every state change so progress never depends on a renderer timer. */
     onChange: (listener: (state: DesktopLocalStackState) => void) => void;
   };

@@ -28,8 +28,11 @@ import { openBrowserAuth } from "./browser-auth.js";
 import { DOCKER_INSTALL_LINKS, isDesktopSetupLink, runDocker } from "./docker-cli.js";
 import { requestLocalSettings } from "./local-settings.js";
 import {
+  GATE_DEFAULT_PORT,
+  gatePortFree,
   LocalStackController,
   parseGateChange,
+  parseGatePort,
   readStackGate,
   readStackToken,
   readStackWebUrl,
@@ -1196,6 +1199,7 @@ app.whenReady().then(async () => {
     const saved = activeServerAccess();
     return {
       defaultLocalUrl: localStack.webUrl(),
+      defaultPort: GATE_DEFAULT_PORT,
       gate: await readStackGate(stackDir(userDataDir)),
       saved: currentSetup,
       savedUsername:
@@ -1322,15 +1326,22 @@ app.whenReady().then(async () => {
   );
   ipcMain.handle("desktop.setup.stack.start", (event, payload: unknown) => {
     if (!fromSetupWindow(event)) return null;
-    const gate = parseGateChange(
-      payload !== null && typeof payload === "object"
-        ? (payload as Record<string, unknown>).access
-        : undefined,
-    );
-    if (gate === null) return localStack.state();
+    const request =
+      payload !== null && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+    const gate = parseGateChange(request.access);
+    const port = request.port === undefined ? null : parseGatePort(request.port);
+    if (gate === null || (request.port !== undefined && port === null)) return localStack.state();
     // Respond right away; the setup window polls `stack.state` until a terminal phase.
-    void localStack.start(gate);
+    void localStack.start(gate, port);
     return localStack.state();
+  });
+  ipcMain.handle("desktop.setup.stack.checkPort", async (event, value: unknown) => {
+    if (!fromSetupWindow(event)) return null;
+    const port = parseGatePort(value);
+    if (port === null) return { ok: false, busy: false };
+    // The running gate holds its own port, so keeping it is never a conflict.
+    if ((await readStackGate(stackDir(userDataDir)))?.port === port) return { ok: true };
+    return (await gatePortFree(port)) ? { ok: true } : { ok: false, busy: true };
   });
 
   // Register before startup awaits so macOS dock clicks during probe/open are handled.

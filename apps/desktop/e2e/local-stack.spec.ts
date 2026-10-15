@@ -2,13 +2,20 @@ import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs
 import { createServer, type RequestListener, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { type ElectronApplication, _electron as electron, expect, test } from "@playwright/test";
+import {
+  type ElectronApplication,
+  _electron as electron,
+  expect,
+  type Page,
+  test,
+} from "@playwright/test";
 
 const APP_MARKER = "Local Quant stack ready";
 const IMAGE_TAG = "v9.9.9";
 const STACK_PROBE_PATH = "/.well-known/rakazo-desktop-stack";
 const STACK_TOKEN_HEADER = "x-rakazo-desktop-stack-token";
 const COMPOSE_DIR = path.resolve(import.meta.dirname, "..", "..", "..", "infra", "compose");
+const GATE_HASH = `$2a$14$${"a".repeat(53)}`;
 
 type FakeDockerMode =
   | "ok"
@@ -21,6 +28,7 @@ type FakeDockerMode =
 let server: Server;
 let serverUrl: string;
 let userData: string;
+let gatePort: number;
 let app: ElectronApplication | undefined;
 
 // The fake docker is a POSIX shell script; Windows desktop e2e does not run in CI.
@@ -78,6 +86,7 @@ test.afterAll(async () => {
 test.beforeEach(async () => {
   // The fake docker logs $PWD, which is the resolved path (macOS /var is a symlink).
   userData = await realpath(await mkdtemp(path.join(tmpdir(), "rakazo-desktop-stack-")));
+  gatePort = await freePort();
 });
 
 test.afterEach(async () => {
@@ -85,6 +94,28 @@ test.afterEach(async () => {
   app = undefined;
   await rm(userData, { recursive: true, force: true });
 });
+
+/** A port nothing listens on, for the gate the fake docker never actually binds. */
+async function freePort() {
+  const probe = createServer();
+  await new Promise<void>((resolve) => probe.listen(0, "0.0.0.0", resolve));
+  const address = probe.address();
+  if (address === null || typeof address === "string") throw new Error("probe has no port");
+  await new Promise<void>((resolve, reject) => {
+    probe.close((error) => (error ? reject(error) : resolve()));
+  });
+  return address.port;
+}
+
+/** Walks the This computer steps: sign-in for other devices, then the port, then Install. */
+async function installHere(setup: Page, port = gatePort) {
+  await setup.getByRole("button", { name: "Next" }).click();
+  await setup.locator("#gate-username").fill("quant");
+  await setup.locator("#gate-password").fill("e2e-gate-pw");
+  await setup.getByRole("button", { name: "Next" }).click();
+  await setup.locator("#gate-port").fill(String(port));
+  await setup.getByRole("button", { name: "Install" }).click();
+}
 
 function fakeDockerLog() {
   return path.join(userData, "fake-docker.log");
@@ -117,6 +148,7 @@ async function writeFakeDocker(mode: FakeDockerMode) {
     "esac",
     "# compose --env-file .env -f docker-compose.images.yml --project-name quant-desktop <command> ...",
     'case "$8" in',
+    `  run) echo '${GATE_HASH}'; exit 0 ;;`,
     "  pull)",
     mode === "pull-fails"
       ? '    echo "Error response from daemon: manifest unknown" >&2; exit 1 ;;'
@@ -170,15 +202,39 @@ test("This computer installs and starts the stack, then opens the app", async ()
   const setup = await app.firstWindow();
 
   await expect(setup.getByRole("radio", { name: /This computer/ })).toBeChecked();
-  // The panel is empty until a start begins, so check the attribute rather than the box.
-  await expect(setup.locator("#panel-new")).toHaveJSProperty("hidden", false);
-  await expect(setup.locator("#stack")).toBeHidden();
-  await expect(setup.getByRole("button", { name: "Check connection" })).toBeHidden();
+
+  // Sign-in for other devices is required, and the port step shows where a tunnel points.
+  await setup.getByRole("button", { name: "Next" }).click();
+  await expect(setup.getByText("Step 2 of 3")).toBeVisible();
+  await setup.getByRole("button", { name: "Next" }).click();
+  await expect(setup.locator("#status")).toHaveText("Enter a username.");
+  await setup.locator("#gate-username").fill("quant");
+  await setup.getByRole("button", { name: "Next" }).click();
+  await expect(setup.locator("#status")).toHaveText("Enter a password.");
+  await setup.locator("#gate-password").fill("e2e-gate-pw");
+  await setup.getByRole("button", { name: "Next" }).click();
+  await expect(setup.getByText("Step 3 of 3")).toBeVisible();
+  await expect(setup.locator("#gate-port")).toHaveValue("8080");
+  await expect(setup.locator("#gate-address")).toHaveText("Tunnel address: http://localhost:8080");
+  await setup.locator("#gate-port").fill("80");
+  await setup.getByRole("button", { name: "Install" }).click();
+  await expect(setup.locator("#status")).toHaveText("Enter a port from 1024 to 65535.");
+  await setup.locator("#gate-port").fill(String(gatePort));
+  await expect(setup.locator("#gate-address")).toHaveText(
+    `Tunnel address: http://localhost:${gatePort}`,
+  );
+  await setup.screenshot({
+    path: path.join(import.meta.dirname, "screenshots", "11-setup-port.png"),
+  });
+  expect(await readLog()).toEqual([]);
 
   const appWindowPromise = app.waitForEvent("window");
-  await setup.getByRole("button", { name: "Continue" }).click();
+  await setup.getByRole("button", { name: "Install" }).click();
   await expect(setup.locator("#stack-phase")).toHaveText("Downloading Quant…");
-  await expect(setup.getByRole("button", { name: "Continue" })).toBeDisabled();
+  await expect(setup.locator("#install-address")).toHaveText(
+    `Tunnel address: http://localhost:${gatePort}`,
+  );
+  await expect(setup.getByRole("button", { name: "Back" })).toBeHidden();
   // Docker output stays behind the details toggle; the phase, the bar, and the size show by default.
   await expect(setup.locator("#stack-detail")).toHaveText("412 MB downloaded");
   await expect(setup.locator("#stack-progress")).toBeVisible();
@@ -206,6 +262,9 @@ test("This computer installs and starts the stack, then opens the app", async ()
   expect(env).toMatch(/^BETTER_AUTH_SECRET=[0-9a-f]{64}$/m);
   expect(env).not.toContain("RAKAZO_IMAGE_TAG=");
   expect(env).not.toContain("RAKAZO_COMPUTER_IMAGE_TAG=");
+  expect(env).toContain(`QUANT_PORT=${gatePort}\n`);
+  expect(env).toContain("QUANT_BASIC_USER=quant\n");
+  expect(env).not.toContain("e2e-gate-pw");
   await expect(readFile(path.join(stackDir, "docker-compose.images.yml"), "utf8")).resolves.toBe(
     await readFile(path.join(COMPOSE_DIR, "docker-compose.images.yml"), "utf8"),
   );
@@ -216,6 +275,7 @@ test("This computer installs and starts the stack, then opens the app", async ()
     `${stackDir} | ${IMAGE_TAG} | compose version --short`,
     `${stackDir} | ${IMAGE_TAG} | info --format {{.ServerVersion}}`,
     `${stackDir} | ${IMAGE_TAG} | ${compose} pull`,
+    `${stackDir} | ${IMAGE_TAG} | ${compose} run --rm --no-deps -T -e QUANT_HASH_INPUT gate sh -c caddy hash-password --plaintext "$QUANT_HASH_INPUT"`,
     `${stackDir} | ${IMAGE_TAG} | ${compose} up -d --wait --wait-timeout 300`,
   ]);
 });
@@ -224,7 +284,7 @@ test("without Docker the app explains how to get it and offers to check again", 
   app = await launch("missing");
   const setup = await app.firstWindow();
 
-  await setup.getByRole("button", { name: "Continue" }).click();
+  await installHere(setup);
   await expect(setup.locator("#stack-phase")).toHaveText(
     "Docker is not installed on this computer.",
   );
@@ -237,47 +297,43 @@ test("without Docker the app explains how to get it and offers to check again", 
     path: path.join(import.meta.dirname, "screenshots", "07-setup-docker-missing.png"),
   });
 
-  // Existing instance stays available without Docker.
-  await setup.getByRole("radio", { name: /Existing instance/ }).check();
-  await expect(setup.locator("#stack")).toBeHidden();
+  // Another server stays available without Docker.
+  for (let step = 0; step < 3; step += 1) {
+    await setup.getByRole("button", { name: "Back" }).click();
+  }
+  await setup.getByRole("radio", { name: /Another server/ }).check();
+  await setup.getByRole("button", { name: "Next" }).click();
   await expect(setup.getByRole("button", { name: "Continue" })).toBeEnabled();
   expect(await savedSetup()).toBeNull();
 });
 
-test("switching to Existing instance while the stack starts keeps that choice", async () => {
-  app = await launch("ok");
-  const setup = await app.firstWindow();
+test("a busy port is refused before anything is installed", async () => {
+  const busy = createServer();
+  await new Promise<void>((resolve) => busy.listen(0, "0.0.0.0", resolve));
+  try {
+    const address = busy.address();
+    if (address === null || typeof address === "string") throw new Error("busy has no port");
+    app = await launch("ok");
+    const setup = await app.firstWindow();
 
-  await setup.getByRole("button", { name: "Continue" }).click();
-  await expect(setup.locator("#stack-phase")).toHaveText("Downloading Quant…");
-
-  // Fake docker sleeps during pull; leave This computer before ready so followStack must not save.
-  await setup.getByRole("radio", { name: /Existing instance/ }).check();
-  await expect(setup.locator("#panel-existing")).toBeVisible();
-  await expect(setup.getByRole("button", { name: "Continue" })).toBeEnabled();
-  await expect(setup.getByRole("button", { name: "Check connection" })).toBeVisible();
-
-  // Main process still finishes the install; setup.json must stay untouched.
-  await expect
-    .poll(async () => (await readLog()).some((line) => line.includes(" up -d")))
-    .toBe(true);
-  await new Promise((resolve) => setTimeout(resolve, 2500));
-  expect(await savedSetup()).toBeNull();
-  expect(app.windows()).toHaveLength(1);
-
-  // Back on This computer, Continue starts (or re-follows) and opens the app.
-  await setup.getByRole("radio", { name: /This computer/ }).check();
-  const appWindowPromise = app.waitForEvent("window");
-  await setup.getByRole("button", { name: "Continue" }).click();
-  await expect((await appWindowPromise).getByText(APP_MARKER)).toBeVisible();
-  await expect.poll(savedSetup).toEqual({ mode: "new", serverUrl });
+    await installHere(setup, address.port);
+    await expect(setup.locator("#status")).toHaveText(
+      `Port ${address.port} is busy. Choose another.`,
+    );
+    await expect(setup.getByRole("heading", { name: "Port" })).toBeVisible();
+    expect(await readLog()).toEqual([]);
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      busy.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
 });
 
 test("a stopped Docker daemon is reported and Check again asks Docker once more", async () => {
   app = await launch("daemon-down");
   const setup = await app.firstWindow();
 
-  await setup.getByRole("button", { name: "Continue" }).click();
+  await installHere(setup);
   await expect(setup.locator("#stack-phase")).toHaveText(
     "Docker is installed but not running. Start Docker, then check again.",
   );
@@ -294,7 +350,7 @@ test("unpublished images show the docker output and a Retry button", async () =>
   app = await launch("pull-fails");
   const setup = await app.firstWindow();
 
-  await setup.getByRole("button", { name: "Continue" }).click();
+  await installHere(setup);
   await expect(setup.locator("#stack-phase")).toHaveText(
     `Images for ${IMAGE_TAG} are not published yet. Try again in a few minutes.`,
   );
@@ -323,8 +379,8 @@ test("a saved local stack that is down is started again without asking", async (
 
   app = await launch("ok");
   const setup = await app.firstWindow();
-  await expect(setup.getByRole("radio", { name: /This computer/ })).toBeChecked();
-  await expect(setup.locator("#stack")).toBeVisible();
+  await expect(setup.getByRole("heading", { name: "Installing Quant" })).toBeVisible();
+  await expect(setup.locator("#stack-phase")).not.toBeEmpty();
   await expect(setup.locator("#status")).toBeEmpty();
 
   const appWindow = await app.waitForEvent("window");
@@ -386,8 +442,7 @@ test("a saved local target is the exact origin authenticated before reuse", asyn
 
     app = await launch("ok");
     const setup = await app.firstWindow();
-    await expect(setup.getByRole("radio", { name: /This computer/ })).toBeChecked();
-    await expect(setup.locator("#stack")).toBeVisible();
+    await expect(setup.getByRole("heading", { name: "Installing Quant" })).toBeVisible();
     await expect(setup.getByText("Unchecked listener")).toHaveCount(0);
   } finally {
     await new Promise<void>((resolve, reject) => {
@@ -396,7 +451,7 @@ test("a saved local target is the exact origin authenticated before reuse", asyn
   }
 });
 
-test("an existing stack .env is never rewritten", async () => {
+test("an existing stack .env keeps its secrets", async () => {
   const stackDir = path.join(userData, "stack");
   await mkdir(stackDir, { recursive: true });
   const sentinel = "POSTGRES_PASSWORD=keep-me\nSENTINEL=1\n";
@@ -405,17 +460,20 @@ test("an existing stack .env is never rewritten", async () => {
   app = await launch("ok");
   const setup = await app.firstWindow();
   const appWindowPromise = app.waitForEvent("window");
-  await setup.getByRole("button", { name: "Continue" }).click();
+  await installHere(setup);
   const appWindow = await appWindowPromise;
   await expect(appWindow.getByText(APP_MARKER)).toBeVisible();
 
-  await expect(readFile(path.join(stackDir, ".env"), "utf8")).resolves.toBe(sentinel);
+  // Only the gate's lines are added; nothing already there is regenerated.
+  await expect(readFile(path.join(stackDir, ".env"), "utf8")).resolves.toMatch(
+    /^POSTGRES_PASSWORD=keep-me\nSENTINEL=1\nQUANT_BASIC_USER=quant\n/,
+  );
 });
 
 test("exhausted address pools explain recovery", async () => {
   app = await launch("pool-exhausted");
   const setup = await app.firstWindow();
-  await setup.getByRole("button", { name: "Continue" }).click();
+  await installHere(setup);
   await expect(setup.locator("#stack-phase")).toHaveText(
     "Docker has no free network address pools. Remove unused Docker networks or expand Docker’s address pools, then retry.",
   );
@@ -429,7 +487,7 @@ test("a port conflict opens and saves the replacement managed origin", async () 
   app = await launch("port-conflict");
   const setup = await app.firstWindow();
   const appWindowPromise = app.waitForEvent("window");
-  await setup.getByRole("button", { name: "Continue" }).click();
+  await installHere(setup);
   const urlFile = path.join(userData, "stack", ".desktop-web-url");
   let replacementUrl = "";
   await expect
@@ -459,7 +517,7 @@ test("a port conflict opens and saves the replacement managed origin", async () 
 test("repeated port conflicts stop with a retry action", async () => {
   app = await launch("ports-exhausted");
   const setup = await app.firstWindow();
-  await setup.getByRole("button", { name: "Continue" }).click();
+  await installHere(setup);
   await expect(setup.locator("#stack-phase")).toHaveText(
     "Could not bind a local port after retrying. Retry to choose another port.",
   );
@@ -474,7 +532,7 @@ test("the native settings menu opens an isolated logged-out settings capability"
   app = await launch("ok");
   const setup = await app.firstWindow();
   const nextWindow = app.waitForEvent("window");
-  await setup.getByRole("button", { name: "Continue", exact: true }).click();
+  await installHere(setup);
   const main = await nextWindow;
   await expect(main.getByText(APP_MARKER)).toBeVisible();
   await expect.poll(savedSetup).toEqual({ mode: "new", serverUrl });
