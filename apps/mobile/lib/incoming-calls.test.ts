@@ -76,6 +76,38 @@ describe("incoming calls on Android", () => {
     });
   });
 
+  it("recovers the call id from who is ringing when the notification's link lost it", async () => {
+    const deps: AnswerDeps = {
+      selectedSpaceId: () => "space-a",
+      selectSpace: vi.fn(async () => true),
+      ringing: vi.fn(async () => [
+        { botId: "other", botName: "Max", botColor: "", callId: "c2", expiresAt: "" },
+        { botId: "bot", botName: "Ada", botColor: "", callId: "c1", expiresAt: "" },
+      ]),
+      answer: vi.fn(async () => ({ opening: "" })),
+      dismiss: vi.fn(async () => {}),
+      start: vi.fn(),
+    };
+    await answerIncomingCall({ botId: "bot", botName: "Ada", callId: "" }, deps);
+    expect(deps.answer).toHaveBeenCalledWith("bot", "c1");
+    expect(deps.start).toHaveBeenCalledWith(expect.objectContaining({ callId: "c1" }));
+  });
+
+  it("does not send an id the server would reject when nothing is ringing", async () => {
+    const deps: AnswerDeps = {
+      selectedSpaceId: () => "space-a",
+      selectSpace: vi.fn(),
+      ringing: vi.fn(async () => []),
+      answer: vi.fn(),
+      dismiss: vi.fn(async () => {}),
+      start: vi.fn(),
+    };
+    await expect(
+      answerIncomingCall({ botId: "bot", botName: "Ada", callId: "call:bad" }, deps),
+    ).rejects.toThrow("no longer ringing");
+    expect(deps.answer).not.toHaveBeenCalled();
+  });
+
   it("does not connect a call that stopped ringing before it was answered", async () => {
     const deps: AnswerDeps = {
       selectedSpaceId: () => "space-a",

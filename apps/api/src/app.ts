@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 import { ORPCError, onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import type {
@@ -100,6 +101,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createBillingService } from "./billing.js";
 import { mountBillingRoutes } from "./billing-webhook.js";
+import { DiagnosticLog, mountDiagnosticRoutes, recordRpcFailure } from "./diagnostic-log.js";
 import type { AppEnv } from "./env.js";
 import { loadEnv } from "./env.js";
 import { healthRoutes } from "./health.js";
@@ -580,8 +582,14 @@ export async function createApp(
       mcpAllowPrivateEndpoint: env.mcpAllowPrivateEndpoint,
     },
   });
+  const diagnostics = new DiagnosticLog(path.join(env.dataDir, "logs"));
   const rpc = new RPCHandler(router, {
-    clientInterceptors: [onError((error, { path }) => logUnexpectedRpcError(error, path))],
+    clientInterceptors: [
+      onError((error, { path: procedure, input }) => {
+        logUnexpectedRpcError(error, procedure);
+        recordRpcFailure(diagnostics, error, { path: procedure, input });
+      }),
+    ],
   });
   const app = new Hono();
   app.use("*", requestLogging(logger));
@@ -667,6 +675,7 @@ export async function createApp(
     if (matched) return c.newResponse(response.body, response);
     await next();
   });
+  mountDiagnosticRoutes(app, diagnostics, (c) => sessionActor(c.req.raw));
   mountVoiceHttpRoutes(app, { prisma, secrets }, async (c) => {
     const actor = await sessionActor(c.req.raw);
     if (actor) enrichLogContext({ "user.id": actor.userId, "space.id": actor.spaceId });

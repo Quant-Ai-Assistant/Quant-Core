@@ -44,6 +44,7 @@ import {
 import * as SecureStore from "expo-secure-store";
 import { promptAiConsent } from "./ai-consent";
 import { getCachedAvatarStyle, saveAvatarStyle } from "./avatar-style";
+import { reportError, setDiagnosticsTransport } from "./diagnostics";
 import type { EndpointResult } from "./endpoint";
 import { defaultApiBase, hasBuiltInApiBase, normalizeApiBase } from "./endpoint";
 import { t } from "./i18n";
@@ -820,6 +821,12 @@ export async function rpc<T>(
       // oRPC sends a failure as `{ json: { code, status, message } }`; the message is the
       // server's user-facing copy.
       const error = parsed.json as { message?: unknown; data?: unknown } | undefined;
+      if (res.status !== 401) {
+        reportError("rpc.failed", `${proc} ${res.status}`, {
+          message: error?.message,
+          issues: (error?.data as { issues?: unknown } | undefined)?.issues,
+        });
+      }
       const message = errorText(
         withRejectedFields(typeof error?.message === "string" ? error.message : "", error?.data),
       );
@@ -938,6 +945,15 @@ export async function rpc<T>(
     options.signal?.removeEventListener("abort", cancel);
   }
 }
+
+setDiagnosticsTransport(async (entries) => {
+  const res = await fetch(`${currentApiBase()}/api/diagnostics`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "rakazo://", ...(await authHeaders()) },
+    body: JSON.stringify({ source: "mobile", entries }),
+  });
+  cancelResponseBody(res);
+});
 
 /**
  * A rejected request names the fields the server refused (`Input validation failed (callId)`),

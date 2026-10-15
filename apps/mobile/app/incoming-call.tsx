@@ -6,7 +6,9 @@ import { BotAvatar } from "../components/bot-avatar";
 import { GlassIconButton } from "../components/glass-icon-button";
 import { rpc, selectedSpaceId, selectSpace } from "../lib/api";
 import { startCall } from "../lib/call-session";
+import { reportError } from "../lib/diagnostics";
 import { useI18n } from "../lib/i18n";
+import type { RingingCall } from "../lib/incoming-calls";
 import { answerIncomingCall, isStillRinging } from "../lib/incoming-calls";
 import { dismissIncomingCall, showOverLockScreen } from "../lib/live-notifications";
 import { useMobileTokens } from "../lib/native";
@@ -57,6 +59,7 @@ export default function IncomingCallScreen() {
         {
           selectedSpaceId,
           selectSpace,
+          ringing: () => rpc<RingingCall[]>("threads/ringingCalls"),
           answer: (id, call) =>
             rpc<{ opening: string }>("threads/answerCall", { botId: id, callId: call }),
           dismiss: dismissIncomingCall,
@@ -65,6 +68,13 @@ export default function IncomingCallScreen() {
       );
       router.replace({ pathname: "/thread", params: { botId, name: botName } });
     } catch (cause) {
+      // What the ringing notification handed this screen, next to the server's view of the call.
+      reportError("call.answer", cause instanceof Error ? cause.message : String(cause), {
+        params,
+        botId,
+        callId,
+        spaceId,
+      });
       handled.current = false;
       setError(errorText(cause, t("This call is no longer ringing.")));
     } finally {
