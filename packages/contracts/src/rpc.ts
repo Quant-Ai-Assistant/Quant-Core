@@ -424,6 +424,18 @@ export const appContract = {
         }),
       )
       .output(z.object({ answerSdp: z.string() })),
+    /** Bots ringing the user now, for a phone that rings in the background. */
+    ringingCalls: oc.output(
+      z.array(
+        z.object({
+          botId: z.string(),
+          botName: z.string(),
+          botColor: z.string(),
+          callId: z.string(),
+          expiresAt: z.string(),
+        }),
+      ),
+    ),
     /** The user picked up the bot's call: returns what the bot opens with. */
     answerCall: oc
       .input(

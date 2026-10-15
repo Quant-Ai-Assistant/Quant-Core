@@ -3,6 +3,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { apiBaseWarning, normalizeApiBase } from "./endpoint";
 import { t } from "./i18n";
+import { serverAccessHeader } from "./server-access";
 
 export interface LiveNotificationSettings {
   liveConnection: boolean;
@@ -25,8 +26,22 @@ type NativeNotifications = {
     endpoint: string,
     token: string,
     spaceId: string,
+    gateAuth: string,
   ): Promise<void>;
-  resume(endpoint: string, token: string, spaceId: string): Promise<void>;
+  resume(endpoint: string, token: string, spaceId: string, gateAuth: string): Promise<void>;
+  setCalls(
+    enabled: boolean,
+    endpoint: string,
+    token: string,
+    spaceId: string,
+    gateAuth: string,
+  ): Promise<void>;
+  dismissCall(callId: string): Promise<void>;
+  canUseFullScreenIntent(): Promise<boolean>;
+  openFullScreenIntentSettings(): Promise<void>;
+  isIgnoringBatteryOptimizations(): Promise<boolean>;
+  requestIgnoreBatteryOptimizations(): Promise<void>;
+  showOverLockScreen(show: boolean): Promise<void>;
   stop(clearSession: boolean): Promise<void>;
   setOpenThread(botId: string | null, threadId: string | null): Promise<void>;
   openSettings(): Promise<void>;
@@ -96,7 +111,13 @@ export async function setLiveNotificationSettings(
     const granted = existing.granted || (await Notifications.requestPermissionsAsync()).granted;
     if (!granted) throw new Error(t("Android blocked notifications."));
   }
-  await nativeNotifications.setSettings(settings, parsed.url, token, spaceId);
+  await nativeNotifications.setSettings(
+    settings,
+    parsed.url,
+    token,
+    spaceId,
+    serverAccessHeader(parsed.url) ?? "",
+  );
 }
 
 export async function resumeLiveNotifications(
@@ -107,7 +128,12 @@ export async function resumeLiveNotifications(
   if (!nativeNotifications || !token) return;
   const parsed = normalizeApiBase(endpoint);
   if (!parsed.ok || apiBaseWarning(parsed.url)) return;
-  await nativeNotifications.resume(parsed.url, token, spaceId);
+  await nativeNotifications.resume(
+    parsed.url,
+    token,
+    spaceId,
+    serverAccessHeader(parsed.url) ?? "",
+  );
 }
 
 export async function stopLiveNotifications(clearSession = false): Promise<void> {
@@ -173,4 +199,57 @@ export async function canPostPromotedNotifications(): Promise<boolean> {
 
 export async function openPromotedNotificationSettings(): Promise<void> {
   await nativeNotifications?.openPromotedSettings();
+}
+
+/**
+ * Android only: keeps the call service running so a bot's call rings with the app closed.
+ * Off when calls are off or the server is not usable from the background.
+ */
+export async function setIncomingCalls(
+  enabled: boolean,
+  endpoint: string,
+  token: string,
+  spaceId: string,
+): Promise<void> {
+  if (!nativeNotifications) return;
+  const parsed = normalizeApiBase(endpoint);
+  const usable = parsed.ok && !apiBaseWarning(parsed.url) && Boolean(token);
+  await nativeNotifications.setCalls(
+    enabled && usable,
+    parsed.ok ? parsed.url : "",
+    token,
+    spaceId,
+    parsed.ok ? (serverAccessHeader(parsed.url) ?? "") : "",
+  );
+}
+
+/** Stops the ringing for a call this device answered or declined. */
+export async function dismissIncomingCall(callId: string): Promise<void> {
+  await nativeNotifications?.dismissCall(callId);
+}
+
+/** What still keeps calls from ringing on a locked or idle phone. */
+export async function incomingCallBlockers(): Promise<{
+  fullScreen: boolean;
+  battery: boolean;
+}> {
+  if (!nativeNotifications) return { fullScreen: false, battery: false };
+  const [fullScreen, battery] = await Promise.all([
+    nativeNotifications.canUseFullScreenIntent().then((allowed) => !allowed),
+    nativeNotifications.isIgnoringBatteryOptimizations().then((ignoring) => !ignoring),
+  ]);
+  return { fullScreen, battery };
+}
+
+export async function openFullScreenCallSettings(): Promise<void> {
+  await nativeNotifications?.openFullScreenIntentSettings();
+}
+
+export async function requestUnrestrictedBattery(): Promise<void> {
+  await nativeNotifications?.requestIgnoreBatteryOptimizations();
+}
+
+/** The incoming call screen shows over the lock screen and wakes it. */
+export async function showOverLockScreen(show: boolean): Promise<void> {
+  await nativeNotifications?.showOverLockScreen(show);
 }

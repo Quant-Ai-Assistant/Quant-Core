@@ -2,7 +2,9 @@ package com.rakazo.notifications
 
 import android.app.NotificationManager
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -15,7 +17,7 @@ class RakazoNotificationsModule : Module() {
       NotificationStorage(context()).settings.toMap()
     }
 
-    AsyncFunction("setSettings") { value: Map<String, Boolean>, endpoint: String, token: String, spaceId: String ->
+    AsyncFunction("setSettings") { value: Map<String, Boolean>, endpoint: String, token: String, spaceId: String, gateAuth: String ->
       val context = context()
       val storage = NotificationStorage(context)
       if (endpoint.isNotBlank() && !isAllowedNotificationEndpoint(endpoint)) {
@@ -24,6 +26,7 @@ class RakazoNotificationsModule : Module() {
       storage.endpoint = endpoint
       storage.token = token
       storage.spaceId = spaceId
+      storage.gateAuth = gateAuth
       storage.settings = NotificationSettings.fromMap(value)
       if (storage.settings.liveConnection && endpoint.isNotBlank() && token.isNotBlank()) {
         RakazoNotificationService.start(context)
@@ -32,7 +35,7 @@ class RakazoNotificationsModule : Module() {
       }
     }
 
-    AsyncFunction("resume") { endpoint: String, token: String, spaceId: String ->
+    AsyncFunction("resume") { endpoint: String, token: String, spaceId: String, gateAuth: String ->
       val context = context()
       if (endpoint.isNotBlank() && !isAllowedNotificationEndpoint(endpoint)) {
         RakazoNotificationService.stop(context)
@@ -41,6 +44,7 @@ class RakazoNotificationsModule : Module() {
         storage.endpoint = endpoint
         storage.token = token
         storage.spaceId = spaceId
+        storage.gateAuth = gateAuth
         if (storage.settings.liveConnection && endpoint.isNotBlank() && token.isNotBlank()) {
           RakazoNotificationService.start(context)
         }
@@ -51,11 +55,75 @@ class RakazoNotificationsModule : Module() {
       val context = context()
       if (clearSession) {
         RakazoNotificationService.clearSession(context)
+        QuantCallService.stop(context)
         val storage = NotificationStorage(context)
         storage.token = ""
         storage.spaceId = ""
+        storage.gateAuth = ""
+        storage.callsEnabled = false
       } else {
         RakazoNotificationService.stop(context)
+      }
+    }
+
+    AsyncFunction("setCalls") { enabled: Boolean, endpoint: String, token: String, spaceId: String, gateAuth: String ->
+      val context = context()
+      if (enabled && !isAllowedNotificationEndpoint(endpoint)) {
+        throw IllegalArgumentException("Public servers need https://. HTTP only works on your local network.")
+      }
+      val storage = NotificationStorage(context)
+      storage.endpoint = endpoint
+      storage.token = token
+      storage.spaceId = spaceId
+      storage.gateAuth = gateAuth
+      storage.callsEnabled = enabled && token.isNotBlank()
+      if (storage.callsEnabled) QuantCallService.start(context) else QuantCallService.stop(context)
+    }
+
+    AsyncFunction("dismissCall") { callId: String ->
+      QuantCallService.dismiss(context(), callId)
+    }
+
+    AsyncFunction("canUseFullScreenIntent") {
+      if (Build.VERSION.SDK_INT < 34) {
+        true
+      } else {
+        context().getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
+      }
+    }
+
+    AsyncFunction("openFullScreenIntentSettings") {
+      val context = context()
+      val intent = if (Build.VERSION.SDK_INT >= 34) {
+        Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${context.packageName}"))
+      } else {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+          .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+      }
+      context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    AsyncFunction("isIgnoringBatteryOptimizations") {
+      val context = context()
+      context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
+    }
+
+    AsyncFunction("requestIgnoreBatteryOptimizations") {
+      val context = context()
+      context.startActivity(
+        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}"))
+          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+      )
+    }
+
+    /** An incoming call shows over the lock screen and wakes it, like the phone app. */
+    AsyncFunction("showOverLockScreen") { show: Boolean ->
+      val activity = appContext.currentActivity
+      if (activity != null && Build.VERSION.SDK_INT >= 27) {
+        activity.runOnUiThread {
+          activity.setShowWhenLocked(show)
+          activity.setTurnScreenOn(show)
+        }
       }
     }
 

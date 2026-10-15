@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="quant_calls_ready">可以接听来电</string>
+  <string name="quant_calls_incoming">来电</string>
+  <string name="quant_calls_answer">接听</string>
+  <string name="quant_calls_decline">拒绝</string>
+  <string name="quant_calls_channel_incoming">来电</string>
+  <string name="quant_calls_channel_service">通话连接</string>
+</resources>

@@ -79,12 +79,14 @@ export function startCall(
     botColor?: string;
     /** What the bot says as the call connects, before the caller speaks. */
     greeting?: string;
+    /** The bot rang and the user answered: the call keeps the id it rang with. */
+    callId?: string;
   },
   overrides: Partial<CallDeps> = {},
 ): string {
   endCall();
   deps = { ...productionDeps(), ...overrides };
-  callId = randomId();
+  callId = call.callId ?? randomId();
   connectedAt = null;
   state = {
     botId: call.botId,

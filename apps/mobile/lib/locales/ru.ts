@@ -822,4 +822,8 @@ export const RU_MESSAGES: Record<string, string> = {
   Speaking: "Говорит",
   "Transcribing…": "Распознаю…",
   "Could not connect the call.": "Не удалось соединить звонок.",
+  Decline: "Отклонить",
+  "Incoming call": "Входящий звонок",
+  "Let bots' calls show on the lock screen?": "Показывать звонки ботов на экране блокировки?",
+  "This call is no longer ringing.": "Этот звонок уже не активен.",
 };

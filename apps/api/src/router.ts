@@ -257,6 +257,7 @@ import {
   promptFocus,
   startOnboarding,
 } from "./onboarding.js";
+import { listRingingCalls } from "./ringing-calls.js";
 import { listRoutineRuns } from "./routine-runs.js";
 import { listSpaceRuns } from "./runs.js";
 import { addScreenProxyCapability } from "./screen-proxy.js";
@@ -2360,6 +2361,9 @@ export function createRouter(deps: RouterDeps) {
         }
         return { ok: true as const };
       }),
+      ringingCalls: callsEnabled.threads.ringingCalls.handler(async ({ context }) =>
+        listRingingCalls(deps.prisma, context.actor),
+      ),
       answerCall: callsEnabled.threads.answerCall.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         if (target.kind !== "bot") throw new IsolationError();

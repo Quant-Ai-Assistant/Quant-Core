@@ -797,4 +797,8 @@ export const ZH_MESSAGES: Record<string, string> = {
   Speaking: "正在说话",
   "Transcribing…": "正在转写…",
   "Could not connect the call.": "无法接通通话。",
+  Decline: "拒绝",
+  "Incoming call": "来电",
+  "Let bots' calls show on the lock screen?": "在锁屏上显示机器人的来电？",
+  "This call is no longer ringing.": "此来电已结束。",
 };

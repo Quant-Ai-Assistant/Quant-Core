@@ -51,7 +51,7 @@ private data class RunRecord(
   val notificationsEnabled: Boolean,
 )
 
-private class ApiException(val status: Int) : IOException()
+internal class ApiException(val status: Int) : IOException()
 
 class RakazoNotificationService : Service() {
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -110,11 +110,11 @@ class RakazoNotificationService : Service() {
       val seeded = prepareHistorySpace(generation, storage.spaceId) ?: return
       try {
         val avatarStyle = selectedAvatarStyle
-          ?: avatarStyle(storage.endpoint, storage.token, storage.spaceId)
+          ?: avatarStyle(storage.endpoint, storage.token, storage.spaceId, storage.gateAuth)
             .also { selectedAvatarStyle = it }
-        val active = runs(storage.endpoint, storage.token, storage.spaceId, "active")
+        val active = runs(storage.endpoint, storage.token, storage.spaceId, storage.gateAuth, "active")
         val working = active.filter(::isWorking).filter { it.notificationsEnabled }
-        val recent = runs(storage.endpoint, storage.token, storage.spaceId, "recent")
+        val recent = runs(storage.endpoint, storage.token, storage.spaceId, storage.gateAuth, "recent")
         val replyLookups = mutableListOf<Pair<RunRecord, Boolean>>()
         val immediate = mutableListOf<Pair<RunRecord, NotificationCopy>>()
         if (!runIfCurrent(generation) {
@@ -155,7 +155,7 @@ class RakazoNotificationService : Service() {
         }
         for ((run, scheduled) in replyLookups) {
           val reply = runCatching {
-            latestReply(storage.endpoint, storage.token, storage.spaceId, run)
+            latestReply(storage.endpoint, storage.token, storage.spaceId, storage.gateAuth, run)
           }.getOrDefault("")
           if (reply == null) continue
           if (!runIfCurrent(generation) {
@@ -429,8 +429,14 @@ private object Channels {
   const val ATTENTION = "rakazo_attention"
 }
 
-private fun runs(endpoint: String, token: String, spaceId: String, filter: String): List<RunRecord> {
-  val root = rpc(endpoint, token, spaceId, "runs/list", JSONObject().put("filter", filter))
+private fun runs(
+  endpoint: String,
+  token: String,
+  spaceId: String,
+  gateAuth: String,
+  filter: String,
+): List<RunRecord> {
+  val root = rpc(endpoint, token, spaceId, "runs/list", JSONObject().put("filter", filter), gateAuth)
   val rows = root.optJSONArray("runs") ?: throw IOException("Invalid activity response")
   return List(rows.length()) { index ->
     val row = rows.optJSONObject(index) ?: throw IOException("Invalid activity response")
@@ -453,14 +459,20 @@ private fun runs(endpoint: String, token: String, spaceId: String, filter: Strin
 private fun isWorking(run: RunRecord): Boolean =
   run.status == "queued" || run.status == "leased" || run.status == "running"
 
-private fun avatarStyle(endpoint: String, token: String, spaceId: String): String =
-  rpc(endpoint, token, spaceId, "me", JSONObject()).optString("avatarStyle", "robot")
+private fun avatarStyle(endpoint: String, token: String, spaceId: String, gateAuth: String): String =
+  rpc(endpoint, token, spaceId, "me", JSONObject(), gateAuth).optString("avatarStyle", "robot")
 
-private fun latestReply(endpoint: String, token: String, spaceId: String, run: RunRecord): String? {
+private fun latestReply(
+  endpoint: String,
+  token: String,
+  spaceId: String,
+  gateAuth: String,
+  run: RunRecord,
+): String? {
   val target = JSONObject().apply {
     if (run.groupId != null) put("groupId", run.groupId) else put("botId", run.botId)
   }
-  val root = rpc(endpoint, token, spaceId, "threads/get", target)
+  val root = rpc(endpoint, token, spaceId, "threads/get", target, gateAuth)
   val messages = root.optJSONArray("messages") ?: return ""
   for (messageIndex in messages.length() - 1 downTo 0) {
     val message = messages.optJSONObject(messageIndex) ?: continue
@@ -924,13 +936,26 @@ private fun markdownToPreview(markdown: String): String {
   return restore(text).replace(Regex("\\s+"), " ").trim()
 }
 
-private fun rpc(
+internal fun rpc(
   endpoint: String,
   token: String,
   spaceId: String,
   procedure: String,
   input: JSONObject,
-): JSONObject {
+  gateAuth: String = "",
+): JSONObject =
+  JSONObject(rpcBody(endpoint, token, spaceId, procedure, input, gateAuth)).optJSONObject("json")
+    ?: throw IOException("Invalid server response")
+
+/** One RPC call, returning the raw response body. */
+internal fun rpcBody(
+  endpoint: String,
+  token: String,
+  spaceId: String,
+  procedure: String,
+  input: JSONObject,
+  gateAuth: String = "",
+): String {
   if (!isAllowedNotificationEndpoint(endpoint)) throw IOException("Disallowed notification endpoint")
   val connection = URL("$endpoint/rpc/$procedure").openConnection() as HttpURLConnection
   return try {
@@ -941,6 +966,8 @@ private fun rpc(
     connection.setRequestProperty("Content-Type", "application/json")
     connection.setRequestProperty("Origin", "rakazo://")
     connection.setRequestProperty("Authorization", "Bearer $token")
+    // A self-hosted Quant sits behind a Basic Auth gate that reads its own header.
+    if (gateAuth.isNotBlank()) connection.setRequestProperty("X-Quant-Auth", gateAuth)
     if (spaceId.isNotBlank()) {
       connection.setRequestProperty("x-rakazo-space-id", spaceId)
     }
@@ -949,8 +976,7 @@ private fun rpc(
     }
     val status = connection.responseCode
     if (status !in 200..299) throw ApiException(status)
-    val body = connection.inputStream.bufferedReader().use { it.readText() }
-    JSONObject(body).optJSONObject("json") ?: throw IOException("Invalid server response")
+    connection.inputStream.bufferedReader().use { it.readText() }
   } finally {
     connection.disconnect()
   }

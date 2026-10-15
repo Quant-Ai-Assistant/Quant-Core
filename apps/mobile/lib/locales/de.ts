@@ -821,4 +821,8 @@ export const DE_MESSAGES: Record<string, string> = {
   Speaking: "Spricht",
   "Transcribing…": "Transkribiere…",
   "Could not connect the call.": "Der Anruf konnte nicht verbunden werden.",
+  Decline: "Ablehnen",
+  "Incoming call": "Eingehender Anruf",
+  "Let bots' calls show on the lock screen?": "Anrufe von Bots auf dem Sperrbildschirm anzeigen?",
+  "This call is no longer ringing.": "Dieser Anruf klingelt nicht mehr.",
 };
