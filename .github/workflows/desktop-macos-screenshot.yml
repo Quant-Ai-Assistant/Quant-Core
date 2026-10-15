@@ -38,6 +38,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @rakazo/desktop build
+      - run: pnpm --filter @rakazo/desktop build:server
       - name: Verify packaged Tahoe icon and legacy fallback
         run: |
           pnpm --filter @rakazo/web build

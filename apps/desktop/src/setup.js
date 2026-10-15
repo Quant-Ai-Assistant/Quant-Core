@@ -7,33 +7,47 @@
     "Set up Quant": "Настройка Quant",
     Quit: "Выйти",
     "Quit Quant": "Выйти из Quant",
-    "Welcome to Quant": "Добро пожаловать в Quant",
-    "Choose which server this app should use.": "Выберите сервер для этого приложения.",
+    "Where will Quant run?": "Где будет работать Quant?",
     Instance: "Сервер",
     "This computer": "Этот компьютер",
-    "Existing instance": "Существующий сервер",
-    "Username for other devices": "Логин для других устройств",
+    "Server inside the app": "Сервер внутри приложения",
+    "Another server": "Другой сервер",
+    "Connect by address": "Подключиться по адресу",
+    "Step {step} of {count}": "Шаг {step} из {count}",
+    "Sign-in from other devices": "Вход с других устройств",
+    Username: "Логин",
     Password: "Пароль",
+    "Phones and browsers ask for these when they connect.":
+      "Телефон и браузер спросят их при входе.",
+    Port: "Порт",
+    "Installing Quant": "Установка Quant",
+    "Starting Quant": "Запуск Quant",
+    "Connect to a server": "Подключение к серверу",
     "Technical details": "Технические подробности",
     "Setup progress": "Ход установки",
     "Server address": "Адрес сервера",
     "Username (if the server asks)": "Логин (если сервер спрашивает)",
     "Check connection": "Проверить соединение",
+    Back: "Назад",
+    Next: "Далее",
+    Install: "Установить",
     Continue: "Продолжить",
     "Check again": "Проверить снова",
     Retry: "Повторить",
     "Getting ready…": "Подготовка…",
-    "Downloading Quant…": "Загрузка Quant…",
+    "Moving your data into the app…": "Перенос данных в приложение…",
     "Starting Quant…": "Запуск Quant…",
     "Almost ready…": "Почти готово…",
     "Quant is ready.": "Quant готов.",
-    "{size} downloaded": "Загружено {size}",
     "Tunnel address: {url}": "Адрес для туннеля: {url}",
     "Leave empty to keep it": "Оставьте пустым, чтобы не менять",
-    "Enter a password for other devices.": "Введите пароль для других устройств.",
-    "Enter a username for other devices.": "Введите логин для других устройств.",
+    "Enter a username.": "Введите логин.",
+    "Enter a password.": "Введите пароль.",
     "The username may use letters, digits, dot, dash and underscore.":
       "В логине допустимы латинские буквы, цифры, точка, дефис и подчёркивание.",
+    "Enter a port from 1024 to 65535.": "Введите порт от 1024 до 65535.",
+    "Port {port} is busy. Choose another.": "Порт {port} занят. Выберите другой.",
+    "Could not check that port. Try again.": "Не удалось проверить порт. Попробуйте ещё раз.",
     "Connecting…": "Подключение…",
     "Checking…": "Проверка…",
     "Quant answered at {url}.": "Quant ответил по адресу {url}.",
@@ -51,33 +65,32 @@
     "Setup bridge unavailable.": "Настройка недоступна.",
     "Setup could not start. Quit Quant and try again.":
       "Не удалось начать настройку. Закройте Quant и попробуйте снова.",
-    "Docker is not installed on this computer.": "Docker не установлен на этом компьютере.",
-    "Docker is installed but not running. Start Docker, then check again.":
-      "Docker установлен, но не запущен. Запустите Docker и проверьте снова.",
-    "Docker is installed, but Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin.":
-      "Docker установлен, но нет Docker Compose. Установите Docker Desktop или docker-compose-plugin.",
-    "Downloading Quant images failed. Check the output below, then retry.":
-      "Не удалось загрузить образы Quant. Посмотрите вывод ниже и повторите.",
-    "Quant services did not start. Check the output below, then retry.":
-      "Сервисы Quant не запустились. Посмотрите вывод ниже и повторите.",
-    "Could not reach the image registry. Check the internet connection, then retry.":
-      "Не удалось связаться с хранилищем образов. Проверьте интернет и повторите.",
-    "Docker stopped answering. Start Docker, then retry.":
-      "Docker перестал отвечать. Запустите Docker и повторите.",
-    "Could not bind a local port after retrying. Retry to choose another port.":
-      "Не удалось занять локальный порт. Повторите, чтобы выбрать другой.",
     "The start was interrupted. Retry to continue.": "Запуск прерван. Повторите, чтобы продолжить.",
     "Could not prepare the local stack. Retry.": "Не удалось подготовить сервисы. Повторите.",
-    "Could not save the password for other devices. Retry.":
-      "Не удалось сохранить пароль для других устройств. Повторите.",
-    "The stack started but the web app did not answer. Retry, and check the output below.":
-      "Сервисы запустились, но веб-приложение не отвечает. Повторите и посмотрите вывод ниже.",
+    "Could not prepare the local server. Retry.": "Не удалось подготовить сервер. Повторите.",
+    "The database did not start. Check the output below, then retry.":
+      "База данных не запустилась. Посмотрите вывод ниже и повторите.",
+    "Could not update the database. Check the output below, then retry.":
+      "Не удалось обновить базу данных. Посмотрите вывод ниже и повторите.",
+    "The server started but did not answer. Retry, and check the output below.":
+      "Сервер запустился, но не отвечает. Повторите и посмотрите вывод ниже.",
+    "This build has no local server. Reinstall Quant.":
+      "В этой сборке нет локального сервера. Переустановите Quant.",
+    "Quant could not reach Docker to move your existing data into the app. Start Docker, then retry.":
+      "Quant не смог связаться с Docker, чтобы перенести ваши данные в приложение. Запустите Docker и повторите.",
+    "Quant could not move your existing data from Docker. Check the output below, then retry.":
+      "Quant не смог перенести ваши данные из Docker. Посмотрите вывод ниже и повторите.",
+    "Port {port} is busy. Choose another port in setup.":
+      "Порт {port} занят. Выберите другой порт в настройке.",
     "The app-managed Quant services are not ready. Retry setup.":
       "Сервисы Quant ещё не готовы. Повторите настройку.",
     "A connection attempt is already running.": "Подключение уже выполняется.",
   };
+
   const russian = (navigator.language ?? "").toLowerCase().startsWith("ru");
   function t(text, values = {}) {
+    const busy = /^Port (\d+) is busy\. Choose another port in setup\.$/.exec(text);
+    if (busy) return t("Port {port} is busy. Choose another port in setup.", { port: busy[1] });
     let result = russian ? (RU[text] ?? text) : text;
     for (const [name, value] of Object.entries(values)) result = result.replace(`{${name}}`, value);
     return result;
@@ -86,7 +99,7 @@
     document.documentElement.lang = russian ? "ru" : "en";
     document.title = t(document.title);
     for (const element of document.querySelectorAll(
-      "h1, .subheading, legend, .choice-title, .field-label, .button, .titlebar-quit",
+      "h1, legend, .choice-title, .choice-hint, .field-label, .field-hint, .button, .titlebar-quit",
     )) {
       element.textContent = t(element.textContent.trim());
     }
@@ -105,99 +118,51 @@
   const serverPassword = document.getElementById("server-password");
   const gateUsername = document.getElementById("gate-username");
   const gatePassword = document.getElementById("gate-password");
+  const gatePort = document.getElementById("gate-port");
   const gateAddress = document.getElementById("gate-address");
-  /** The gate already saved for this computer's stack, or null when other devices are shut out. */
-  let savedGate = null;
-
-  /**
-   * What Continue asks of the gate: undefined keeps it, null closes it, credentials open it.
-   * Returns an error message instead when the fields cannot be sent as they are.
-   */
-  function gateChange() {
-    const username = gateUsername.value.trim();
-    const password = gatePassword.value;
-    if (username === "") {
-      if (password !== "") return { error: "Enter a username for other devices." };
-      return { access: savedGate === null ? undefined : null };
-    }
-    if (!/^[A-Za-z0-9._-]{1,64}$/.test(username)) {
-      return { error: "The username may use letters, digits, dot, dash and underscore." };
-    }
-    if (password === "") {
-      if (savedGate?.username === username) return { access: undefined };
-      return { error: "Enter a password for other devices." };
-    }
-    return { access: { username, password } };
-  }
-
-  function renderGate(gate) {
-    savedGate = gate ?? null;
-    if (savedGate !== null && gateUsername.value === "") gateUsername.value = savedGate.username;
-    gatePassword.placeholder = savedGate === null ? "" : t("Leave empty to keep it");
-    gateAddress.hidden = savedGate === null;
-    gateAddress.textContent =
-      savedGate === null
-        ? ""
-        : t("Tunnel address: {url}", { url: `http://localhost:${savedGate.port}` });
-  }
-
-  async function refreshGate() {
-    try {
-      const current = await bridge.state();
-      if (current !== null) renderGate(current.gate);
-    } catch {
-      // The address only informs; the start itself reports its own failures.
-    }
-  }
-
-  /** The gate's Basic Auth; an empty username means the server has none. */
-  function serverAccess() {
-    const username = serverUsername.value.trim();
-    return username === "" ? null : { username, password: serverPassword.value };
-  }
-  const panelNew = document.getElementById("panel-new");
-  const panelExisting = document.getElementById("panel-existing");
-  const stackSection = document.getElementById("stack");
+  const installAddress = document.getElementById("install-address");
+  const installHeading = document.querySelector("#step-install .heading");
+  const stepCount = document.getElementById("step-count");
   const stackPhase = document.getElementById("stack-phase");
   const stackOutput = document.getElementById("stack-output");
-  const stackDetail = document.getElementById("stack-detail");
   const stackDetails = document.getElementById("stack-details");
   const stackProgress = document.getElementById("stack-progress");
   const stackProgressFill = document.getElementById("stack-progress-fill");
-  const stackDockerHelp = document.getElementById("stack-docker-help");
   const status = document.getElementById("status");
+  const backButton = document.getElementById("back");
   const checkButton = document.getElementById("check");
   const continueButton = document.getElementById("continue");
   const quitButton = document.getElementById("quit");
 
+  /** Steps of each path; `install` follows `port` and is not counted. */
+  const PATHS = { new: ["choose", "access", "port"], existing: ["choose", "existing"] };
+  const STEPS = ["choose", "access", "port", "install", "existing"];
+  const PORT_MIN = 1024;
+  const PORT_MAX = 65535;
+
   const STACK_POLL_MS = 1000;
   const PHASE_LABELS = {
-    "checking-docker": t("Getting ready…"),
     preparing: t("Getting ready…"),
-    pulling: t("Downloading Quant…"),
+    importing: t("Moving your data into the app…"),
     starting: t("Starting Quant…"),
     "waiting-healthy": t("Almost ready…"),
     ready: t("Quant is ready."),
   };
-  const TERMINAL_PHASES = new Set([
-    "idle",
-    "docker-missing",
-    "docker-not-running",
-    "ready",
-    "failed",
-  ]);
+  const TERMINAL_PHASES = new Set(["idle", "ready", "failed"]);
   const PHASE_PROGRESS = {
-    "checking-docker": 0.06,
-    preparing: 0.12,
-    pulling: 0.2,
-    starting: 0.82,
-    "waiting-healthy": 0.92,
+    preparing: 0.1,
+    importing: 0.3,
+    starting: 0.7,
+    "waiting-healthy": 0.85,
     ready: 1,
   };
-  /** Docker reports bytes pulled but never a total, so the bar approaches the next phase without reaching it. */
-  const PULL_SPAN = 0.6;
-  const PULL_SCALE_BYTES = 1.2e9;
 
+  let step = "choose";
+  /** The gate already saved for this computer's stack, or null before the first install. */
+  let savedGate = null;
+  let defaultPort = 8080;
+  /** What Install sent, so Retry repeats the same start. */
+  let pendingStart = null;
   let defaultLocalUrl = "";
   let stackPolling = false;
   let lastStack = null;
@@ -207,6 +172,7 @@
   let detailsOpenedByFailure = false;
   /** Resolves the poll wait early when the main process pushes a new state. */
   let wakePoll = null;
+  let busy = false;
 
   function selectedMode() {
     const checked = form.querySelector('input[name="mode"]:checked');
@@ -219,46 +185,102 @@
     else status.setAttribute("data-tone", tone);
   }
 
-  function setBusy(busy) {
-    checkButton.disabled = busy;
-    continueButton.disabled = busy;
-    gateUsername.disabled = busy;
-    gatePassword.disabled = busy;
+  /** A failed start, or a ready one whose save failed, offers Back and Retry. */
+  function stackSettled() {
+    if (lastStack === null) return false;
+    const { phase } = lastStack;
+    return phase === "failed" || (phase === "ready" && !busy);
   }
 
-  /** A save in flight cannot be cancelled, so the choice it commits must not change under it. */
-  function lockMode(locked) {
-    for (const input of form.querySelectorAll('input[name="mode"]')) input.disabled = locked;
+  /** Shows the controls the current step offers; a busy step keeps them but disables them. */
+  function renderActions() {
+    const install = step === "install";
+    backButton.hidden = step === "choose" || (install && !stackSettled());
+    checkButton.hidden = step !== "existing";
+    continueButton.hidden = install && !stackSettled();
+    if (step === "port") continueButton.textContent = t("Install");
+    else if (step === "existing") continueButton.textContent = t("Continue");
+    else if (install) continueButton.textContent = t("Retry");
+    else continueButton.textContent = t("Next");
+    for (const control of [backButton, checkButton, continueButton]) control.disabled = busy;
+    for (const input of form.querySelectorAll("input")) input.disabled = busy;
   }
 
-  function syncPanels() {
-    const mode = selectedMode();
-    panelNew.hidden = mode !== "new";
-    panelExisting.hidden = mode === "new";
-    checkButton.hidden = mode === "new";
-    if (mode !== "new") continueButton.textContent = t("Continue");
+  function setBusy(value) {
+    busy = value;
+    renderActions();
+  }
+
+  function renderStepCount() {
+    const path = PATHS[selectedMode()];
+    const index = path.indexOf(step);
+    stepCount.textContent =
+      index === -1 ? "" : t("Step {step} of {count}", { step: index + 1, count: path.length });
+  }
+
+  function showStep(next) {
+    step = next;
+    for (const name of STEPS) document.getElementById(`step-${name}`).hidden = name !== next;
+    renderStepCount();
+    renderActions();
     setStatus("");
+    const focus = {
+      choose: form.querySelector('input[name="mode"]:checked'),
+      access: gateUsername.value === "" ? gateUsername : gatePassword,
+      port: gatePort,
+      existing: serverUrl,
+    }[next];
+    focus?.focus();
   }
 
-  function isDockerPhase(phase) {
-    return phase === "docker-missing" || phase === "docker-not-running";
+  function tunnelAddress(port) {
+    return t("Tunnel address: {url}", { url: `http://localhost:${port}` });
   }
 
-  function downloadedBytes(stack) {
-    return Object.values(stack.layerBytes ?? {}).reduce((total, bytes) => total + bytes, 0);
+  /** The port typed so far, or null when it is not a usable port. */
+  function portValue() {
+    const raw = gatePort.value.trim();
+    if (!/^\d{1,5}$/.test(raw)) return null;
+    const port = Number(raw);
+    return port >= PORT_MIN && port <= PORT_MAX ? port : null;
   }
 
-  function formatBytes(bytes) {
-    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-    if (bytes >= 1e6) return `${Math.round(bytes / 1e6)} MB`;
-    if (bytes >= 1e3) return `${Math.round(bytes / 1e3)} kB`;
-    return `${Math.round(bytes)} B`;
+  function renderPortAddress() {
+    const port = portValue();
+    gateAddress.textContent = port === null ? "" : tunnelAddress(port);
   }
 
-  function progressFor(stack) {
-    const base = PHASE_PROGRESS[stack.phase] ?? 0;
-    if (stack.phase !== "pulling") return base;
-    return base + PULL_SPAN * (1 - Math.exp(-downloadedBytes(stack) / PULL_SCALE_BYTES));
+  /**
+   * What Install asks of the gate: undefined keeps the saved one, credentials replace it.
+   * Returns an error message instead when the fields cannot be sent as they are.
+   */
+  function gateChange() {
+    const username = gateUsername.value.trim();
+    const password = gatePassword.value;
+    if (username === "") return { error: "Enter a username." };
+    if (!/^[A-Za-z0-9._-]{1,64}$/.test(username)) {
+      return { error: "The username may use letters, digits, dot, dash and underscore." };
+    }
+    if (password === "") {
+      if (savedGate?.username === username) return { access: undefined };
+      return { error: "Enter a password." };
+    }
+    return { access: { username, password } };
+  }
+
+  function renderGate(gate) {
+    savedGate = gate ?? null;
+    if (savedGate !== null && gateUsername.value === "") gateUsername.value = savedGate.username;
+    gatePassword.placeholder = savedGate === null ? "" : t("Leave empty to keep it");
+    if (gatePort.value === "") gatePort.value = String(savedGate?.port ?? defaultPort);
+    renderPortAddress();
+    installAddress.textContent = tunnelAddress(savedGate?.port ?? defaultPort);
+  }
+
+  /** The gate's Basic Auth; an empty username means the server has none. */
+  function serverAccess() {
+    const username = serverUsername.value.trim();
+    return username === "" ? null : { username, password: serverPassword.value };
   }
 
   function renderProgress(stack) {
@@ -270,21 +292,16 @@
       return;
     }
     // A retry restarts at its phase; otherwise the bar only ever moves forward.
-    lastProgress =
-      stack.phase === "checking-docker"
-        ? progressFor(stack)
-        : Math.max(lastProgress, progressFor(stack));
+    const progress = PHASE_PROGRESS[stack.phase];
+    lastProgress = stack.phase === "preparing" ? progress : Math.max(lastProgress, progress);
     const percent = (lastProgress * 100).toFixed(1);
     stackProgressFill.style.width = `${percent}%`;
     stackProgress.setAttribute("aria-valuenow", percent);
   }
 
   function renderDetails(stack) {
-    const bytes = stack.phase === "pulling" ? downloadedBytes(stack) : 0;
-    stackDetail.textContent = bytes > 0 ? t("{size} downloaded", { size: formatBytes(bytes) }) : "";
-
     // A new attempt clears the output, so drop an expansion the person did not ask for.
-    if (stack.phase === "checking-docker" && detailsOpenedByFailure) {
+    if (stack.phase === "preparing" && detailsOpenedByFailure) {
       detailsOpen = false;
       detailsOpenedByFailure = false;
     }
@@ -304,35 +321,21 @@
   }
 
   function renderStack(stack) {
-    const previousPhase = lastStack?.phase;
     lastStack = stack;
     const { phase } = stack;
-    stackSection.hidden = phase === "idle";
-    if (phase === "idle") {
-      continueButton.textContent = t("Continue");
-      return;
-    }
-    const failed = isDockerPhase(phase) || phase === "failed";
+    const failed = phase === "failed";
     stackPhase.textContent = (failed ? t(stack.message ?? "") : PHASE_LABELS[phase]) ?? "";
-    // The gate's port is chosen during the start; show it once the services come up.
-    if (phase === "starting" && previousPhase !== "starting") void refreshGate();
     if (failed) stackPhase.setAttribute("data-tone", "error");
     else if (phase === "ready") stackPhase.setAttribute("data-tone", "ok");
     else stackPhase.removeAttribute("data-tone");
 
     renderProgress(stack);
     renderDetails(stack);
-    stackDockerHelp.hidden = !isDockerPhase(phase);
-
-    if (isDockerPhase(phase)) continueButton.textContent = t("Check again");
-    else if (phase === "failed") continueButton.textContent = t("Retry");
-    else continueButton.textContent = t("Continue");
     setBusy(!TERMINAL_PHASES.has(phase));
   }
 
   async function save(mode, url) {
     setBusy(true);
-    lockMode(true);
     setStatus("Connecting…");
     try {
       const saved = await bridge.save(
@@ -344,7 +347,6 @@
     } catch {
       setStatus("Could not save that address. Try again.", "error");
     } finally {
-      lockMode(false);
       setBusy(false);
     }
   }
@@ -364,25 +366,18 @@
     });
   }
 
-  /**
-   * Follows a start already in flight until it settles. Leaving "This computer"
-   * ends the follow so the stack becoming ready never saves over that choice.
-   */
+  /** Follows a start already in flight until it settles, then opens the app once it is ready. */
   async function followStack() {
     if (stackPolling) return;
     stackPolling = true;
     try {
-      while (true) {
+      while (step === "install") {
         const stack = await bridge.stack.state();
         if (stack === null) throw new Error("Setup is not active");
-        // Checked after the await: a mode change during it hands the form to the change
-        // handler, and a save it started must stay busy and must not be re-rendered over.
-        if (selectedMode() !== "new") return;
         renderStack(stack);
         if (TERMINAL_PHASES.has(stack.phase)) {
-          if (stack.phase === "ready" && selectedMode() === "new") {
+          if (stack.phase === "ready") {
             const current = await bridge.state();
-            if (selectedMode() !== "new") return;
             defaultLocalUrl = current.defaultLocalUrl;
             await save("new", defaultLocalUrl);
           }
@@ -399,16 +394,11 @@
   }
 
   async function runStack() {
-    const gate = gateChange();
-    if (gate.error !== undefined) {
-      setStatus(gate.error, "error");
-      return;
-    }
-    setStatus("");
+    showStep("install");
     setBusy(true);
     try {
-      // A queued start still reads `idle`; leave the panel as it is and let the follow render it.
-      const started = await bridge.stack.start({ access: gate.access });
+      // A queued start still reads `idle`; leave the step as it is and let the follow render it.
+      const started = await bridge.stack.start(pendingStart);
       if (started !== null && started.phase !== "idle") renderStack(started);
     } catch {
       setStatus("Could not start the local stack. Try again.", "error");
@@ -416,6 +406,42 @@
       return;
     }
     await followStack();
+  }
+
+  /** Checks the port step and, when the port is free, starts the install. */
+  async function install() {
+    const gate = gateChange();
+    if (gate.error !== undefined) {
+      showStep("access");
+      setStatus(gate.error, "error");
+      return;
+    }
+    const port = portValue();
+    if (port === null) {
+      setStatus("Enter a port from 1024 to 65535.", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const checked = await bridge.stack.checkPort(port);
+      if (!checked?.ok) {
+        setStatus(
+          checked?.busy
+            ? t("Port {port} is busy. Choose another.", { port })
+            : "Enter a port from 1024 to 65535.",
+          "error",
+        );
+        return;
+      }
+    } catch {
+      setStatus("Could not check that port. Try again.", "error");
+      return;
+    } finally {
+      setBusy(false);
+    }
+    pendingStart = { access: gate.access, port };
+    installAddress.textContent = tunnelAddress(port);
+    await runStack();
   }
 
   async function check() {
@@ -446,10 +472,16 @@
 
   form.addEventListener("change", (event) => {
     if (event.target instanceof HTMLInputElement && event.target.name === "mode") {
-      syncPanels();
-      // Unlock Continue/Check immediately; followStack exits on its next poll.
-      if (selectedMode() !== "new") setBusy(false);
+      renderStepCount();
     }
+  });
+
+  gatePort.addEventListener("input", renderPortAddress);
+
+  backButton.addEventListener("click", () => {
+    if (step === "install") showStep("port");
+    else if (step === "port") showStep("access");
+    else showStep("choose");
   });
 
   checkButton.addEventListener("click", () => {
@@ -462,11 +494,6 @@
     if (lastStack !== null) renderDetails(lastStack);
   });
 
-  stackDockerHelp.addEventListener("click", (event) => {
-    const link = event.target instanceof HTMLElement ? event.target.dataset.link : undefined;
-    if (link) void bridge.openLink(link);
-  });
-
   quitButton.addEventListener("click", () => {
     if (bridge === undefined) {
       window.close();
@@ -477,7 +504,14 @@
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    if (selectedMode() === "new") void runStack();
+    if (busy) return;
+    if (step === "choose") showStep(selectedMode() === "new" ? "access" : "existing");
+    else if (step === "access") {
+      const gate = gateChange();
+      if (gate.error === undefined) showStep("port");
+      else setStatus(gate.error, "error");
+    } else if (step === "port") void install();
+    else if (step === "install") void runStack();
     else void save("existing", serverUrl.value);
   });
 
@@ -485,9 +519,9 @@
   function watchStack() {
     bridge.stack.onChange(() => {
       wakePoll?.();
-      // A follow that ended on an error restarts here instead of leaving the panel frozen;
+      // A follow that ended on an error restarts here instead of leaving the step frozen;
       // hold the controls until it has rendered the state it is restarting on.
-      if (!stackPolling && selectedMode() === "new") {
+      if (!stackPolling && step === "install") {
         setBusy(true);
         void followStack();
       }
@@ -506,6 +540,7 @@
       const state = await bridge.state();
       if (state === null) throw new Error("Setup is not active");
       defaultLocalUrl = state.defaultLocalUrl;
+      defaultPort = state.defaultPort ?? defaultPort;
       renderGate(state.gate);
       if (state.saved !== null) {
         const modeInput = document.querySelector(`input[name="mode"][value="${state.saved.mode}"]`);
@@ -516,18 +551,20 @@
       // A relaunch with the stack down starts it before this window opens; show that
       // attempt instead of the saved mode, and follow it while it is still running.
       const stack = await bridge.stack.state();
-      const attached = stack !== null && stack.phase !== "idle";
-      if (attached) document.getElementById("mode-new").checked = true;
-      syncPanels();
-      if (state.error) setStatus(state.error, "error");
-      if (attached) {
+      if (stack !== null && stack.phase !== "idle") {
+        document.getElementById("mode-new").checked = true;
+        // A launch restarting the saved server is not an install.
+        if (state.saved?.mode === "new") installHeading.textContent = t("Starting Quant");
+        showStep("install");
         renderStack(stack);
-        if (!TERMINAL_PHASES.has(stack.phase)) void followStack();
-      } else if (selectedMode() === "existing") {
-        serverUrl.focus();
-      } else {
-        continueButton.focus();
+        if (state.error) setStatus(state.error, "error");
+        // A start that finished while this window opened still has to open the app.
+        if (stack.phase !== "failed") void followStack();
+        return;
       }
+      // A saved server that could not be reopened goes straight back to its address.
+      showStep(state.error && state.saved?.mode === "existing" ? "existing" : "choose");
+      if (state.error) setStatus(state.error, "error");
     } catch {
       setStatus("Setup could not start. Quit Quant and try again.", "error");
       setBusy(true);

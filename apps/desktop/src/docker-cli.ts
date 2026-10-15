@@ -1,17 +1,5 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import type { DesktopSetupLink } from "@rakazo/contracts";
-
-/** Pages the setup window may open when Docker is missing. Nothing is ever installed by the app. */
-export const DOCKER_INSTALL_LINKS: Record<DesktopSetupLink, string> = {
-  "docker-desktop": "https://www.docker.com/products/docker-desktop/",
-  orbstack: "https://orbstack.dev/",
-  "docker-engine": "https://docs.docker.com/engine/install/",
-};
-
-export function isDesktopSetupLink(value: unknown): value is DesktopSetupLink {
-  return typeof value === "string" && Object.hasOwn(DOCKER_INSTALL_LINKS, value);
-}
 
 /**
  * Where the docker CLI usually lives. GUI launches on macOS get a minimal PATH, so the
@@ -284,13 +272,4 @@ export function classifyDockerFailure(output: string): DockerFailureKind {
   if (matches(ADDRESS_POOL_EXHAUSTED)) return "address-pool-exhausted";
   if (matches(NETWORK)) return "network";
   return "other";
-}
-
-/** `up --wait --wait-timeout` needs Compose 2.17; older plugins get a plain `up -d`. */
-export function composeSupportsWaitTimeout(versionText: string): boolean {
-  const match = versionText.match(/(\d+)\.(\d+)(?:\.(\d+))?/);
-  if (!match) return false;
-  const major = Number(match[1]);
-  const minor = Number(match[2]);
-  return major > 2 || (major === 2 && minor >= 17);
 }

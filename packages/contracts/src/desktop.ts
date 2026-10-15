@@ -77,6 +77,10 @@ export interface DesktopSetup {
 
 export interface DesktopSetupState {
   defaultLocalUrl: string;
+  /** The port setup suggests for the gate before one is saved. */
+  defaultPort: number;
+  /** The gate this computer's server already has: who signs in and the port it listens on. */
+  gate: { username: string; port: number } | null;
   saved: DesktopSetup | null;
   /** Present when a saved or newly selected server could not be reopened. */
   error?: string;
@@ -97,17 +101,14 @@ export interface DesktopStackProbeResponse {
 }
 
 /**
- * Lifecycle of the Docker Compose stack the desktop app manages for mode `new`.
- * `docker-missing` and `docker-not-running` wait for the person to act; `ready` and
- * `failed` are terminal until the next start.
+ * Lifecycle of the server the desktop app runs itself for mode `new`. `importing` moves the
+ * data of an earlier Docker install into the app once. `ready` and `failed` are terminal
+ * until the next start.
  */
 export type DesktopLocalStackPhase =
   | "idle"
-  | "checking-docker"
-  | "docker-missing"
-  | "docker-not-running"
   | "preparing"
-  | "pulling"
+  | "importing"
   | "starting"
   | "waiting-healthy"
   | "ready"
@@ -115,17 +116,11 @@ export type DesktopLocalStackPhase =
 
 export interface DesktopLocalStackState {
   phase: DesktopLocalStackPhase;
-  /** One actionable sentence; null while the stack is progressing normally. */
+  /** One actionable sentence; null while the server is progressing normally. */
   message: string | null;
-  /** Bounded tail of docker output for the current attempt. */
+  /** Bounded tail of the server's output for the current attempt. */
   output: string[];
-  /** Bytes pulled per image layer in the current attempt; the sum is the only progress Docker reports. */
-  layerBytes: Record<string, number>;
-  /** Image tag this app launches (`v<app version>` for installed builds, `edge` otherwise). */
-  imageTag: string;
 }
-
-export type DesktopSetupLink = "docker-desktop" | "orbstack" | "docker-engine";
 
 /**
  * Bridge exposed only to the first-run setup window. The app window keeps the
@@ -138,13 +133,19 @@ export interface RakazoSetup {
   test: (url: string) => Promise<DesktopReachability>;
   save: (setup: DesktopSetup) => Promise<{ ok: boolean; error?: string }>;
   quit: () => Promise<void>;
-  /** Opens one of the Docker install pages in the system browser. */
-  openLink: (link: DesktopSetupLink) => Promise<void>;
-  /** The Docker Compose stack this app installs and runs for mode `new`. */
+  /** The server this app runs itself for mode `new`. */
   stack: {
     state: () => Promise<DesktopLocalStackState>;
-    /** Starts (or retries) the stack; a no-op while a start is already in flight. */
-    start: () => Promise<DesktopLocalStackState>;
+    /**
+     * Starts (or retries) the stack; a no-op while a start is already in flight. Credentials
+     * replace the gate's, a port moves it; leaving either out keeps what is saved.
+     */
+    start: (request?: {
+      access?: { username: string; password: string };
+      port?: number;
+    }) => Promise<DesktopLocalStackState>;
+    /** Whether the gate can listen on this port; its own saved port always can. */
+    checkPort: (port: number) => Promise<{ ok: boolean; busy?: boolean }>;
     /** Fires on every state change so progress never depends on a renderer timer. */
     onChange: (listener: (state: DesktopLocalStackState) => void) => void;
   };

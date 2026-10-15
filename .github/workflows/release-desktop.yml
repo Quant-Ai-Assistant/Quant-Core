@@ -120,7 +120,7 @@ jobs:
           node-version: 22
       - run: pnpm install --frozen-lockfile
       - name: Build renderer and Electron main process
-        run: pnpm --filter @rakazo/web build && pnpm --filter @rakazo/desktop build
+        run: pnpm --filter @rakazo/web build && pnpm --filter @rakazo/desktop build && pnpm --filter @rakazo/desktop build:server
         env:
           RAKAZO_ALLOW_DEV_SECRETS: "1"
 
