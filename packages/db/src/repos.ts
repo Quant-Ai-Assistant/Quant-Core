@@ -2,6 +2,7 @@ import type { Actor, Bot, BotSection, MessageBlock, SpaceBot } from "@rakazo/con
 import { BOT_COLORS } from "@rakazo/contracts";
 import {
   BACKGROUND_RUN_TRIGGERS,
+  CALL_REQUEST_RING_MS,
   isBackgroundRunTrigger,
   ringingCall,
   userVisibleMessages,
@@ -118,7 +119,10 @@ function mapBot(
   };
 }
 
-export function createRepos(prisma: PrismaClient) {
+export function createRepos(
+  prisma: PrismaClient,
+  capabilities: { phoneCallsEnabled?: boolean } = {},
+) {
   async function listBotSectionsForSpaces(
     actor: Actor,
     spaceIds: string[],
@@ -322,6 +326,23 @@ export function createRepos(prisma: PrismaClient) {
         },
         orderBy: [{ pinned: "desc" }, { position: "asc" }, { createdAt: "asc" }],
       });
+      const callThreadIds = capabilities.phoneCallsEnabled
+        ? bots.flatMap((bot) => (bot.thread ? [bot.thread.id] : []))
+        : [];
+      const callMessages = callThreadIds.length
+        ? await prisma.message.findMany({
+            where: {
+              threadId: { in: callThreadIds },
+              createdAt: { gt: new Date(Date.now() - CALL_REQUEST_RING_MS) },
+              role: "bot",
+              clientNonce: { startsWith: "call:", endsWith: ":request" },
+            },
+            orderBy: { seq: "desc" },
+            distinct: ["threadId"],
+            select: { threadId: true, role: true, blocks: true },
+          })
+        : [];
+      const callsByThread = new Map(callMessages.map((message) => [message.threadId, message]));
       const candidateRunIds = [
         ...new Set(
           bots.flatMap((bot) =>
@@ -390,7 +411,11 @@ export function createRepos(prisma: PrismaClient) {
             preview,
             bot.runs[0]?.status ?? "idle",
             rosterRunErrorId(bot.thread?.runs[0], bot.runs[0]),
-            ringingCall(bot.thread?.messages ?? []),
+            ringingCall(
+              bot.thread && callsByThread.has(bot.thread.id)
+                ? [callsByThread.get(bot.thread.id)!]
+                : [],
+            ),
           );
         }),
       );

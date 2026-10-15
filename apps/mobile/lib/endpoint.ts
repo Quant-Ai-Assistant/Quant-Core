@@ -179,7 +179,7 @@ function originOnly(value: string) {
   return parsed.ok ? parsed.url : null;
 }
 
-function isLanOrLocalHost(hostname: string) {
+export function isLanOrLocalHost(hostname: string) {
   const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
   if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
   if (host.endsWith(".local")) return true;

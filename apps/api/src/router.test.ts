@@ -3638,9 +3638,14 @@ describe("routines.update", () => {
 });
 
 describe("threads.answerCall and threads.declineCall", () => {
-  function fixture(status = "ringing", updated = 1) {
+  function fixture(
+    status = "ringing",
+    updated = 1,
+    expiresAt = new Date(Date.now() + 45_000).toISOString(),
+  ) {
     const appended: { type: string; payload: Record<string, unknown> }[] = [];
-    const prisma = {
+    const tx = {
+      $queryRaw: vi.fn(async () => []),
       bot: {
         findFirst: vi
           .fn()
@@ -3658,11 +3663,20 @@ describe("threads.answerCall and threads.declineCall", () => {
               reason: "Send the report",
               opening: "Hi, it's about the report.",
               status,
-              expiresAt: "2026-10-14T18:30:45Z",
+              expiresAt,
             },
           ],
         }),
         updateMany: vi.fn().mockResolvedValue({ count: updated }),
+      },
+      thread: { update: vi.fn(async () => ({ nextEventSeq: 2 })) },
+      event: {
+        create: vi.fn(
+          async ({ data }: { data: { type: string; payload: Record<string, unknown> } }) => {
+            appended.push(data);
+            return { seq: 1 };
+          },
+        ),
       },
       routine: {
         create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
@@ -3670,6 +3684,10 @@ describe("threads.answerCall and threads.declineCall", () => {
           ...data,
         })),
       },
+    };
+    const prisma = {
+      ...tx,
+      $transaction: vi.fn(async (fn: (client: typeof tx) => unknown) => fn(tx)),
     } as unknown as PrismaClient;
     const enqueue = vi.fn().mockResolvedValue(undefined);
     const deps = {
@@ -3682,7 +3700,7 @@ describe("threads.answerCall and threads.declineCall", () => {
         }),
       },
       jobs: { enqueue },
-      env: { sandboxProvider: "fake" },
+      env: { sandboxProvider: "fake", phoneCallsEnabled: true },
     } as unknown as RouterDeps;
     const actor = {
       spaceId: "space-1",
@@ -3732,23 +3750,24 @@ describe("threads.answerCall and threads.declineCall", () => {
     expect(prisma.routine.create).not.toHaveBeenCalled();
   });
 
-  it("asks the bot to call back in ten minutes on later", async () => {
-    const { call, prisma, enqueue } = fixture();
-    const before = Date.now();
-    const { response } = await call("declineCall", { outcome: "later" });
-    expect(response.status).toBe(200);
-    expect(prisma.routine.create).toHaveBeenCalledWith(
+  it("rejects expired answers and records a missed call", async () => {
+    const { call, appended } = fixture("ringing", 1, new Date(0).toISOString());
+    expect((await call("answerCall", {})).response.status).toBe(409);
+    expect(appended[0]?.payload).toMatchObject({
+      blocks: [expect.objectContaining({ status: "missed" })],
+    });
+  });
+
+  it("checks ownership within the active space", async () => {
+    const { call, prisma } = fixture();
+    vi.mocked(prisma.bot.findFirst).mockResolvedValue(null);
+    expect((await call("answerCall", {})).response.status).not.toBe(200);
+    expect(prisma.bot.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          botId: "bot-1",
-          threadId: "thread-1",
-          prompt: expect.stringContaining("call_user"),
-        }),
+        where: expect.objectContaining({ id: "bot-1", userId: "user-1", spaceId: "space-1" }),
       }),
     );
-    const nextRunAt = vi.mocked(prisma.routine.create).mock.calls[0]?.[0]?.data?.nextRunAt as Date;
-    expect(nextRunAt.getTime() - before).toBeGreaterThanOrEqual(10 * 60_000 - 1_000);
-    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ name: "routine.wakeup" }));
+    expect(prisma.message.updateMany).not.toHaveBeenCalled();
   });
 });
 
@@ -3757,8 +3776,10 @@ describe("threads.endCall", () => {
     const created: { blocks?: unknown; clientNonce?: string }[] = [];
     const events: { type: string; payload: Record<string, unknown> }[] = [];
     const tx = {
+      $queryRaw: vi.fn(async () => []),
       thread: { update: vi.fn().mockResolvedValue({ nextMessageSeq: 3, nextEventSeq: 5 }) },
       message: {
+        findUnique: vi.fn().mockResolvedValue(null),
         findFirst: vi.fn().mockResolvedValue(userSpoke ? { id: "utterance-1" } : null),
         create: vi.fn(async ({ data }: { data: { blocks: unknown; clientNonce?: string } }) => {
           if (duplicateMarker) throw Object.assign(new Error("unique"), { code: "P2002" });
@@ -3795,7 +3816,7 @@ describe("threads.endCall", () => {
       prisma,
       events: { notify: vi.fn().mockResolvedValue(undefined) },
       jobs: { enqueue },
-      env: { sandboxProvider: "fake" },
+      env: { sandboxProvider: "fake", phoneCallsEnabled: true },
     } as unknown as RouterDeps;
     const actor = {
       spaceId: "space-1",

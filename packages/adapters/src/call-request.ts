@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import type { JobPublisher } from "@rakazo/adapter-kit";
+import { callExpireJob } from "@rakazo/adapter-kit";
 import type { MessageBlock } from "@rakazo/contracts";
 import type { CallRequestBlock } from "@rakazo/core";
 import {
@@ -9,6 +11,7 @@ import {
   callRequestClientNonce,
 } from "@rakazo/core";
 import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+import { appendEventInTransaction, createThreadMessageInTransaction } from "@rakazo/db";
 
 const REASON_MAX = 120;
 const OPENING_MAX = 240;
@@ -17,7 +20,7 @@ export type CallRequestStatus = CallRequestBlock["status"];
 
 /** Why the bot may not ring the user right now, or null when it may. */
 export async function callRequestRefusal(
-  prisma: PrismaClient,
+  prisma: Pick<PrismaClient, "message" | "userVoiceCredential">,
   input: { userId: string; threadId: string; groupChat: boolean; now?: number },
 ): Promise<string | null> {
   if (input.groupChat) return "Calls work in a one-to-one chat only. Send a message instead.";
@@ -31,7 +34,7 @@ export async function callRequestRefusal(
   const since = new Date((input.now ?? Date.now()) - CALL_REQUEST_COOLDOWN_MS);
   const recent = await prisma.message.findFirst({
     where: {
-      threadId: input.threadId,
+      thread: { userId: input.userId },
       role: "bot",
       clientNonce: { startsWith: CALL_CLIENT_NONCE_PREFIX, endsWith: ":request" },
       createdAt: { gt: since },
@@ -80,7 +83,7 @@ export function newCallRequest(input: {
  * devices answering, or an answer racing the ring-out, settle exactly once.
  */
 export async function settleCallRequest(
-  deps: { prisma: PrismaClient; events: Pick<ThreadEvents, "append"> },
+  deps: { prisma: PrismaClient; events: Pick<ThreadEvents, "notify"> },
   input: {
     threadId: string;
     callId: string;
@@ -89,37 +92,138 @@ export async function settleCallRequest(
     durationSeconds?: number;
   },
 ): Promise<CallRequestBlock | null> {
-  const message = await deps.prisma.message.findUnique({
-    where: {
-      threadId_clientNonce: {
-        threadId: input.threadId,
-        clientNonce: callRequestClientNonce(input.callId),
+  const result = await deps.prisma.$transaction(async (tx) => {
+    // Match clearThread: thread first, then messages.
+    await tx.$queryRaw`SELECT id FROM threads WHERE id = ${input.threadId} FOR UPDATE`;
+    const message = await tx.message.findUnique({
+      where: {
+        threadId_clientNonce: {
+          threadId: input.threadId,
+          clientNonce: callRequestClientNonce(input.callId),
+        },
       },
+      select: { id: true, blocks: true, botId: true, thread: { select: { spaceId: true } } },
+    });
+    if (!message?.botId) return null;
+    const before = Array.isArray(message.blocks) ? (message.blocks as MessageBlock[]) : [];
+    const block = callRequestBlock(before);
+    if (!block || !input.from.includes(block.status)) return null;
+    const expired = block.status === "ringing" && Date.parse(block.expiresAt) <= Date.now();
+    const next: CallRequestBlock = {
+      ...block,
+      ...(input.status ? { status: expired ? "missed" : input.status } : {}),
+      ...(input.durationSeconds === undefined ? {} : { durationSeconds: input.durationSeconds }),
+    };
+    const blocks = [next, ...before.slice(1)];
+    // Compare-and-set on the stored blocks: a concurrent settle leaves this one a no-op.
+    const updated = await tx.message.updateMany({
+      where: { id: message.id, blocks: { equals: message.blocks as Prisma.InputJsonValue } },
+      data: { blocks: blocks as Prisma.InputJsonValue },
+    });
+    if (updated.count !== 1) return null;
+    const event = await appendEventInTransaction(tx, {
+      spaceId: message.thread.spaceId,
+      threadId: input.threadId,
+      botId: message.botId,
+      type: "thread.message.updated",
+      payload: { messageId: message.id, role: "bot", blocks, callId: input.callId },
+    });
+    return { next, eventSeq: event.seq };
+  });
+  if (!result) return null;
+  await deps.events.notify(input.threadId, result.eventSeq).catch(() => undefined);
+  return result.next;
+}
+
+/** Serialize ringing across every bot owned by the user, including concurrent runs. */
+export async function requestUserCall(
+  deps: {
+    prisma: PrismaClient;
+    events: ThreadEvents;
+    jobs: JobPublisher;
+    phoneCallsEnabled?: boolean;
+  },
+  run: { id: string; spaceId: string; userId: string; threadId: string; botId: string },
+  input: { reason: string; opening: string },
+) {
+  if (!deps.phoneCallsEnabled) return { error: "Calls are disabled." };
+  const request = newCallRequest(input);
+  if ("error" in request) return request;
+  const result = await deps.prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`call:${run.userId}`}, 0))::text`;
+    const target = await tx.thread.findFirst({
+      where: {
+        id: run.threadId,
+        spaceId: run.spaceId,
+        userId: run.userId,
+        botId: run.botId,
+        groupId: null,
+        externalConversationId: null,
+        bot: { userId: run.userId, spaceId: run.spaceId, archivedAt: null },
+      },
+      select: { id: true },
+    });
+    if (!target) return { error: "Calls require the bot's own one-to-one chat." };
+    const refusal = await callRequestRefusal(tx, { ...run, groupChat: false });
+    if (refusal) return { error: refusal };
+    const message = await createThreadMessageInTransaction(tx, {
+      threadId: run.threadId,
+      botId: run.botId,
+      runId: run.id,
+      role: "bot",
+      blocks: request.blocks,
+      clientNonce: request.clientNonce,
+      markUnread: true,
+    });
+    const event = await appendEventInTransaction(tx, {
+      spaceId: run.spaceId,
+      threadId: run.threadId,
+      botId: run.botId,
+      runId: run.id,
+      type: "thread.message.created",
+      payload: {
+        messageId: message.id,
+        role: "bot",
+        blocks: request.blocks,
+        callId: request.callId,
+      },
+    });
+    return { eventSeq: event.seq };
+  });
+  if ("error" in result) return result;
+  await deps.events.notify(run.threadId, result.eventSeq).catch(() => undefined);
+  try {
+    await deps.jobs.enqueue(callExpireJob(run.threadId, request.callId, request.expiresAt));
+  } catch {
+    // Fail closed immediately; the reconciler retries any interrupted settlement.
+    await settleCallRequest(deps, {
+      threadId: run.threadId,
+      callId: request.callId,
+      from: ["ringing"],
+      status: "missed",
+    });
+    return { error: "Could not ring the user. Send a message instead." };
+  }
+  return { ok: true, status: "ringing" };
+}
+
+/** Restore expiry jobs after a process interruption between persistence and enqueue. */
+export async function reconcileCallRequests(deps: { prisma: PrismaClient; jobs: JobPublisher }) {
+  const messages = await deps.prisma.message.findMany({
+    where: {
+      role: "bot",
+      clientNonce: { startsWith: CALL_CLIENT_NONCE_PREFIX, endsWith: ":request" },
+      blocks: { path: ["0", "status"], equals: "ringing" },
     },
-    select: { id: true, blocks: true, botId: true, thread: { select: { spaceId: true } } },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+    select: { threadId: true, blocks: true },
   });
-  if (!message?.botId) return null;
-  const before = Array.isArray(message.blocks) ? (message.blocks as MessageBlock[]) : [];
-  const block = callRequestBlock(before);
-  if (!block || !input.from.includes(block.status)) return null;
-  const next: CallRequestBlock = {
-    ...block,
-    ...(input.status ? { status: input.status } : {}),
-    ...(input.durationSeconds === undefined ? {} : { durationSeconds: input.durationSeconds }),
-  };
-  const blocks = [next, ...before.slice(1)];
-  // Compare-and-set on the stored blocks: a concurrent settle leaves this one a no-op.
-  const updated = await deps.prisma.message.updateMany({
-    where: { id: message.id, blocks: { equals: message.blocks as Prisma.InputJsonValue } },
-    data: { blocks: blocks as Prisma.InputJsonValue },
-  });
-  if (updated.count !== 1) return null;
-  await deps.events.append({
-    spaceId: message.thread.spaceId,
-    threadId: input.threadId,
-    botId: message.botId,
-    type: "thread.message.updated",
-    payload: { messageId: message.id, role: "bot", blocks, callId: input.callId },
-  });
-  return next;
+  for (const message of messages) {
+    const block = callRequestBlock(message.blocks as MessageBlock[]);
+    if (block)
+      await deps.jobs.enqueue(
+        callExpireJob(message.threadId, block.callId, new Date(block.expiresAt)),
+      );
+  }
 }
