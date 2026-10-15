@@ -23,8 +23,9 @@ postgres("call isolation and cooldown (PostgreSQL)", () => {
         data: { id: organizationId, name: "Call tests", slug: id, createdAt: new Date() },
       });
       await prisma.space.create({ data: { id: spaceId, organizationId, name: "Call tests" } });
+      // Calls are live conversations, which need the OpenAI voice connection.
       await prisma.userVoiceCredential.create({
-        data: { userId, provider: "scripted", secretId: "fake-secret" },
+        data: { userId, provider: "openai", secretId: "fake-secret" },
       });
       const runs = [];
       for (const suffix of ["a", "b"]) {
