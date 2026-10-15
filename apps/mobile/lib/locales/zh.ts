@@ -807,4 +807,5 @@ export const ZH_MESSAGES: Record<string, string> = {
   "OpenAI API key": "OpenAI API 密钥",
   "Model for tasks": "任务模型",
   "Bot's model": "机器人的模型",
+  "Install the latest fixes": "安装最新修复",
 };

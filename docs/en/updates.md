@@ -34,7 +34,16 @@ The build number in the tag (`N` in `v0.1.N`) is the app's version code. Every r
 The desktop app checks the latest release on start and every hour, and shows the state in the app's update section.
 
 - **Windows and Linux:** the update downloads in the background and installs on restart.
-- **macOS:** the app is not signed with an Apple Developer ID, so macOS refuses to replace it in place. When that happens, the app opens the latest release in the browser: download the new `.dmg` and drag Quant into Applications again.
+- **macOS:** the app is not signed with an Apple Developer ID, so macOS refuses to replace it in place. The update section offers **Download 0.1.N**, which opens the latest release in the browser: download the new `.dmg` and drag Quant into Applications again.
+
+## Fast updates from main
+
+The full release takes about 25 minutes, mostly for the Android build. Every push to `main` also runs the `edge` workflow, which publishes a fast update under the `edge` pre-release a few minutes after the push. A fast update carries only JavaScript, so it never replaces anything native.
+
+- **Desktop:** **Settings → Updates → Latest from main** checks for it. The update holds the web app and the server's JavaScript, about 13 MB. The app checks its SHA-256, unpacks it next to its data, and restarts on it. Your server data, sign-in and settings stay where they are. It applies only when the installed app has the same native parts (Electron, Postgres, native modules). Otherwise the app says the newest changes need the next full release. A newer full release always replaces an older fast update.
+- **Android:** **Account → Check for updates** checks the full release first, then a fast update. When one is ready, the button becomes **Install the latest fixes**. The app downloads the new JavaScript through its own Quant server and restarts on it, with no reinstall and no lost settings. It applies only when the installed APK has the same native fingerprint (`runtimeVersion`). After native changes, install the full release.
+
+The first build that has these features still has to be installed from a full release.
 
 ## Versions
 

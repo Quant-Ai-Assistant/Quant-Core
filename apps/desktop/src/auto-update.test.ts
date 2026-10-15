@@ -318,6 +318,25 @@ describe("DesktopUpdateController", () => {
     });
   });
 
+  it("offers a macOS release for a manual install instead of downloading it", async () => {
+    let fake: ReturnType<typeof fakeUpdater>;
+    fake = fakeUpdater({
+      checkForUpdates: vi.fn(async () => {
+        fake.emit("checking-for-update");
+        fake.emit("update-available", { version: "0.2.0" });
+      }),
+    });
+    const controller = new DesktopUpdateController(
+      { ...packaged, manualInstall: true },
+      async () => fake.updater,
+      clock,
+    );
+
+    await controller.check(true);
+    expect(controller.state()).toMatchObject({ phase: "available", availableVersion: "0.2.0" });
+    expect(fake.updater.downloadUpdate).not.toHaveBeenCalled();
+  });
+
   it("joins manual downloads to the automatic download already in flight", async () => {
     const download = deferred();
     let fake: ReturnType<typeof fakeUpdater>;

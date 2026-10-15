@@ -832,4 +832,5 @@ export const RU_MESSAGES: Record<string, string> = {
   "OpenAI API key": "API-ключ OpenAI",
   "Model for tasks": "Модель для задач",
   "Bot's model": "Модель бота",
+  "Install the latest fixes": "Установить свежие исправления",
 };

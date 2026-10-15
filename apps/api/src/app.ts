@@ -112,6 +112,7 @@ import {
   wakeMessageRoutines,
 } from "./messaging-inbound.js";
 import { mountMessagingWebhookRoutes } from "./messaging-webhook.js";
+import { mountMobileUpdateRoutes } from "./mobile-updates.js";
 import { mountApiRequestBodyLimits } from "./request-body-limit.js";
 import { createRouter } from "./router.js";
 import { mountScreenTarget } from "./screen-proxy.js";
@@ -676,6 +677,7 @@ export async function createApp(
     await next();
   });
   mountDiagnosticRoutes(app, diagnostics, (c) => sessionActor(c.req.raw));
+  mountMobileUpdateRoutes(app);
   mountVoiceHttpRoutes(app, { prisma, secrets }, async (c) => {
     const actor = await sessionActor(c.req.raw);
     if (actor) enrichLogContext({ "user.id": actor.userId, "space.id": actor.spaceId });

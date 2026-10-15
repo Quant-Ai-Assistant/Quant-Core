@@ -22,6 +22,9 @@ apps/web/dist
 apps/desktop/dist
 apps/desktop/out
 apps/desktop/server-dist
+apps/desktop/out-edge
+apps/mobile/dist-edge
+apps/mobile/out-edge
 apps/desktop/e2e/screenshots
 apps/mobile/.expo
 apps/mobile/dist

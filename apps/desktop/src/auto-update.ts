@@ -9,6 +9,11 @@ export interface UpdaterEnvironment {
   packaged: boolean;
   version: string;
   disabled?: boolean;
+  /**
+   * The new release is installed by hand (macOS: without an Apple Developer ID the app cannot
+   * replace itself), so an offer is not downloaded here.
+   */
+  manualInstall?: boolean;
 }
 
 export function updaterSupport(env: UpdaterEnvironment): { supported: boolean; reason: string } {
@@ -299,7 +304,7 @@ export class DesktopUpdateController {
             return;
           }
           this.push({ type: "available", version });
-          void this.download();
+          if (!this.environment.manualInstall) void this.download();
         });
         updater.on("update-not-available", () => this.push({ type: "not-available" }));
         updater.on("download-progress", (payload) => {
