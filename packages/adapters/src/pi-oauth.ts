@@ -5,6 +5,7 @@ import type {
   OAuthAuth,
   OAuthCredential,
 } from "@earendil-works/pi-ai";
+import { registerBunOAuthFlows } from "@earendil-works/pi-ai/bun-oauth";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import type {
   ModelCredentialFailedState,
@@ -26,6 +27,11 @@ import {
 import type { PrismaClient } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import { createManualAnthropicOAuthLogin } from "./pi-anthropic-oauth.js";
+
+// pi-ai loads its sign-in flows through a variable `import()` that a bundle cannot
+// follow, so the desktop's bundled server would fail every sign-in and refresh.
+// Registering them statically keeps the flows inside whatever bundles this module.
+registerBunOAuthFlows();
 
 export const CHATGPT_OAUTH_PROVIDER = "openai-codex";
 export const COPILOT_OAUTH_PROVIDER = "github-copilot";
