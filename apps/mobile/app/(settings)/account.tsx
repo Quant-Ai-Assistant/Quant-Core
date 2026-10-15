@@ -60,6 +60,7 @@ import {
 } from "../../lib/live-notifications";
 import { presentMessageActionSheet } from "../../lib/message-action-sheet";
 import { native, useResolvedAppearance, useThemedStyles } from "../../lib/native";
+import { checkForOtaUpdate, installOtaUpdate } from "../../lib/ota-update";
 import { registerPushToken } from "../../lib/push";
 import {
   getCachedRemoteImagesEnabled,
@@ -136,6 +137,8 @@ export default function Account() {
   const [appUpdate, setAppUpdate] = useState<AppUpdate | null>(null);
   const [appUpdateState, setAppUpdateState] = useState<"idle" | "checking" | "installing">("idle");
   const [appUpdateError, setAppUpdateError] = useState<string | null>(null);
+  /** An update from main is ready to install over the air; a newer APK takes precedence. */
+  const [otaAvailable, setOtaAvailable] = useState(false);
 
   async function checkOrInstallUpdate() {
     setAppUpdateError(null);
@@ -145,8 +148,15 @@ export default function Account() {
         await installAppUpdate(appUpdate);
         return;
       }
+      if (otaAvailable) {
+        setAppUpdateState("installing");
+        await installOtaUpdate();
+        return;
+      }
       setAppUpdateState("checking");
-      setAppUpdate(await checkForAppUpdate());
+      const release = await checkForAppUpdate();
+      setAppUpdate(release);
+      if (!release.available) setOtaAvailable(await checkForOtaUpdate());
     } catch (error) {
       setAppUpdateError(errorText(error, t("Could not check for updates")));
     } finally {
@@ -641,9 +651,13 @@ export default function Account() {
                       ? t("Downloading the update…")
                       : appUpdate?.available
                         ? t("Install update {version}", { version: appUpdate.tag })
-                        : t("Check for updates")
+                        : otaAvailable
+                          ? t("Install the latest fixes")
+                          : t("Check for updates")
                 }
-                value={appUpdate && !appUpdate.available ? t("Up to date") : undefined}
+                value={
+                  appUpdate && !appUpdate.available && !otaAvailable ? t("Up to date") : undefined
+                }
               />
               {appUpdateError ? <Text style={styles.error}>{appUpdateError}</Text> : null}
             </SettingsGroup>

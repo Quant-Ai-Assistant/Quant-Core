@@ -1613,6 +1613,10 @@ msgstr "无法连接到模型服务器。"
 msgid "Could not reach the server"
 msgstr "无法连接服务器"
 
+#: src/components/DesktopUpdates.tsx
+msgid "Could not reach the update server."
+msgstr "无法连接更新服务器。"
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "无法移除"
@@ -2099,8 +2103,10 @@ msgstr ""
 
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
+#. placeholder {0}: state.availableVersion
 #: src/components/ArtifactFileCard.tsx
 #: src/components/computer/FilesApp.tsx
+#: src/components/DesktopUpdates.tsx
 msgid "Download {0}"
 msgstr "下载 {0}"
 
@@ -2612,6 +2618,10 @@ msgstr "语言"
 #: src/components/DesktopUpdates.tsx
 msgid "Later"
 msgstr ""
+
+#: src/components/DesktopUpdates.tsx
+msgid "Latest from main"
+msgstr "来自 main 的最新修复"
 
 #: src/components/computer/TerminalApp.tsx
 msgid "Launched {app}"
@@ -4482,6 +4492,10 @@ msgstr "API 未恢复。请刷新此页面。"
 msgid "The connection timed out."
 msgstr "连接超时。"
 
+#: src/components/DesktopUpdates.tsx
+msgid "The newest changes need the next full release."
+msgstr "最新更改需要下一个完整版本。"
+
 #: src/lib/model-connection-preflight.ts
 msgid "The provider is rate-limiting requests."
 msgstr "提供方正在限制请求频率。"
@@ -4742,6 +4756,11 @@ msgstr "更新完成但有错误"
 msgid "Update progress"
 msgstr ""
 
+#. placeholder {0}: state.available
+#: src/components/DesktopUpdates.tsx
+msgid "Update to {0}"
+msgstr "更新到 {0}"
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Updated"
 msgstr "已更新"
@@ -4764,6 +4783,7 @@ msgid "Updating Team Computer"
 msgstr ""
 
 #: src/components/ComputerMaintenanceActions.tsx
+#: src/components/DesktopUpdates.tsx
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Updating…"
 msgstr "正在更新…"

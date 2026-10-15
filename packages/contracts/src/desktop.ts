@@ -31,6 +31,25 @@ export interface RakazoDesktopUpdate {
   install: () => Promise<DesktopUpdateState>;
 }
 
+/** A fast update from main: the web app and server JavaScript (see edge.ts). */
+export interface DesktopEdgeState {
+  phase: "idle" | "checking" | "available" | "applying" | "restarting" | "unsupported" | "error";
+  /** The commit this app runs, short. */
+  current: string | null;
+  /** A newer commit from main this app can take, short. */
+  available: string | null;
+  /** Why there is nothing to take: the next change needs a full release, or a step failed. */
+  problem: "needs-release" | "offline" | "failed" | null;
+  checkedAt?: string;
+}
+
+export interface RakazoDesktopEdge {
+  state: () => Promise<DesktopEdgeState>;
+  check: () => Promise<DesktopEdgeState>;
+  /** Downloads the build from main and restarts the app on it. */
+  apply: () => Promise<DesktopEdgeState>;
+}
+
 export interface RakazoDesktopOAuthCallback {
   code: string;
   state?: string;
@@ -49,6 +68,8 @@ export interface RakazoDesktop {
     state: () => Promise<{ minimized: boolean; maximized: boolean; fullScreen: boolean }>;
   };
   update: RakazoDesktopUpdate;
+  /** Optional: older desktop apps have no fast updates. */
+  edge?: RakazoDesktopEdge;
   oauth: {
     /**
      * Open system-browser auth. A redirect_uri must be HTTP loopback with state;

@@ -7,14 +7,15 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "pnpm build && electron .",
-    "build": "tsc -p tsconfig.json && node scripts/copy-static.mjs",
+    "build": "tsc -p tsconfig.json && node scripts/copy-static.mjs && node scripts/build-info.mjs dist/build-info.json",
     "pack": "pnpm --filter @rakazo/web build && pnpm build && pnpm build:server && electron-builder --mac --win --linux",
     "pack:dir": "pnpm --filter @rakazo/web build && pnpm build && pnpm build:server && electron-builder --dir",
     "check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p server/tsconfig.json",
     "test": "vitest run --root ../.. apps/desktop/src apps/desktop/server",
     "test:e2e": "pnpm build && playwright test --config e2e/playwright.config.ts",
     "release": "pnpm --filter @rakazo/web build && pnpm build && pnpm build:server && electron-builder --publish never",
-    "build:server": "pnpm --filter @rakazo/db generate && node scripts/build-server.mjs"
+    "build:server": "pnpm --filter @rakazo/db generate && node scripts/build-server.mjs",
+    "pack:edge": "node scripts/build-server.mjs --bundle-only && node scripts/pack-edge.mjs"
   },
   "dependencies": {
     "@rakazo/contracts": "workspace:*",

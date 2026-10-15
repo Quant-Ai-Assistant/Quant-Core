@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { DesktopUpdateState } from "@rakazo/contracts";
+import type { DesktopEdgeState, DesktopUpdateState } from "@rakazo/contracts";
 import { Button } from "@rakazo/ui-web";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { desktopBridge } from "../lib/desktop";
@@ -45,7 +45,7 @@ function useDesktopUpdates() {
     };
   }, [bridge]);
 
-  async function act(action: "check" | "install") {
+  async function act(action: "check" | "download" | "install") {
     if (!bridge || pending.current) return;
     pending.current = true;
     revision.current++;
@@ -130,7 +130,10 @@ export function DesktopUpdateSection() {
   if (!updates?.state) return null;
   const { state, busy, error, act, confirmedCheck } = updates;
   const ready = state.phase === "ready";
-  const downloading = state.phase === "available" || state.phase === "downloading";
+  // macOS installs a release by hand from its download page; elsewhere it downloads here.
+  const manual = desktopBridge()?.platform === "darwin";
+  const offered = manual && state.phase === "available";
+  const downloading = (!manual && state.phase === "available") || state.phase === "downloading";
   return (
     <section
       data-testid="desktop-update-settings"
@@ -144,10 +147,12 @@ export function DesktopUpdateSection() {
         <Button
           variant="outline"
           disabled={busy || downloading || state.phase === "checking"}
-          onClick={() => void act(ready ? "install" : "check")}
+          onClick={() => void act(ready ? "install" : offered ? "download" : "check")}
         >
           {ready ? (
             <Trans>Restart to update</Trans>
+          ) : offered ? (
+            <Trans>Download {state.availableVersion}</Trans>
           ) : downloading ? (
             <Trans>Downloading…</Trans>
           ) : busy || state.phase === "checking" ? (
@@ -166,6 +171,77 @@ export function DesktopUpdateSection() {
             <Trans>Up to date</Trans>
           ) : null)}
       </p>
+      <EdgeUpdateRow />
     </section>
+  );
+}
+
+/** Fixes from main, minutes after a push: the web app and server, without a new installer. */
+function EdgeUpdateRow() {
+  const bridge = desktopBridge()?.edge;
+  const [state, setState] = useState<DesktopEdgeState | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!bridge) return;
+    void bridge
+      .state()
+      .then(setState)
+      .catch(() => undefined);
+  }, [bridge]);
+
+  if (!bridge || !state || state.phase === "unsupported") return null;
+  const available = state.phase === "available";
+  const working = busy || state.phase === "checking" || state.phase === "applying";
+
+  async function act() {
+    if (!bridge) return;
+    setBusy(true);
+    try {
+      setState(await (available ? bridge.apply() : bridge.check()));
+    } catch {
+      setState((current) =>
+        current ? { ...current, phase: "error", problem: "failed" } : current,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 border-t border-border pt-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-muted-foreground">
+          <Trans>Latest from main</Trans>
+          {state.current ? ` · ${state.current}` : null}
+        </span>
+        <Button
+          variant="outline"
+          disabled={working || state.phase === "restarting"}
+          onClick={() => void act()}
+        >
+          {state.phase === "applying" || state.phase === "restarting" ? (
+            <Trans>Updating…</Trans>
+          ) : state.phase === "checking" ? (
+            <Trans>Checking…</Trans>
+          ) : available ? (
+            <Trans>Update to {state.available}</Trans>
+          ) : (
+            <Trans>Check for updates</Trans>
+          )}
+        </Button>
+      </div>
+      <p role="status" className="mt-2 text-sm text-muted-foreground">
+        {state.problem === "needs-release" ? (
+          <Trans>The newest changes need the next full release.</Trans>
+        ) : state.problem === "offline" ? (
+          <Trans>Could not reach the update server.</Trans>
+        ) : state.problem === "failed" ? (
+          <Trans>Could not complete the update. Try again.</Trans>
+        ) : state.phase === "idle" && state.checkedAt ? (
+          <Trans>Up to date</Trans>
+        ) : null}
+      </p>
+    </div>
   );
 }

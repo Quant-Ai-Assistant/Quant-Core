@@ -1,0 +1,117 @@
+name: edge
+
+# Every push to main also publishes a fast update under the `edge` pre-release, minutes after the
+# push instead of after the full release:
+# - desktop: the web app and the bundled server's JavaScript, which an installed app with the
+#   same native parts swaps in from Settings → Updates;
+# - Android: an over-the-air JavaScript update the app installs from Account → Check for updates,
+#   through its own server, when the installed APK has the same native fingerprint.
+# Native changes still need the full release from the release workflow.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: edge
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    name: Desktop web and server
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          # build-info reads the commit time.
+          fetch-depth: 1
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: |
+          pnpm --filter @rakazo/db generate
+          pnpm --filter @rakazo/web build
+          pnpm --filter @rakazo/desktop pack:edge
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: edge-desktop
+          path: |
+            apps/desktop/out-edge/desktop-edge.tar.gz
+            apps/desktop/out-edge/desktop-edge.json
+          if-no-files-found: error
+          retention-days: 3
+
+  android:
+    name: Android over-the-air update
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Export and pack
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          npx expo export --platform android --output-dir dist-edge
+          runtime="$(node node_modules/expo-updates/bin/cli.js runtimeversion:resolve --platform android | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).runtimeVersion))')"
+          node scripts/pack-edge.mjs "$runtime"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: edge-android
+          path: apps/mobile/out-edge/*
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    name: Publish the edge pre-release
+    needs: [desktop, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: edge-*
+          path: edge
+          merge-multiple: true
+      - name: Replace the edge assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # A pre-release that is never "latest", so release updaters keep reading full releases.
+          if ! gh release view edge --repo "$REPO" >/dev/null 2>&1; then
+            gh release create edge --repo "$REPO" --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "Edge (main)" \
+              --notes "Fast updates built from the newest commit on main. Install full releases from the latest release."
+          fi
+          # Files first, manifests last: an app never reads a manifest whose files are missing.
+          find edge -type f ! -name '*.json' -print0 | xargs -0 gh release upload edge --repo "$REPO" --clobber
+          gh release upload edge edge/*.json --repo "$REPO" --clobber
+          # Drop what the newest build no longer uses, so the release keeps one update.
+          keep="$(ls edge)"
+          gh release view edge --repo "$REPO" --json assets --jq '.assets[].name' | while read -r name; do
+            if ! grep -qxF "$name" <<<"$keep"; then
+              gh release delete-asset edge "$name" --repo "$REPO" --yes
+            fi
+          done
+          gh release edit edge --repo "$REPO" --notes "Fast updates built from ${GITHUB_SHA} on main. Install full releases from the latest release."

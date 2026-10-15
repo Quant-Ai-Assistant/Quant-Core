@@ -96,10 +96,14 @@
       "supportsRTL": true
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "updates": {
-      "enabled": false
+      "enabled": true,
+      "url": "https://updates.invalid/api/mobile-updates/manifest",
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0,
+      "disableAntiBrickingMeasures": true
     }
   }
 }

@@ -1613,6 +1613,10 @@ msgstr "Не удалось связаться с сервером модели.
 msgid "Could not reach the server"
 msgstr "Не удалось связаться с сервером"
 
+#: src/components/DesktopUpdates.tsx
+msgid "Could not reach the update server."
+msgstr "Не удалось связаться с сервером обновлений."
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "Не удалось удалить"
@@ -2099,8 +2103,10 @@ msgstr ""
 
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
+#. placeholder {0}: state.availableVersion
 #: src/components/ArtifactFileCard.tsx
 #: src/components/computer/FilesApp.tsx
+#: src/components/DesktopUpdates.tsx
 msgid "Download {0}"
 msgstr "Скачать {0}"
 
@@ -2612,6 +2618,10 @@ msgstr "Язык"
 #: src/components/DesktopUpdates.tsx
 msgid "Later"
 msgstr "Позже"
+
+#: src/components/DesktopUpdates.tsx
+msgid "Latest from main"
+msgstr "Свежие исправления из main"
 
 #: src/components/computer/TerminalApp.tsx
 msgid "Launched {app}"
@@ -4482,6 +4492,10 @@ msgstr "API не вернулся. Обновите эту страницу."
 msgid "The connection timed out."
 msgstr "Время ожидания соединения истекло."
 
+#: src/components/DesktopUpdates.tsx
+msgid "The newest changes need the next full release."
+msgstr "Для последних изменений нужен следующий полный релиз."
+
 #: src/lib/model-connection-preflight.ts
 msgid "The provider is rate-limiting requests."
 msgstr "Поставщик ограничивает частоту запросов."
@@ -4742,6 +4756,11 @@ msgstr "Обновление завершено с ошибками"
 msgid "Update progress"
 msgstr "Ход обновления"
 
+#. placeholder {0}: state.available
+#: src/components/DesktopUpdates.tsx
+msgid "Update to {0}"
+msgstr "Обновить до {0}"
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Updated"
 msgstr "Обновлено"
@@ -4764,6 +4783,7 @@ msgid "Updating Team Computer"
 msgstr "Обновление компьютера команды"
 
 #: src/components/ComputerMaintenanceActions.tsx
+#: src/components/DesktopUpdates.tsx
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Updating…"
 msgstr "Обновление…"

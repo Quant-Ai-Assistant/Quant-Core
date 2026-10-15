@@ -831,4 +831,5 @@ export const DE_MESSAGES: Record<string, string> = {
   "OpenAI API key": "OpenAI-API-Schlüssel",
   "Model for tasks": "Modell für Aufgaben",
   "Bot's model": "Modell des Bots",
+  "Install the latest fixes": "Neueste Korrekturen installieren",
 };

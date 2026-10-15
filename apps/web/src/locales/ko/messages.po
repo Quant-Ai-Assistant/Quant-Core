@@ -1613,6 +1613,10 @@ msgstr "모델 서버에 연결하지 못했습니다."
 msgid "Could not reach the server"
 msgstr "서버에 연결할 수 없습니다"
 
+#: src/components/DesktopUpdates.tsx
+msgid "Could not reach the update server."
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "삭제하지 못했습니다."
@@ -2099,8 +2103,10 @@ msgstr ""
 
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
+#. placeholder {0}: state.availableVersion
 #: src/components/ArtifactFileCard.tsx
 #: src/components/computer/FilesApp.tsx
+#: src/components/DesktopUpdates.tsx
 msgid "Download {0}"
 msgstr "{0} 다운로드"
 
@@ -2611,6 +2617,10 @@ msgstr "언어"
 
 #: src/components/DesktopUpdates.tsx
 msgid "Later"
+msgstr ""
+
+#: src/components/DesktopUpdates.tsx
+msgid "Latest from main"
 msgstr ""
 
 #: src/components/computer/TerminalApp.tsx
@@ -4482,6 +4492,10 @@ msgstr "API가 다시 작동하지 않습니다. 이 페이지를 새로 고침�
 msgid "The connection timed out."
 msgstr "연결 시간이 초과되었습니다."
 
+#: src/components/DesktopUpdates.tsx
+msgid "The newest changes need the next full release."
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "The provider is rate-limiting requests."
 msgstr "서비스가 요청 속도를 제한하고 있습니다."
@@ -4742,6 +4756,11 @@ msgstr "오류와 함께 업데이트가 완료되었습니다"
 msgid "Update progress"
 msgstr ""
 
+#. placeholder {0}: state.available
+#: src/components/DesktopUpdates.tsx
+msgid "Update to {0}"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Updated"
 msgstr "업데이트됨"
@@ -4764,6 +4783,7 @@ msgid "Updating Team Computer"
 msgstr ""
 
 #: src/components/ComputerMaintenanceActions.tsx
+#: src/components/DesktopUpdates.tsx
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Updating…"
 msgstr "업데이트 중…"

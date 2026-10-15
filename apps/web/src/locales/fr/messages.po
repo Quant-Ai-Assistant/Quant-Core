@@ -1613,6 +1613,10 @@ msgstr "Impossible de joindre le serveur du modèle."
 msgid "Could not reach the server"
 msgstr "Impossible d'atteindre le serveur"
 
+#: src/components/DesktopUpdates.tsx
+msgid "Could not reach the update server."
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "Impossible de retirer"
@@ -2099,8 +2103,10 @@ msgstr "Télécharger"
 
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
+#. placeholder {0}: state.availableVersion
 #: src/components/ArtifactFileCard.tsx
 #: src/components/computer/FilesApp.tsx
+#: src/components/DesktopUpdates.tsx
 msgid "Download {0}"
 msgstr "Télécharger {0}"
 
@@ -2612,6 +2618,10 @@ msgstr "Langue"
 #: src/components/DesktopUpdates.tsx
 msgid "Later"
 msgstr "Plus tard"
+
+#: src/components/DesktopUpdates.tsx
+msgid "Latest from main"
+msgstr ""
 
 #: src/components/computer/TerminalApp.tsx
 msgid "Launched {app}"
@@ -4482,6 +4492,10 @@ msgstr "L'API n'est pas revenue. Actualisez cette page."
 msgid "The connection timed out."
 msgstr "La connexion a expiré."
 
+#: src/components/DesktopUpdates.tsx
+msgid "The newest changes need the next full release."
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "The provider is rate-limiting requests."
 msgstr "Le fournisseur limite le débit des requêtes."
@@ -4742,6 +4756,11 @@ msgstr "Mise à jour terminée avec des erreurs"
 msgid "Update progress"
 msgstr "Progression de la mise à jour"
 
+#. placeholder {0}: state.available
+#: src/components/DesktopUpdates.tsx
+msgid "Update to {0}"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Updated"
 msgstr "Mis à jour"
@@ -4764,6 +4783,7 @@ msgid "Updating Team Computer"
 msgstr "Mise à jour de l'ordinateur d'équipe"
 
 #: src/components/ComputerMaintenanceActions.tsx
+#: src/components/DesktopUpdates.tsx
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Updating…"
 msgstr "Mise à jour en cours…"

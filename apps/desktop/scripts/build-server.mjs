@@ -5,13 +5,14 @@
 //                                (nested: electron-builder drops a node_modules at the root)
 // electron-builder ships the folder as resources/server.
 //
-// Usage: node scripts/build-server.mjs [--platform darwin|win32|linux]
+// Usage: node scripts/build-server.mjs [--platform darwin|win32|linux] [--bundle-only]
 // The platform defaults to this machine's. A macOS build carries both arm64 and x64 modules
 // because one runner packages both DMGs (the Postgres binaries are already universal).
 import { execFileSync } from "node:child_process";
 import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { build } from "esbuild";
+import { ARCHES, EXTERNAL, POSTGRES, POSTGRES_VERSION } from "./server-deps.mjs";
 
 const desktop = path.resolve(import.meta.dirname, "..");
 const root = path.resolve(desktop, "..", "..");
@@ -19,15 +20,8 @@ const out = path.join(desktop, "server-dist");
 
 const platformFlag = process.argv.indexOf("--platform");
 const platform = platformFlag === -1 ? process.platform : process.argv[platformFlag + 1];
-const ARCHES = { darwin: ["arm64", "x64"], win32: ["x64"], linux: ["x64"] };
-const POSTGRES = {
-  darwin: "@embedded-postgres/darwin-arm64",
-  win32: "@embedded-postgres/windows-x64",
-  linux: "@embedded-postgres/linux-x64",
-};
-const POSTGRES_VERSION = "16.14.0-beta.17";
-/** Native or file-reading modules that do not survive bundling. */
-const EXTERNAL = ["sharp", "koffi", "jsdom"];
+/** Only the JavaScript and migrations: a build from main reuses the installed native modules. */
+const bundleOnly = process.argv.includes("--bundle-only");
 if (!ARCHES[platform]) throw new Error(`Unsupported platform: ${platform}`);
 
 await rm(out, { recursive: true, force: true });
@@ -64,6 +58,7 @@ await build({
 await cp(path.join(root, "packages/db/prisma/migrations"), path.join(out, "migrations"), {
   recursive: true,
 });
+if (bundleOnly) process.exit(0);
 
 const adapters = JSON.parse(
   await readFile(path.join(root, "packages/adapters/package.json"), "utf8"),

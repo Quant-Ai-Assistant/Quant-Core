@@ -28,6 +28,8 @@ import {
 } from "./auto-update.js";
 import { openBrowserAuth } from "./browser-auth.js";
 import { runDocker } from "./docker-cli.js";
+import type { BuildInfo } from "./edge-update.js";
+import { activeBuild, EdgeUpdater, forgetStaleBuild, systemExtract } from "./edge-update.js";
 import { startFrontServer } from "./front-server.js";
 import {
   envTemplatePath,
@@ -117,6 +119,7 @@ const updaterEnvironment = {
   packaged: app.isPackaged,
   version: app.getVersion(),
   disabled: process.env.RAKAZO_DISABLE_AUTO_UPDATE === "1",
+  manualInstall: process.platform === "darwin",
 };
 const desktopUpdater = new DesktopUpdateController(
   updaterEnvironment,
@@ -129,6 +132,10 @@ const desktopUpdater = new DesktopUpdateController(
     quitting = false;
   },
 );
+/** Fast updates from main; null until the app is ready. */
+let edgeUpdater: EdgeUpdater | null = null;
+/** The web app this launch serves: a build from main, or null for the app's own. */
+let activeWebRoot: string | null = null;
 let launchUpdateCheckScheduled = false;
 let localStack: LocalServerController;
 let tray: Tray | null = null;
@@ -496,7 +503,7 @@ async function installBundledRenderer(
   const webUrl = new URL(targetUrl);
   const installationKey = `${partition ?? "default"}:${webUrl.protocol}`;
   if (bundledRendererInstallations.has(installationKey)) return;
-  const root = path.join(process.resourcesPath, "web");
+  const root = activeWebRoot ?? path.join(process.resourcesPath, "web");
 
   await targetSession.protocol.handle(webUrl.protocol.slice(0, -1), async (request) => {
     const forward = () => {
@@ -977,14 +984,34 @@ app.whenReady().then(async () => {
     resourcesPath: process.resourcesPath,
     appPath: app.getAppPath(),
   };
+  const edgePaths = {
+    root: path.join(userDataDir, "edge"),
+    bundledServer: serverResourceDir(resources),
+  };
+  const ownBuild =
+    app.isPackaged && process.env.RAKAZO_DISABLE_EDGE !== "1" ? await readOwnBuild() : null;
+  const active = await activeBuild(edgePaths, ownBuild);
+  void forgetStaleBuild(edgePaths, active);
+  activeWebRoot = active?.webRoot ?? null;
+  edgeUpdater = new EdgeUpdater(edgePaths, active?.build ?? null, {
+    fetch: (url) => net.fetch(url),
+    extract: systemExtract,
+    relaunch: () => {
+      app.relaunch();
+      app.quit();
+    },
+    now: () => new Date().toISOString(),
+  });
   localStack = new LocalServerController({
     platform: process.platform,
     env: process.env,
     execPath: process.execPath,
     // Test hooks: a stand-in server and web app for the desktop e2e suite.
-    resourceDir: process.env.RAKAZO_SERVER_DIR?.trim() || serverResourceDir(resources),
+    resourceDir:
+      process.env.RAKAZO_SERVER_DIR?.trim() || active?.serverDir || serverResourceDir(resources),
     webRoot:
       process.env.RAKAZO_WEB_ROOT?.trim() ||
+      active?.webRoot ||
       (app.isPackaged
         ? path.join(process.resourcesPath, "web")
         : path.resolve(app.getAppPath(), "..", "web", "dist")),
@@ -1136,6 +1163,13 @@ app.whenReady().then(async () => {
       fullScreen: win?.isFullScreen() ?? false,
     };
   });
+  ipcMain.handle("desktop.edge.state", () => edgeUpdater?.state() ?? null);
+  ipcMain.handle("desktop.edge.check", (event) =>
+    fromMainWindow(event) ? (edgeUpdater?.check() ?? null) : (edgeUpdater?.state() ?? null),
+  );
+  ipcMain.handle("desktop.edge.apply", (event) =>
+    fromMainWindow(event) ? (edgeUpdater?.apply() ?? null) : (edgeUpdater?.state() ?? null),
+  );
   ipcMain.handle("desktop.update.state", () => desktopUpdater.state());
   ipcMain.handle("desktop.update.check", (event) =>
     fromMainWindow(event) ? desktopUpdater.check(true) : desktopUpdater.state(),
@@ -1430,3 +1464,14 @@ app.on("before-quit", (event) => {
     app.quit();
   });
 });
+
+/** The commit and native parts this app was built with; written by scripts/build-info.mjs. */
+async function readOwnBuild(): Promise<BuildInfo | null> {
+  try {
+    return JSON.parse(
+      await readFile(path.join(app.getAppPath(), "dist", "build-info.json"), "utf8"),
+    ) as BuildInfo;
+  } catch {
+    return null;
+  }
+}
