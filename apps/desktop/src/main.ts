@@ -10,11 +10,13 @@ import {
   dialog,
   ipcMain,
   Menu,
+  nativeImage,
   net,
   type Session,
   safeStorage,
   session,
   shell,
+  Tray,
 } from "electron";
 import type { AppDocumentState } from "./app-document-state.js";
 import { APP_DOCUMENT_STATE_SCRIPT } from "./app-document-state.js";
@@ -25,21 +27,23 @@ import {
   LAUNCH_CHECK_DELAY_MS,
 } from "./auto-update.js";
 import { openBrowserAuth } from "./browser-auth.js";
-import { DOCKER_INSTALL_LINKS, isDesktopSetupLink, runDocker } from "./docker-cli.js";
-import { requestLocalSettings } from "./local-settings.js";
+import { runDocker } from "./docker-cli.js";
+import { startFrontServer } from "./front-server.js";
 import {
+  envTemplatePath,
   GATE_DEFAULT_PORT,
   gatePortFree,
-  LocalStackController,
+  LocalServerController,
   parseGateChange,
   parseGatePort,
   readStackGate,
   readStackToken,
   readStackWebUrl,
-  resolveImageTag,
+  serverDir,
+  serverResourceDir,
   stackDir,
-  stackResourceDir,
-} from "./local-stack.js";
+} from "./local-server.js";
+import { requestLocalSettings } from "./local-settings.js";
 import { oauthCallbackFrom } from "./oauth-callback.js";
 import {
   bundledRendererCandidates,
@@ -59,13 +63,12 @@ import {
   serverAccessFor,
   setActiveServerAccess,
 } from "./server-access.js";
+import { launchProcess } from "./server-processes.js";
 import { installSessionPermissions } from "./session-permissions.js";
 import {
   DEFAULT_LOCAL_WEB_URL,
-  desktopStackImageTag,
   isRakazoHealth,
   managedLocalOpenUrl,
-  maySendDesktopStackToken,
   normalizeServerUrl,
   parseSetupInput,
   probeFailureMessage,
@@ -88,8 +91,8 @@ const PERFORMANCE_USER_DATA = process.env.RAKAZO_PERFORMANCE_USER_DATA;
 /** Test hook: where the app-managed stack answers. Mode `new` still requires loopback. */
 const LOCAL_WEB_URL = process.env.RAKAZO_LOCAL_WEB_URL?.trim() || DEFAULT_LOCAL_WEB_URL;
 const PROBE_TIMEOUT_MS = 8_000;
-const DESKTOP_STACK_PROBE_PATH = "/.well-known/rakazo-desktop-stack";
-const DESKTOP_STACK_TOKEN_HEADER = "x-rakazo-desktop-stack-token";
+/** A launch shows setup's progress only when the local server takes longer than this. */
+const QUIET_START_MS = 1_500;
 let mainWindow: BrowserWindow | null = null;
 const appWindowTargets = new WeakMap<BrowserWindow, string>();
 let setupWindow: BrowserWindow | null = null;
@@ -107,10 +110,6 @@ const appOpener = createAppOpener(openAppOnce);
 let pendingPreviousWindow: BrowserWindow | null = null;
 let quitting = false;
 let warmWindowTimer: NodeJS.Timeout | undefined;
-// Number of short-lived hidden probe windows currently alive. On Windows/Linux,
-// destroying the last window fires "window-all-closed" -> app.quit(); a probe
-// that runs before the first real window exists must not count as "all closed".
-let liveProbeWindows = 0;
 const WARM_WINDOW_TTL_MS = warmWindowTtlMs(process.env.RAKAZO_WARM_WINDOW_TTL_MS);
 
 const LATEST_RELEASE_URL = "https://github.com/Quant-Ai-Assistant/Quant-Core/releases/latest";
@@ -131,7 +130,10 @@ const desktopUpdater = new DesktopUpdateController(
   },
 );
 let launchUpdateCheckScheduled = false;
-let localStack: LocalStackController;
+let localStack: LocalServerController;
+let tray: Tray | null = null;
+/** Set once the local server has stopped, so the next quit goes through. */
+let serverStopped = false;
 
 markOnce("rk:main:module-evaluated");
 if (PERFORMANCE_USER_DATA) {
@@ -238,9 +240,6 @@ async function defaultSessionHasOriginData(origin: string): Promise<boolean> {
       sandbox: true,
     },
   });
-  // Increment only after construction succeeds so a throw cannot leave the
-  // counter stuck > 0 and permanently block quit on Windows/Linux.
-  liveProbeWindows++;
   try {
     await probe.loadURL(origin);
     return (await probe.webContents.executeJavaScript(`(async () => {
@@ -263,7 +262,6 @@ async function defaultSessionHasOriginData(origin: string): Promise<boolean> {
     return false;
   } finally {
     if (!probe.isDestroyed()) probe.destroy();
-    liveProbeWindows--;
   }
 }
 
@@ -330,11 +328,8 @@ function createWindow(url: string, partition: string | null) {
     popup.webContents.on("will-navigate", (details) => capture(details));
   });
   win.on("close", (event) => {
-    if (
-      process.platform === "darwin" &&
-      !quitting &&
-      process.env.RAKAZO_DISABLE_WARM_WINDOW !== "1"
-    ) {
+    // The app lives on in the tray (and the macOS Dock) while its window is closed.
+    if (!quitting && process.env.RAKAZO_DISABLE_WARM_WINDOW !== "1") {
       event.preventDefault();
       win.hide();
       clearTimeout(warmWindowTimer);
@@ -619,7 +614,7 @@ async function showLocalSettings() {
   try {
     const url = localStack.webUrl();
     const token = await readStackToken(stackDir(app.getPath("userData")));
-    if (!token || !(await localStack.matchesDesiredStack(url))) {
+    if (!token || !localStack.ready()) {
       await dialog.showMessageBox({
         message: "Start the local server before opening its settings.",
         type: "info",
@@ -697,14 +692,6 @@ function installApplicationMenu() {
     accelerator: "CmdOrCtrl+Shift+K",
     click: () => showSetupWindow(),
   };
-  const stopStack: Electron.MenuItemConstructorOptions = {
-    id: "stop-local-stack",
-    label: "Stop Local Stack",
-    // The stack keeps running after quit (bots are always on); this is the explicit off switch.
-    click: () => {
-      if (currentSetup?.mode === "new") void localStack.stop();
-    },
-  };
   const template: Electron.MenuItemConstructorOptions[] =
     process.platform === "darwin"
       ? [
@@ -715,7 +702,6 @@ function installApplicationMenu() {
               { type: "separator" },
               localSettings,
               changeServer,
-              stopStack,
               { type: "separator" },
               { role: "hide" },
               { role: "hideOthers" },
@@ -730,13 +716,7 @@ function installApplicationMenu() {
       : [
           {
             label: "File",
-            submenu: [
-              localSettings,
-              changeServer,
-              stopStack,
-              { type: "separator" },
-              { role: "quit" },
-            ],
+            submenu: [localSettings, changeServer, { type: "separator" }, { role: "quit" }],
           },
           { role: "editMenu" },
           { role: "windowMenu" },
@@ -815,32 +795,6 @@ async function probeServer(
     };
   } catch (error) {
     return { ok: false, url, error: probeFailureMessage(error) };
-  }
-}
-
-/** A public health response is not enough: another checkout may own the same fixed port. */
-async function probeManagedStack(
-  rawUrl: string,
-  token: string,
-  signal?: AbortSignal,
-): Promise<string | null> {
-  const url = normalizeServerUrl(rawUrl);
-  // Never put the private stack token on a cleartext LAN or .local hop.
-  if (url === null || !maySendDesktopStackToken(url)) return null;
-  const timeout = AbortSignal.timeout(PROBE_TIMEOUT_MS);
-  try {
-    const response = await net.fetch(`${url}${DESKTOP_STACK_PROBE_PATH}`, {
-      method: "GET",
-      headers: { [DESKTOP_STACK_TOKEN_HEADER]: token },
-      cache: "no-store",
-      credentials: "omit",
-      redirect: "manual",
-      signal: signal ? AbortSignal.any([timeout, signal]) : timeout,
-    });
-    if (!response.ok) return null;
-    return desktopStackImageTag(await readProbeJson(response));
-  } catch {
-    return null;
   }
 }
 
@@ -1018,26 +972,39 @@ app.whenReady().then(async () => {
   installSessionPermissions(session.defaultSession, permissionTarget);
   const userDataDir = app.getPath("userData");
   await loadServerAccess(userDataDir, safeStorage);
-  localStack = new LocalStackController({
+  const resources = {
+    packaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    appPath: app.getAppPath(),
+  };
+  localStack = new LocalServerController({
     platform: process.platform,
     env: process.env,
-    exists: existsSync,
-    run: runDocker,
+    execPath: process.execPath,
+    // Test hooks: a stand-in server and web app for the desktop e2e suite.
+    resourceDir: process.env.RAKAZO_SERVER_DIR?.trim() || serverResourceDir(resources),
+    webRoot:
+      process.env.RAKAZO_WEB_ROOT?.trim() ||
+      (app.isPackaged
+        ? path.join(process.resourcesPath, "web")
+        : path.resolve(app.getAppPath(), "..", "web", "dist")),
+    envTemplate: envTemplatePath(resources),
     stackDir: stackDir(userDataDir),
-    resourceDir: stackResourceDir({
-      packaged: app.isPackaged,
-      resourcesPath: process.resourcesPath,
-      appPath: app.getAppPath(),
-    }),
+    serverDir: serverDir(userDataDir),
     localWebUrl:
       process.env.RAKAZO_LOCAL_WEB_URL?.trim() ||
       (await readStackWebUrl(stackDir(userDataDir), LOCAL_WEB_URL)),
-    imageTag: resolveImageTag({
-      version: app.getVersion(),
-      packaged: app.isPackaged,
-      override: process.env.RAKAZO_IMAGE_TAG,
-    }),
-    probe: (url, signal, token) => probeManagedStack(url, token, signal),
+    version: app.getVersion(),
+    run: runDocker,
+    launch: launchProcess,
+    startFront: startFrontServer,
+    probe: async (apiUrl, signal) => {
+      const response = await net.fetch(`${apiUrl}/health`, {
+        cache: "no-store",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(PROBE_TIMEOUT_MS)]),
+      });
+      return response.ok;
+    },
     randomHex: (bytes) => randomBytes(bytes).toString("hex"),
     onState: (state) => {
       if (setupWindow !== null && !setupWindow.isDestroyed()) {
@@ -1242,7 +1209,7 @@ app.whenReady().then(async () => {
       let openSetup = setup;
       if (setup.mode === "new") {
         const managedUrl = managedLocalOpenUrl(setup.serverUrl, localStack.webUrl());
-        if (managedUrl === null || !(await localStack.matchesDesiredStack())) {
+        if (managedUrl === null || !localStack.ready()) {
           return {
             ok: false,
             error: "The app-managed Quant services are not ready. Retry setup.",
@@ -1317,10 +1284,6 @@ app.whenReady().then(async () => {
   ipcMain.handle("desktop.setup.quit", (event) => {
     if (fromSetupWindow(event)) app.quit();
   });
-  ipcMain.handle("desktop.setup.openLink", async (event, link: unknown) => {
-    if (!fromSetupWindow(event) || !isDesktopSetupLink(link)) return;
-    await shell.openExternal(DOCKER_INSTALL_LINKS[link]);
-  });
   ipcMain.handle("desktop.setup.stack.state", (event) =>
     fromSetupWindow(event) ? localStack.state() : null,
   );
@@ -1339,50 +1302,20 @@ app.whenReady().then(async () => {
     if (!fromSetupWindow(event)) return null;
     const port = parseGatePort(value);
     if (port === null) return { ok: false, busy: false };
-    // The running gate holds its own port, so keeping it is never a conflict.
+    // The app's own gate holds its port while it runs, so keeping it is never a conflict.
     if ((await readStackGate(stackDir(userDataDir)))?.port === port) return { ok: true };
     return (await gatePortFree(port)) ? { ok: true } : { ok: false, busy: true };
   });
 
+  installTray();
   // Register before startup awaits so macOS dock clicks during probe/open are handled.
-  app.on("activate", () => {
-    if (setupWindow !== null && !setupWindow.isDestroyed()) {
-      setupWindow.show();
-      setupWindow.focus();
-      return;
-    }
-    if (mainWindow !== null && !mainWindow.isDestroyed()) {
-      clearTimeout(warmWindowTimer);
-      mainWindow.show();
-      mainWindow.focus();
-      return;
-    }
-    if (appOpener.busy()) return;
-    if (currentTargetUrl === null) showSetupWindow(setupError);
-    else
-      void appOpener.open(currentTargetUrl).then((opened) => {
-        if (opened) commitPendingAppSwitch();
-      });
-  });
+  app.on("activate", () => showApp());
 
   if (target.kind === "setup") {
     showSetupWindow();
   } else if (target.source === "saved") {
     if (currentSetup?.mode === "new") {
-      const managedUrl = managedLocalOpenUrl(target.url, localStack.webUrl());
-      const managedStackReady =
-        managedUrl !== null ? await localStack.matchesDesiredStack() : false;
-      if (managedStackReady && managedUrl !== null) {
-        if (await appOpener.open(managedUrl)) {
-          commitPendingAppSwitch();
-          destroySetupWindow();
-        }
-      } else {
-        // Missing, stale, foreign, or owned by another process: reconcile the
-        // app-managed stack before any API or computer traffic is allowed.
-        void localStack.start();
-        showSetupWindow();
-      }
+      await openLocalServer(userDataDir);
     } else {
       const reachability = await probeServer(target.url);
       if (reachability.ok) {
@@ -1402,16 +1335,92 @@ app.whenReady().then(async () => {
   }
 });
 
-app.on("window-all-closed", () => {
-  // A hidden session probe (defaultSessionHasOriginData) can be the only window
-  // during startup; its teardown must not quit the app.
-  if (liveProbeWindows > 0) return;
-  if (process.platform !== "darwin") app.quit();
-});
+/**
+ * Starts the server this app runs itself and opens it. Setup shows the progress only when the
+ * start takes a moment, and stays up with the reason when it fails.
+ */
+async function openLocalServer(userDataDir: string) {
+  const started = localStack.start();
+  const quick = await Promise.race([
+    started,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), QUIET_START_MS)),
+  ]);
+  if (quick?.phase !== "ready") {
+    showSetupWindow();
+    return;
+  }
+  const url = localStack.webUrl();
+  if (!(await appOpener.open(url))) return;
+  commitPendingAppSwitch();
+  destroySetupWindow();
+  // The previous loopback port was taken, so the server moved; remember where it is now.
+  if (currentSetup?.serverUrl !== url) {
+    currentSetup = { mode: "new", serverUrl: url };
+    await writeSetup(userDataDir, currentSetup).catch(() => undefined);
+  }
+}
 
-app.on("before-quit", () => {
+/** Brings back whatever window the app has: setup, the app itself, or a fresh one. */
+function showApp() {
+  if (setupWindow !== null && !setupWindow.isDestroyed()) {
+    setupWindow.show();
+    setupWindow.focus();
+    return;
+  }
+  if (mainWindow !== null && !mainWindow.isDestroyed()) {
+    clearTimeout(warmWindowTimer);
+    mainWindow.show();
+    mainWindow.focus();
+    return;
+  }
+  if (appOpener.busy()) return;
+  if (currentTargetUrl === null) showSetupWindow(setupError);
+  else
+    void appOpener.open(currentTargetUrl).then((opened) => {
+      if (opened) commitPendingAppSwitch();
+    });
+}
+
+const TRAY_LABELS = {
+  en: { open: "Open Quant", quit: "Quit Quant" },
+  ru: { open: "Открыть Quant", quit: "Выйти из Quant" },
+};
+
+/** The app keeps running, and so does its server, while its window is closed. */
+function installTray() {
+  const assets = app.isPackaged
+    ? path.join(process.resourcesPath, "tray")
+    : path.join(app.getAppPath(), "assets");
+  const image = nativeImage.createFromPath(
+    path.join(assets, process.platform === "darwin" ? "trayTemplate.png" : "tray.png"),
+  );
+  if (process.platform === "darwin") image.setTemplateImage(true);
+  const labels = app.getLocale().toLowerCase().startsWith("ru") ? TRAY_LABELS.ru : TRAY_LABELS.en;
+  tray = new Tray(image);
+  tray.setToolTip("Quant");
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { id: "tray-open", label: labels.open, click: () => showApp() },
+      { type: "separator" },
+      { id: "tray-quit", label: labels.quit, click: () => app.quit() },
+    ]),
+  );
+  // Windows and Linux open the app on a click; macOS shows the menu.
+  if (process.platform !== "darwin") tray.on("click", () => showApp());
+}
+
+// The tray keeps the app (and its server) running with every window closed; Quit ends it.
+app.on("window-all-closed", () => undefined);
+
+app.on("before-quit", (event) => {
   quitting = true;
   clearTimeout(warmWindowTimer);
-  // Containers keep running; only an in-flight pull/up is cut short.
-  localStack?.abort();
+  // The server runs inside the app, so it stops with it: Postgres gets a clean shutdown.
+  if (localStack === undefined || serverStopped || localStack.state().phase === "idle") return;
+  event.preventDefault();
+  void localStack.stop().finally(() => {
+    serverStopped = true;
+    tray?.destroy();
+    app.quit();
+  });
 });

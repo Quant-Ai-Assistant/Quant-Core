@@ -1,10 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_LOCAL_WEB_URL,
-  desktopStackImageTag,
   isRakazoHealth,
   managedLocalOpenUrl,
-  maySendDesktopStackToken,
   normalizeServerUrl,
   PROBE_RESPONSE_LIMIT_BYTES,
   parseSetupInput,
@@ -81,16 +79,6 @@ describe("managed local open URL", () => {
     expect(managedLocalOpenUrl("http://127.0.0.1:5199", DEFAULT_LOCAL_WEB_URL)).toBeNull();
     expect(managedLocalOpenUrl("http://localhost:5173", DEFAULT_LOCAL_WEB_URL)).toBeNull();
     expect(managedLocalOpenUrl("https://rakazo.example.com", DEFAULT_LOCAL_WEB_URL)).toBeNull();
-  });
-});
-
-describe("desktop stack token transport", () => {
-  it("allows HTTPS and loopback HTTP only", () => {
-    expect(maySendDesktopStackToken("https://rakazo.example.com")).toBe(true);
-    expect(maySendDesktopStackToken("http://127.0.0.1:5173")).toBe(true);
-    expect(maySendDesktopStackToken("http://localhost:5173")).toBe(true);
-    expect(maySendDesktopStackToken("http://10.0.0.8:5173")).toBe(false);
-    expect(maySendDesktopStackToken("http://rakazo.local:5173")).toBe(false);
   });
 });
 
@@ -221,14 +209,7 @@ describe("Quant health response", () => {
   });
 });
 
-describe("managed stack response", () => {
-  it("returns only a non-empty authenticated image tag", () => {
-    expect(desktopStackImageTag({ ok: true, imageTag: "v0.2.0" })).toBe("v0.2.0");
-    expect(desktopStackImageTag({ ok: true, imageTag: "" })).toBeNull();
-    expect(desktopStackImageTag({ ok: false, imageTag: "v0.2.0" })).toBeNull();
-    expect(desktopStackImageTag({ json: { ok: true, imageTag: "v0.2.0" } })).toBeNull();
-  });
-
+describe("probe response", () => {
   it("parses a bounded JSON probe response", async () => {
     await expect(readProbeJson(Response.json({ ok: true }))).resolves.toEqual({ ok: true });
   });

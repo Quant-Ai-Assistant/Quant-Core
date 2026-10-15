@@ -4,24 +4,11 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   classifyDockerFailure,
-  composeSupportsWaitTimeout,
-  DOCKER_INSTALL_LINKS,
   dockerBinaryCandidates,
   dockerSpawnEnv,
-  isDesktopSetupLink,
   resolveDockerBinary,
   runDocker,
 } from "./docker-cli.js";
-
-describe("docker install links", () => {
-  it("only opens the three known pages over https", () => {
-    for (const url of Object.values(DOCKER_INSTALL_LINKS)) expect(url).toMatch(/^https:\/\//);
-    expect(isDesktopSetupLink("orbstack")).toBe(true);
-    expect(isDesktopSetupLink("toString")).toBe(false);
-    expect(isDesktopSetupLink("https://evil.example")).toBe(false);
-    expect(isDesktopSetupLink(42)).toBe(false);
-  });
-});
 
 describe("dockerBinaryCandidates", () => {
   it("checks the macOS install locations before PATH", () => {
@@ -147,19 +134,6 @@ describe("classifyDockerFailure", () => {
     ["something else entirely", "other"],
   ])("classifies %j as %s", (output, kind) => {
     expect(classifyDockerFailure(output)).toBe(kind);
-  });
-});
-
-describe("composeSupportsWaitTimeout", () => {
-  it.each([
-    ["2.17.0", true],
-    ["v2.29.7", true],
-    ["3.0.0", true],
-    ["2.16.9", false],
-    ["1.29.2", false],
-    ["", false],
-  ])("%s → %s", (version, supported) => {
-    expect(composeSupportsWaitTimeout(version)).toBe(supported);
   });
 });
 

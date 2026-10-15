@@ -2,7 +2,7 @@ import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { allocateLoopbackPort, readStackWebUrl, STACK_WEB_URL_FILE } from "./local-stack.js";
+import { allocateLoopbackPort, readStackWebUrl, STACK_WEB_URL_FILE } from "./local-server.js";
 import { DEFAULT_LOCAL_WEB_URL } from "./setup-config.js";
 
 let dir: string;

@@ -21,6 +21,7 @@
       "Телефон и браузер спросят их при входе.",
     Port: "Порт",
     "Installing Quant": "Установка Quant",
+    "Starting Quant": "Запуск Quant",
     "Connect to a server": "Подключение к серверу",
     "Technical details": "Технические подробности",
     "Setup progress": "Ход установки",
@@ -34,11 +35,10 @@
     "Check again": "Проверить снова",
     Retry: "Повторить",
     "Getting ready…": "Подготовка…",
-    "Downloading Quant…": "Загрузка Quant…",
+    "Moving your data into the app…": "Перенос данных в приложение…",
     "Starting Quant…": "Запуск Quant…",
     "Almost ready…": "Почти готово…",
     "Quant is ready.": "Quant готов.",
-    "{size} downloaded": "Загружено {size}",
     "Tunnel address: {url}": "Адрес для туннеля: {url}",
     "Leave empty to keep it": "Оставьте пустым, чтобы не менять",
     "Enter a username.": "Введите логин.",
@@ -65,27 +65,23 @@
     "Setup bridge unavailable.": "Настройка недоступна.",
     "Setup could not start. Quit Quant and try again.":
       "Не удалось начать настройку. Закройте Quant и попробуйте снова.",
-    "Docker is not installed on this computer.": "Docker не установлен на этом компьютере.",
-    "Docker is installed but not running. Start Docker, then check again.":
-      "Docker установлен, но не запущен. Запустите Docker и проверьте снова.",
-    "Docker is installed, but Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin.":
-      "Docker установлен, но нет Docker Compose. Установите Docker Desktop или docker-compose-plugin.",
-    "Downloading Quant images failed. Check the output below, then retry.":
-      "Не удалось загрузить образы Quant. Посмотрите вывод ниже и повторите.",
-    "Quant services did not start. Check the output below, then retry.":
-      "Сервисы Quant не запустились. Посмотрите вывод ниже и повторите.",
-    "Could not reach the image registry. Check the internet connection, then retry.":
-      "Не удалось связаться с хранилищем образов. Проверьте интернет и повторите.",
-    "Docker stopped answering. Start Docker, then retry.":
-      "Docker перестал отвечать. Запустите Docker и повторите.",
-    "Could not bind a local port after retrying. Retry to choose another port.":
-      "Не удалось занять локальный порт. Повторите, чтобы выбрать другой.",
     "The start was interrupted. Retry to continue.": "Запуск прерван. Повторите, чтобы продолжить.",
     "Could not prepare the local stack. Retry.": "Не удалось подготовить сервисы. Повторите.",
-    "Could not save the password for other devices. Retry.":
-      "Не удалось сохранить пароль для других устройств. Повторите.",
-    "The stack started but the web app did not answer. Retry, and check the output below.":
-      "Сервисы запустились, но веб-приложение не отвечает. Повторите и посмотрите вывод ниже.",
+    "Could not prepare the local server. Retry.": "Не удалось подготовить сервер. Повторите.",
+    "The database did not start. Check the output below, then retry.":
+      "База данных не запустилась. Посмотрите вывод ниже и повторите.",
+    "Could not update the database. Check the output below, then retry.":
+      "Не удалось обновить базу данных. Посмотрите вывод ниже и повторите.",
+    "The server started but did not answer. Retry, and check the output below.":
+      "Сервер запустился, но не отвечает. Повторите и посмотрите вывод ниже.",
+    "This build has no local server. Reinstall Quant.":
+      "В этой сборке нет локального сервера. Переустановите Quant.",
+    "Quant could not reach Docker to move your existing data into the app. Start Docker, then retry.":
+      "Quant не смог связаться с Docker, чтобы перенести ваши данные в приложение. Запустите Docker и повторите.",
+    "Quant could not move your existing data from Docker. Check the output below, then retry.":
+      "Quant не смог перенести ваши данные из Docker. Посмотрите вывод ниже и повторите.",
+    "Port {port} is busy. Choose another port in setup.":
+      "Порт {port} занят. Выберите другой порт в настройке.",
     "The app-managed Quant services are not ready. Retry setup.":
       "Сервисы Quant ещё не готовы. Повторите настройку.",
     "A connection attempt is already running.": "Подключение уже выполняется.",
@@ -93,6 +89,8 @@
 
   const russian = (navigator.language ?? "").toLowerCase().startsWith("ru");
   function t(text, values = {}) {
+    const busy = /^Port (\d+) is busy\. Choose another port in setup\.$/.exec(text);
+    if (busy) return t("Port {port} is busy. Choose another port in setup.", { port: busy[1] });
     let result = russian ? (RU[text] ?? text) : text;
     for (const [name, value] of Object.entries(values)) result = result.replace(`{${name}}`, value);
     return result;
@@ -123,14 +121,13 @@
   const gatePort = document.getElementById("gate-port");
   const gateAddress = document.getElementById("gate-address");
   const installAddress = document.getElementById("install-address");
+  const installHeading = document.querySelector("#step-install .heading");
   const stepCount = document.getElementById("step-count");
   const stackPhase = document.getElementById("stack-phase");
   const stackOutput = document.getElementById("stack-output");
-  const stackDetail = document.getElementById("stack-detail");
   const stackDetails = document.getElementById("stack-details");
   const stackProgress = document.getElementById("stack-progress");
   const stackProgressFill = document.getElementById("stack-progress-fill");
-  const stackDockerHelp = document.getElementById("stack-docker-help");
   const status = document.getElementById("status");
   const backButton = document.getElementById("back");
   const checkButton = document.getElementById("check");
@@ -145,31 +142,20 @@
 
   const STACK_POLL_MS = 1000;
   const PHASE_LABELS = {
-    "checking-docker": t("Getting ready…"),
     preparing: t("Getting ready…"),
-    pulling: t("Downloading Quant…"),
+    importing: t("Moving your data into the app…"),
     starting: t("Starting Quant…"),
     "waiting-healthy": t("Almost ready…"),
     ready: t("Quant is ready."),
   };
-  const TERMINAL_PHASES = new Set([
-    "idle",
-    "docker-missing",
-    "docker-not-running",
-    "ready",
-    "failed",
-  ]);
+  const TERMINAL_PHASES = new Set(["idle", "ready", "failed"]);
   const PHASE_PROGRESS = {
-    "checking-docker": 0.06,
-    preparing: 0.12,
-    pulling: 0.2,
-    starting: 0.82,
-    "waiting-healthy": 0.92,
+    preparing: 0.1,
+    importing: 0.3,
+    starting: 0.7,
+    "waiting-healthy": 0.85,
     ready: 1,
   };
-  /** Docker reports bytes pulled but never a total, so the bar approaches the next phase without reaching it. */
-  const PULL_SPAN = 0.6;
-  const PULL_SCALE_BYTES = 1.2e9;
 
   let step = "choose";
   /** The gate already saved for this computer's stack, or null before the first install. */
@@ -199,15 +185,11 @@
     else status.setAttribute("data-tone", tone);
   }
 
-  function isDockerPhase(phase) {
-    return phase === "docker-missing" || phase === "docker-not-running";
-  }
-
   /** A failed start, or a ready one whose save failed, offers Back and Retry. */
   function stackSettled() {
     if (lastStack === null) return false;
     const { phase } = lastStack;
-    return isDockerPhase(phase) || phase === "failed" || (phase === "ready" && !busy);
+    return phase === "failed" || (phase === "ready" && !busy);
   }
 
   /** Shows the controls the current step offers; a busy step keeps them but disables them. */
@@ -218,8 +200,6 @@
     continueButton.hidden = install && !stackSettled();
     if (step === "port") continueButton.textContent = t("Install");
     else if (step === "existing") continueButton.textContent = t("Continue");
-    else if (install && lastStack !== null && isDockerPhase(lastStack.phase))
-      continueButton.textContent = t("Check again");
     else if (install) continueButton.textContent = t("Retry");
     else continueButton.textContent = t("Next");
     for (const control of [backButton, checkButton, continueButton]) control.disabled = busy;
@@ -303,23 +283,6 @@
     return username === "" ? null : { username, password: serverPassword.value };
   }
 
-  function downloadedBytes(stack) {
-    return Object.values(stack.layerBytes ?? {}).reduce((total, bytes) => total + bytes, 0);
-  }
-
-  function formatBytes(bytes) {
-    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-    if (bytes >= 1e6) return `${Math.round(bytes / 1e6)} MB`;
-    if (bytes >= 1e3) return `${Math.round(bytes / 1e3)} kB`;
-    return `${Math.round(bytes)} B`;
-  }
-
-  function progressFor(stack) {
-    const base = PHASE_PROGRESS[stack.phase] ?? 0;
-    if (stack.phase !== "pulling") return base;
-    return base + PULL_SPAN * (1 - Math.exp(-downloadedBytes(stack) / PULL_SCALE_BYTES));
-  }
-
   function renderProgress(stack) {
     const running = stack.phase in PHASE_PROGRESS;
     stackProgress.hidden = !running;
@@ -329,21 +292,16 @@
       return;
     }
     // A retry restarts at its phase; otherwise the bar only ever moves forward.
-    lastProgress =
-      stack.phase === "checking-docker"
-        ? progressFor(stack)
-        : Math.max(lastProgress, progressFor(stack));
+    const progress = PHASE_PROGRESS[stack.phase];
+    lastProgress = stack.phase === "preparing" ? progress : Math.max(lastProgress, progress);
     const percent = (lastProgress * 100).toFixed(1);
     stackProgressFill.style.width = `${percent}%`;
     stackProgress.setAttribute("aria-valuenow", percent);
   }
 
   function renderDetails(stack) {
-    const bytes = stack.phase === "pulling" ? downloadedBytes(stack) : 0;
-    stackDetail.textContent = bytes > 0 ? t("{size} downloaded", { size: formatBytes(bytes) }) : "";
-
     // A new attempt clears the output, so drop an expansion the person did not ask for.
-    if (stack.phase === "checking-docker" && detailsOpenedByFailure) {
+    if (stack.phase === "preparing" && detailsOpenedByFailure) {
       detailsOpen = false;
       detailsOpenedByFailure = false;
     }
@@ -365,7 +323,7 @@
   function renderStack(stack) {
     lastStack = stack;
     const { phase } = stack;
-    const failed = isDockerPhase(phase) || phase === "failed";
+    const failed = phase === "failed";
     stackPhase.textContent = (failed ? t(stack.message ?? "") : PHASE_LABELS[phase]) ?? "";
     if (failed) stackPhase.setAttribute("data-tone", "error");
     else if (phase === "ready") stackPhase.setAttribute("data-tone", "ok");
@@ -373,7 +331,6 @@
 
     renderProgress(stack);
     renderDetails(stack);
-    stackDockerHelp.hidden = !isDockerPhase(phase);
     setBusy(!TERMINAL_PHASES.has(phase));
   }
 
@@ -537,11 +494,6 @@
     if (lastStack !== null) renderDetails(lastStack);
   });
 
-  stackDockerHelp.addEventListener("click", (event) => {
-    const link = event.target instanceof HTMLElement ? event.target.dataset.link : undefined;
-    if (link) void bridge.openLink(link);
-  });
-
   quitButton.addEventListener("click", () => {
     if (bridge === undefined) {
       window.close();
@@ -601,10 +553,13 @@
       const stack = await bridge.stack.state();
       if (stack !== null && stack.phase !== "idle") {
         document.getElementById("mode-new").checked = true;
+        // A launch restarting the saved server is not an install.
+        if (state.saved?.mode === "new") installHeading.textContent = t("Starting Quant");
         showStep("install");
         renderStack(stack);
         if (state.error) setStatus(state.error, "error");
-        if (!TERMINAL_PHASES.has(stack.phase)) void followStack();
+        // A start that finished while this window opened still has to open the app.
+        if (stack.phase !== "failed") void followStack();
         return;
       }
       // A saved server that could not be reopened goes straight back to its address.
