@@ -10,7 +10,14 @@ vi.mock("@lingui/core/macro", () => ({
 }));
 vi.mock("./call-pickup.js", () => ({ pickUp: vi.fn(async () => undefined) }));
 vi.mock("./live-call.js", () => ({ connectLiveCall: vi.fn() }));
-vi.mock("./rpc.js", () => ({ rpc: { threads: { endCall: vi.fn(async () => ({ ok: true })) } } }));
+vi.mock("./rpc.js", () => ({
+  rpc: {
+    threads: {
+      endCall: vi.fn(async () => ({ ok: true })),
+      activity: vi.fn(async () => ({ tool: null as string | null })),
+    },
+  },
+}));
 
 let handlers: LiveCallFeedHandlers;
 const connection = { setMuted: vi.fn(), close: vi.fn() };
@@ -77,17 +84,29 @@ describe("web call session", () => {
       callId: "call2",
       durationSeconds: 0,
     });
-    expect(getSnapshot()).toBeNull();
+    // It stays a moment as "Call ended", then closes.
+    expect(getSnapshot()?.endedAt).toEqual(expect.any(Number));
+    await vi.waitFor(() => expect(getSnapshot()).toBeNull(), { timeout: 3_000 });
+  });
+
+  it("connects before the clock starts, then shows the tool the bot is using", async () => {
+    vi.mocked(rpc.threads.activity).mockResolvedValue({ tool: "computer_act" });
+    startCall({ botId: "bot", botName: "Ada" });
+    expect(getSnapshot()?.connectedAt).toBeNull();
+    await vi.waitFor(() => expect(getSnapshot()?.connectedAt).toEqual(expect.any(Number)));
+    await vi.waitFor(() => expect(getSnapshot()?.tool).toBe("computer_act"));
+    expect(rpc.threads.activity).toHaveBeenCalledWith({ botId: "bot" });
+    vi.mocked(rpc.threads.activity).mockResolvedValue({ tool: null });
   });
 
   it("ends when the provider closes the call, and shows a failed connection", async () => {
     startCall({ botId: "bot", botName: "Ada" });
     await vi.waitFor(() => expect(getSnapshot()?.phase).toBe("listening"));
     handlers.onEnded("remote_hangup");
-    expect(getSnapshot()).toBeNull();
+    expect(getSnapshot()?.endedAt).toEqual(expect.any(Number));
 
     vi.mocked(connectLiveCall).mockRejectedValueOnce(new Error("No access to gpt-live-1"));
     startCall({ botId: "bot", botName: "Ada" });
-    await vi.waitFor(() => expect(getSnapshot()?.caption).toBe("No access to gpt-live-1"));
+    await vi.waitFor(() => expect(getSnapshot()?.error).toBe("No access to gpt-live-1"));
   });
 });

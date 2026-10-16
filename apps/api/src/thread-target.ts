@@ -328,6 +328,28 @@ export async function threadHead(prisma: PrismaClient, target: ThreadTarget) {
   return { threadId: target.threadId, cursor: latest?.seq ?? -1 };
 }
 
+/** The tool the thread's running work is using now: the last line it posted, if a tool's. */
+export async function threadActivity(
+  prisma: PrismaClient,
+  threadId: string,
+): Promise<{ tool: string | null }> {
+  const run = await prisma.run.findFirst({
+    where: { threadId, status: "running" },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+  if (!run) return { tool: null };
+  const event = await prisma.event.findFirst({
+    where: { threadId, runId: run.id, type: "thread.progress" },
+    orderBy: { seq: "desc" },
+    select: { payload: true },
+  });
+  const payload = (event?.payload ?? {}) as Record<string, unknown>;
+  return {
+    tool: payload.activity === true && typeof payload.tool === "string" ? payload.tool : null,
+  };
+}
+
 export async function threadSnapshot(
   deps: { prisma: PrismaClient },
   target: ThreadTarget,

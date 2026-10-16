@@ -62,8 +62,10 @@ describe("VoiceChatCard", () => {
     container?.remove();
     const opened = render("user-1");
     expect(opened.querySelector("button")?.getAttribute("aria-expanded")).toBe("true");
-    expect(opened.querySelector('[data-message-id="user-1"]')?.textContent).toBe("book the flight");
-    expect(opened.querySelector('[data-message-id="bot-1"]')?.textContent).toBe("Booked.");
+    expect(opened.querySelector('[data-message-id="user-1"]')?.textContent).toBe(
+      "You: book the flight",
+    );
+    expect(opened.querySelector('[data-message-id="bot-1"]')?.textContent).toBe("Bot: Booked.");
     expect(opened.querySelector('[data-message-id="marker-1"]')).not.toBeNull();
 
     act(() => {
@@ -103,11 +105,14 @@ describe("VoiceChatCard", () => {
     act(() => root?.render(<VoiceChatCard group={missed} onCallBack={onCallBack} />));
 
     expect(container.textContent).toContain("Missed call");
-    expect(container.textContent).toContain("No answer");
-    expect(container.textContent).toContain("3 reminders without a reply");
-    const callBack = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "Call back",
+    // Why the bot called is in the transcript, not a line of its own.
+    expect(container.textContent).not.toContain("3 reminders without a reply");
+    const transcript = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Transcript",
     );
+    act(() => transcript?.click());
+    expect(container.textContent).toContain("3 reminders without a reply");
+    const callBack = container.querySelector<HTMLButtonElement>('button[aria-label="Call again"]');
     act(() => callBack?.click());
     expect(onCallBack).toHaveBeenCalledOnce();
   });

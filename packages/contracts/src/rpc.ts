@@ -367,6 +367,8 @@ export const appContract = {
       }),
     ),
     get: oc.input(threadTarget).output(ThreadSnapshotSchema),
+    /** The tool the bot's running work is using right now, if any; calls show it live. */
+    activity: oc.input(threadTarget).output(z.object({ tool: z.string().nullable() })),
     messages: oc
       .input(
         threadTarget.safeExtend({

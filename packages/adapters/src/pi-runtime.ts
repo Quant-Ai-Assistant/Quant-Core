@@ -476,6 +476,7 @@ export class PiAgentRuntime implements AgentRuntime {
               type: "progress",
               text: describeToolActivity(event.toolName, event.args),
               activity: true,
+              tool: event.toolName,
             });
           }
           if (event.type === "message_start" && event.message.role === "assistant") {

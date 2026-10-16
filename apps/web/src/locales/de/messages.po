@@ -794,6 +794,10 @@ msgstr "Bot-Bildschirmvorschau"
 msgid "Bot to link"
 msgstr ""
 
+#: src/components/call/VoiceChatCard.tsx
+msgid "Bot:"
+msgstr ""
+
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/RoutineEditor.tsx
 msgid "Bot's model"
@@ -832,8 +836,13 @@ msgid "Call"
 msgstr "Anrufen"
 
 #: src/components/call/VoiceChatCard.tsx
-msgid "Call back"
-msgstr "Zurückrufen"
+msgid "Call again"
+msgstr ""
+
+#. placeholder {0}: callClock(elapsed)
+#: src/components/call/CallCard.tsx
+msgid "Call ended · {0}"
+msgstr ""
 
 #. placeholder {0}: call.botName
 #: src/components/call/CallCard.tsx
@@ -847,10 +856,6 @@ msgstr "Ruft dich an"
 #: src/components/call/VoiceChatCard.tsx
 msgid "Calling you…"
 msgstr "Ruft dich an…"
-
-#: src/components/call/CallCard.tsx
-msgid "Calling…"
-msgstr "Anruf läuft…"
 
 #: src/pages/SettingsOverlay.tsx
 msgid "Calls"
@@ -899,6 +904,10 @@ msgstr "abgebrochen"
 #: src/pages/ActivityList.tsx
 msgid "Cancelled"
 msgstr "Abgebrochen"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Cancelled call"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
@@ -1286,6 +1295,11 @@ msgstr "Verbunden. Die Tools sind ab deiner nächsten Nachricht verfügbar."
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connecting…"
 msgstr "Verbindung wird hergestellt…"
+
+#: src/components/call/CallCard.tsx
+msgctxt "call status"
+msgid "Connecting…"
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Connection test failed."
@@ -1939,6 +1953,10 @@ msgstr "Tage"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Decline"
 msgstr "Ablehnen"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Declined call"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -2721,11 +2739,6 @@ msgstr ""
 msgid "Listening"
 msgstr "Hört zu"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Listening"
-msgstr "Hört zu"
-
 #: src/pages/Shell.tsx
 msgid "Load earlier messages"
 msgstr "Frühere Nachrichten laden"
@@ -3089,11 +3102,6 @@ msgstr "Verschieben nach"
 msgid "Mute"
 msgstr "Stummschalten"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Muted"
-msgstr "Stummgeschaltet"
-
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
@@ -3174,10 +3182,6 @@ msgstr ""
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr ""
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "No answer"
-msgstr "Keine Antwort"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "No apps match your search."
@@ -3447,6 +3451,10 @@ msgstr "{path} geöffnet"
 msgid "Opened its thread."
 msgstr "Thread geöffnet."
 
+#: src/components/call/CallCard.tsx
+msgid "Opening a page"
+msgstr ""
+
 #: src/pages/Onboarding.tsx
 msgid "Opening chat…"
 msgstr "Chat wird geöffnet…"
@@ -3489,6 +3497,10 @@ msgstr "Originalnachricht nicht verfügbar"
 #: src/pages/Onboarding.tsx
 msgid "Other model…"
 msgstr "Anderes Modell…"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Outgoing call"
+msgstr ""
 
 #: src/pages/Board.tsx
 msgid "Owner"
@@ -3553,10 +3565,6 @@ msgstr ""
 #: src/pages/RoutineEditor.tsx
 msgid "Paused"
 msgstr ""
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "Phone call"
-msgstr "Telefonanruf"
 
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
@@ -3765,6 +3773,10 @@ msgstr "Kontrolle abgeben"
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Release interrupted computer?"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Remembering"
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
@@ -4021,6 +4033,10 @@ msgstr ""
 msgid "Running · Stop"
 msgstr "Wird ausgeführt · Stoppen"
 
+#: src/components/call/CallCard.tsx
+msgid "Running a command"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "Running…"
 msgstr "Wird ausgeführt…"
@@ -4149,6 +4165,10 @@ msgstr ""
 msgid "Search: {0}"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
+msgid "Searching the web"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
 msgid "Searching…"
@@ -4225,7 +4245,6 @@ msgstr "Servername"
 msgid "Server URL"
 msgstr "Server-URL"
 
-#: src/components/call/CallCard.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/Shell.tsx
@@ -4298,7 +4317,6 @@ msgstr "Einstellungen anzeigen"
 msgid "Show tool activity"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
 #: src/pages/shell/voice-message.tsx
 msgid "Show transcript"
 msgstr "Transkript anzeigen"
@@ -4413,11 +4431,6 @@ msgstr "Nur sprechen"
 #: src/pages/Shell.tsx
 msgid "Speak this reply"
 msgstr "Diese Antwort vorlesen"
-
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Speaking"
-msgstr "Spricht"
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Speech model"
@@ -4631,11 +4644,6 @@ msgstr ""
 msgid "Thinking"
 msgstr "Denkmodus"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Thinking"
-msgstr "Denkt nach"
-
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Thinking: {activeThinkingLabel}"
 msgstr ""
@@ -4774,7 +4782,7 @@ msgstr "Toolquellen"
 msgid "Tools"
 msgstr ""
 
-#: src/components/call/CallCard.tsx
+#: src/components/call/VoiceChatCard.tsx
 msgid "Transcript"
 msgstr "Transkript"
 
@@ -4963,6 +4971,10 @@ msgstr ""
 msgid "Uses this server's own {hostCredentialSource} credentials to access {selectedProviderName}."
 msgstr "Verwendet die eigenen {hostCredentialSource}-Zugangsdaten dieses Servers für den Zugriff auf {selectedProviderName}."
 
+#: src/components/call/CallCard.tsx
+msgid "Using a tool"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Value"
 msgstr ""
@@ -5090,8 +5102,13 @@ msgstr ""
 msgid "Won't do"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
 #: src/pages/Shell.tsx
 msgid "Working on the computer"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Working with files"
 msgstr ""
 
 #: src/lib/roster-status.ts
@@ -5129,13 +5146,13 @@ msgstr "Du kannst diesen Tab schließen, wenn du nicht automatisch weitergeleite
 msgid "You can close this window."
 msgstr "Du kannst dieses Fenster schließen."
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "You declined"
-msgstr "Du hast abgelehnt"
-
 #: src/pages/Shell.tsx
 msgid "You have control"
 msgstr "Du hast die Kontrolle"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "You:"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Your email address"

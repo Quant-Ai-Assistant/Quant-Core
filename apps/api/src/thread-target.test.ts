@@ -12,6 +12,7 @@ import {
   sendThreadMessage,
   stopBotRuns,
   stopThreadRuns,
+  threadActivity,
   threadHead,
   threadSnapshot,
 } from "./thread-target.js";
@@ -3557,5 +3558,31 @@ describe("resolveVoiceBlock", () => {
 
   it("has nothing to draw without a voice message", async () => {
     await expect(resolveVoiceBlock(undefined, vi.fn())).resolves.toBeUndefined();
+  });
+});
+
+describe("threadActivity", () => {
+  function prismaWith(run: { id: string } | null, payload: unknown) {
+    return {
+      run: { findFirst: vi.fn(async () => run) },
+      event: { findFirst: vi.fn(async () => (payload === undefined ? null : { payload })) },
+    } as unknown as PrismaClient;
+  }
+
+  it("names the tool the running work last reported", async () => {
+    const prisma = prismaWith(
+      { id: "run-1" },
+      { text: "Operating the computer", activity: true, tool: "computer_act" },
+    );
+    await expect(threadActivity(prisma, "thread-1")).resolves.toEqual({ tool: "computer_act" });
+  });
+
+  it("is idle once the bot talks again or nothing runs", async () => {
+    await expect(
+      threadActivity(prismaWith({ id: "run-1" }, { delta: "Done" }), "t"),
+    ).resolves.toEqual({
+      tool: null,
+    });
+    await expect(threadActivity(prismaWith(null, undefined), "t")).resolves.toEqual({ tool: null });
   });
 });

@@ -794,6 +794,10 @@ msgstr "Bot screen preview"
 msgid "Bot to link"
 msgstr "Bot to link"
 
+#: src/components/call/VoiceChatCard.tsx
+msgid "Bot:"
+msgstr "Bot:"
+
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/RoutineEditor.tsx
 msgid "Bot's model"
@@ -832,8 +836,13 @@ msgid "Call"
 msgstr "Call"
 
 #: src/components/call/VoiceChatCard.tsx
-msgid "Call back"
-msgstr "Call back"
+msgid "Call again"
+msgstr "Call again"
+
+#. placeholder {0}: callClock(elapsed)
+#: src/components/call/CallCard.tsx
+msgid "Call ended · {0}"
+msgstr "Call ended · {0}"
 
 #. placeholder {0}: call.botName
 #: src/components/call/CallCard.tsx
@@ -847,10 +856,6 @@ msgstr "Calling you"
 #: src/components/call/VoiceChatCard.tsx
 msgid "Calling you…"
 msgstr "Calling you…"
-
-#: src/components/call/CallCard.tsx
-msgid "Calling…"
-msgstr "Calling…"
 
 #: src/pages/SettingsOverlay.tsx
 msgid "Calls"
@@ -899,6 +904,10 @@ msgstr "cancelled"
 #: src/pages/ActivityList.tsx
 msgid "Cancelled"
 msgstr "Cancelled"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Cancelled call"
+msgstr "Cancelled call"
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
@@ -1284,6 +1293,11 @@ msgstr "Connected. Its tools are available from your next message."
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 #: src/pages/shell/message-cards.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
+msgid "Connecting…"
+msgstr "Connecting…"
+
+#: src/components/call/CallCard.tsx
+msgctxt "call status"
 msgid "Connecting…"
 msgstr "Connecting…"
 
@@ -1939,6 +1953,10 @@ msgstr "days"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Decline"
 msgstr "Decline"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Declined call"
+msgstr "Declined call"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -2721,11 +2739,6 @@ msgstr "Listen"
 msgid "Listening"
 msgstr "Listening"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Listening"
-msgstr "Listening"
-
 #: src/pages/Shell.tsx
 msgid "Load earlier messages"
 msgstr "Load earlier messages"
@@ -3089,11 +3102,6 @@ msgstr "Move to"
 msgid "Mute"
 msgstr "Mute"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Muted"
-msgstr "Muted"
-
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
@@ -3174,10 +3182,6 @@ msgstr "No"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr "No agent connections yet."
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "No answer"
-msgstr "No answer"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "No apps match your search."
@@ -3447,6 +3451,10 @@ msgstr "Opened {path}"
 msgid "Opened its thread."
 msgstr "Opened its thread."
 
+#: src/components/call/CallCard.tsx
+msgid "Opening a page"
+msgstr "Opening a page"
+
 #: src/pages/Onboarding.tsx
 msgid "Opening chat…"
 msgstr "Opening chat…"
@@ -3489,6 +3497,10 @@ msgstr "Original message unavailable"
 #: src/pages/Onboarding.tsx
 msgid "Other model…"
 msgstr "Other model…"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Outgoing call"
+msgstr "Outgoing call"
 
 #: src/pages/Board.tsx
 msgid "Owner"
@@ -3553,10 +3565,6 @@ msgstr "Pause voice message"
 #: src/pages/RoutineEditor.tsx
 msgid "Paused"
 msgstr "Paused"
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "Phone call"
-msgstr "Phone call"
 
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
@@ -3766,6 +3774,10 @@ msgstr "Release control"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Release interrupted computer?"
 msgstr "Release interrupted computer?"
+
+#: src/components/call/CallCard.tsx
+msgid "Remembering"
+msgstr "Remembering"
 
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
@@ -4021,6 +4033,10 @@ msgstr "Running · port {0}"
 msgid "Running · Stop"
 msgstr "Running · Stop"
 
+#: src/components/call/CallCard.tsx
+msgid "Running a command"
+msgstr "Running a command"
+
 #: src/pages/RoutineEditor.tsx
 msgid "Running…"
 msgstr "Running…"
@@ -4149,6 +4165,10 @@ msgstr "Search runs"
 msgid "Search: {0}"
 msgstr "Search: {0}"
 
+#: src/components/call/CallCard.tsx
+msgid "Searching the web"
+msgstr "Searching the web"
+
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
 msgid "Searching…"
@@ -4225,7 +4245,6 @@ msgstr "Server name"
 msgid "Server URL"
 msgstr "Server URL"
 
-#: src/components/call/CallCard.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/Shell.tsx
@@ -4298,7 +4317,6 @@ msgstr "Show settings"
 msgid "Show tool activity"
 msgstr "Show tool activity"
 
-#: src/components/call/VoiceChatCard.tsx
 #: src/pages/shell/voice-message.tsx
 msgid "Show transcript"
 msgstr "Show transcript"
@@ -4413,11 +4431,6 @@ msgstr "Speak only"
 #: src/pages/Shell.tsx
 msgid "Speak this reply"
 msgstr "Speak this reply"
-
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Speaking"
-msgstr "Speaking"
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Speech model"
@@ -4631,11 +4644,6 @@ msgstr "These saved settings can't be read. Remove it and add it again."
 msgid "Thinking"
 msgstr "Thinking"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Thinking"
-msgstr "Thinking"
-
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Thinking: {activeThinkingLabel}"
 msgstr "Thinking: {activeThinkingLabel}"
@@ -4774,7 +4782,7 @@ msgstr "Tool sources"
 msgid "Tools"
 msgstr "Tools"
 
-#: src/components/call/CallCard.tsx
+#: src/components/call/VoiceChatCard.tsx
 msgid "Transcript"
 msgstr "Transcript"
 
@@ -4963,6 +4971,10 @@ msgstr "Username"
 msgid "Uses this server's own {hostCredentialSource} credentials to access {selectedProviderName}."
 msgstr "Uses this server's own {hostCredentialSource} credentials to access {selectedProviderName}."
 
+#: src/components/call/CallCard.tsx
+msgid "Using a tool"
+msgstr "Using a tool"
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Value"
 msgstr "Value"
@@ -5090,9 +5102,14 @@ msgstr "Where this bot works"
 msgid "Won't do"
 msgstr "Won't do"
 
+#: src/components/call/CallCard.tsx
 #: src/pages/Shell.tsx
 msgid "Working on the computer"
 msgstr "Working on the computer"
+
+#: src/components/call/CallCard.tsx
+msgid "Working with files"
+msgstr "Working with files"
 
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx
@@ -5129,13 +5146,13 @@ msgstr "You can close this tab if it does not redirect automatically."
 msgid "You can close this window."
 msgstr "You can close this window."
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "You declined"
-msgstr "You declined"
-
 #: src/pages/Shell.tsx
 msgid "You have control"
 msgstr "You have control"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "You:"
+msgstr "You:"
 
 #: src/pages/Auth.tsx
 msgid "Your email address"

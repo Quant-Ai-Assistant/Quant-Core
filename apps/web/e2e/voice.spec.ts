@@ -108,11 +108,11 @@ test("voice settings connect a key, speak a reply, and open a call", async ({ pa
   await page.reload();
   await page.getByTestId("call-button").click();
   await expect(page.getByTestId("call-view")).toBeVisible();
-  await expect(page.getByTestId("call-view").getByText("Calling…")).toBeVisible();
+  // Until the bot answers the call only says it is connecting; the pending start keeps it so.
+  await expect(page.getByTestId("call-view").getByText("Connecting…")).toBeVisible();
+  await expect(page.getByTestId("call-view")).toHaveAttribute("data-call-state", "connecting");
   await expect(page.getByRole("button", { name: "Hang up" })).toBeVisible();
-  await captureScreenshot(page, testInfo, "outgoing-ringing");
-  await expect(page.getByTestId("call-view").getByText("Calling…")).toHaveCount(0);
-  await captureScreenshot(page, testInfo, "voice-call");
+  await captureScreenshot(page, testInfo, "voice-call-connecting");
   await page.getByRole("button", { name: "Minimize call" }).click();
   await expect(page.getByTestId("call-view")).toHaveCount(0);
   await expect(page.getByTestId("call-button")).toHaveAccessibleName("Open call");

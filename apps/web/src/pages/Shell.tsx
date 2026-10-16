@@ -3890,7 +3890,7 @@ export function ShellPage() {
         ) : null}
       </main>
 
-      <CallCard onSettings={() => openSettings("calls")} />
+      <CallCard onOpenComputer={onOpenComputer} />
       <IncomingCall
         bots={callsAvailable ? bots : []}
         onAnswered={(botId) => navigate(`/app/${botId}`)}
