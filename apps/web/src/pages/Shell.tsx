@@ -154,6 +154,7 @@ import {
   useHoldToTalk,
 } from "../components/composer/HoldToTalk";
 import { ComputerWorkspace } from "../components/computer/ComputerWorkspace";
+import { ComputerPlaceSwitch, HostScreen, useHostLabel } from "../components/computer/HostScreen";
 import { lazyOverlay } from "../components/ErrorBoundary";
 import { MessageHoverMetadata } from "../components/MessageHoverMetadata";
 import {
@@ -405,6 +406,7 @@ function readCollapsedRosterParents(userId: string | null | undefined): Set<stri
 
 export function ShellPage() {
   const { t } = useLingui();
+  const hostLabel = useHostLabel();
   const { botId, groupId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -3801,15 +3803,28 @@ export function ShellPage() {
             panel !== "create-group" &&
             panel !== "group-settings" ? (
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-[13.5px] text-muted-foreground">
-                  {panel === "settings" ? (
-                    <Trans>Settings</Trans>
-                  ) : active ? (
-                    (computer?.state ?? active.status)
-                  ) : (
-                    <Trans>Group</Trans>
-                  )}
-                </span>
+                {panel === "computer" && active && computer?.virtualDesktops ? (
+                  <ComputerPlaceSwitch
+                    botId={active.id}
+                    mode={computer.mode}
+                    onSwitched={async () => {
+                      await refreshThread(active.id);
+                      await refreshBots().catch(() => undefined);
+                    }}
+                  />
+                ) : (
+                  <span className="text-[13.5px] text-muted-foreground">
+                    {panel === "settings" ? (
+                      <Trans>Settings</Trans>
+                    ) : panel === "computer" && computer?.kind === "desktop" ? (
+                      hostLabel
+                    ) : active ? (
+                      (computer?.state ?? active.status)
+                    ) : (
+                      <Trans>Group</Trans>
+                    )}
+                  </span>
+                )}
                 <div className="flex gap-1">
                   {active &&
                   panel === "computer" &&
@@ -3858,7 +3873,7 @@ export function ShellPage() {
                       <Trans>Open in full window</Trans>
                     </div>
                   ) : computer?.kind === "desktop" ? (
-                    <DesktopKindEmptyState className="grid h-full place-items-center px-6 text-center text-sm text-muted-foreground/80" />
+                    <HostScreen botId={active.id} noScreen={<DesktopKindEmptyState />} />
                   ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
                     <iframe
                       title={t`Bot screen preview`}
@@ -4793,7 +4808,7 @@ export function ShellPage() {
                 }
               >
                 {computer?.kind === "desktop" ? (
-                  <DesktopKindEmptyState className="grid h-full place-items-center px-8 text-center text-sm text-muted-foreground/80" />
+                  <HostScreen botId={computerBot.id} noScreen={<DesktopKindEmptyState />} />
                 ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
                   <>
                     <iframe
@@ -7090,13 +7105,11 @@ const MessageView = memo(function MessageView({
   );
 });
 
-function DesktopKindEmptyState({ className }: { className?: string }) {
+function DesktopKindEmptyState() {
   return (
-    <div className={className}>
-      <Trans>
-        This bot runs on this computer, not a Linux desktop. Shell and files use your home folder.
-      </Trans>
-    </div>
+    <Trans>
+      This bot runs on this computer, not a Linux desktop. Shell and files use your home folder.
+    </Trans>
   );
 }
 

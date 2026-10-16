@@ -777,6 +777,7 @@ msgstr "Бот"
 msgid "Bot screen"
 msgstr "Экран бота"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Shell.tsx
 msgid "Bot screen preview"
 msgstr "Предварительный просмотр экрана бота"
@@ -1739,6 +1740,10 @@ msgstr "Не удалось отправить электронное письм
 msgid "Could not send that"
 msgstr "Не удалось отправить это"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Could not show this screen"
+msgstr "Не удалось показать экран"
+
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not start OAuth"
 msgstr "Не удалось запустить OAuth"
@@ -1750,6 +1755,10 @@ msgstr "Не удалось начать обучение"
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
 msgstr "Не удалось отправить этот ответ"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not switch the computer"
+msgstr "Не удалось переключить компьютер"
 
 #: src/pages/Shell.tsx
 msgid "Could not take control"
@@ -4622,6 +4631,7 @@ msgstr "Этот чат доступен только для просмотра"
 msgid "this computer"
 msgstr "этот компьютер"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/SettingsOverlay.tsx
 msgid "This computer"
 msgstr "Этот компьютер"
@@ -4639,6 +4649,7 @@ msgstr ""
 msgid "this Mac"
 msgstr "этот Mac"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/SettingsOverlay.tsx
 msgid "This Mac"
 msgstr "Этот Mac"
@@ -4947,6 +4958,10 @@ msgstr ""
 msgid "View chat"
 msgstr "Открыть чат"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Virtual"
+msgstr "Виртуальный"
+
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -5033,6 +5048,10 @@ msgstr "Когда использовать"
 #: src/pages/HostComputerPrompt.tsx
 msgid "Where should bots run?"
 msgstr "Где должны работать боты?"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Where this bot works"
+msgstr "Где работает бот"
 
 #: src/lib/ticket-status.ts
 msgid "Won't do"

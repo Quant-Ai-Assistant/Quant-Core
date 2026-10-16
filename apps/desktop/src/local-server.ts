@@ -50,6 +50,9 @@ const MIGRATE_TIMEOUT_MS = 10 * 60_000;
 const LEGACY_DUMP_TIMEOUT_MS = 30 * 60_000;
 const LEGACY_STEP_TIMEOUT_MS = 5 * 60_000;
 const RESTART_DELAY_MS = 2_000;
+const DOCKER_PROBE_TIMEOUT_MS = 5_000;
+/** The desktop image a bot's virtual desktop runs, unless `.env` names another. */
+export const COMPUTER_IMAGE = "ghcr.io/quant-ai-assistant/quant-core/computer:latest";
 const MAX_STACK_TOKEN_BYTES = 1024;
 const MAX_STACK_ENV_BYTES = 256 * 1024;
 
@@ -642,6 +645,8 @@ export class LocalServerController {
       stackToken,
       version: deps.version,
     });
+    const supervisorUrl = await this.startSupervisor(app, processEnv, allocate, signal);
+    if (supervisorUrl !== null) processEnv.SANDBOX_SUPERVISOR_URL = supervisorUrl;
     for (const name of ["api", "worker"]) this.keepRunning(name, app, processEnv);
     this.parts.front = await deps.startFront({
       webRoot: deps.webRoot,
@@ -780,6 +785,42 @@ export class LocalServerController {
     if (started.code !== 0) throw new StartFailed(DATABASE_FAILED);
     const credentials = `${encodeURIComponent(user)}:${encodeURIComponent(password)}`;
     return `postgres://${credentials}@127.0.0.1:${port}/${encodeURIComponent(database)}`;
+  }
+
+  /**
+   * With Docker running, starts the supervisor that gives each bot that asks for one its own
+   * virtual desktop. Without Docker every bot works on this computer, as before.
+   */
+  private async startSupervisor(
+    app: string,
+    processEnv: Record<string, string>,
+    allocate: () => Promise<number>,
+    signal: AbortSignal,
+  ): Promise<string | null> {
+    const { deps } = this;
+    if (!this.exists(path.join(app, "supervisor.mjs"))) return null;
+    const binary = resolveDockerBinary(deps.platform, deps.env, (file) => this.exists(file));
+    if (binary === null) return null;
+    const probe = await deps
+      .run(binary, ["info", "--format", "{{.ServerVersion}}"], {
+        cwd: deps.serverDir,
+        env: dockerSpawnEnv(deps.platform, deps.env, binary),
+        timeoutMs: DOCKER_PROBE_TIMEOUT_MS,
+        signal,
+      })
+      .catch(() => null);
+    if (probe?.code !== 0) return null;
+    const port = await allocate();
+    this.keepRunning("supervisor", app, {
+      ...processEnv,
+      ...dockerSpawnEnv(deps.platform, deps.env, binary),
+      SUPERVISOR_HOST: "127.0.0.1",
+      SUPERVISOR_PORT: String(port),
+      // Docker Desktop cannot route to container addresses from the host.
+      SANDBOX_CONTROL_VIA_LOOPBACK: "true",
+      RAKAZO_COMPUTER_IMAGE: processEnv.RAKAZO_COMPUTER_IMAGE || COMPUTER_IMAGE,
+    });
+    return `http://127.0.0.1:${port}`;
   }
 
   /** Runs one bundled process and starts it again if it exits while the server is up. */

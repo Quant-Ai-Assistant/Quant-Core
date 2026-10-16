@@ -102,9 +102,21 @@ export interface SandboxProvider {
       homePath: string;
       providerRef?: string;
       providerKind?: ComputerRef["kind"];
+      /** A team computer is shared by the space's bots; a dedicated one belongs to one bot. */
+      scope?: "team" | "dedicated";
     },
     context: AdapterContext,
   ): Promise<ComputerRef>;
+  /**
+   * True when a host-screen provider can also give a bot its own virtual desktop: team
+   * computers then use the host screen and dedicated ones get the virtual desktop.
+   */
+  readonly virtualDesktops?: boolean;
+  /** A clean, unmarked picture of the host screen a desktop computer works on. */
+  screenFrame?(
+    computer: ComputerRef,
+    context: AdapterContext,
+  ): Promise<{ image: Uint8Array; mimeType: "image/jpeg" }>;
   /** Read-only probe: true only when this exact reference is already running. */
   isRunning?(computer: ComputerRef, context: AdapterContext): Promise<boolean>;
   /** Perform idempotent provider setup after the lifecycle has captured the reference. */

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { RunDockerOptions, RunDockerResult } from "./docker-cli.js";
 import type { FrontServerOptions } from "./front-server.js";
 import {
+  COMPUTER_IMAGE,
   ensureStackEnv,
   envValue,
   GATE_DEFAULT_PORT,
@@ -202,6 +203,37 @@ describe("local server start", () => {
     expect(written).not.toContain("RAKAZO_IMAGE_TAG");
     expect((await stat(path.join(stackPath(), STACK_ENV_FILE))).mode & 0o777).toBe(0o600);
     expect(await readFile(path.join(stackPath(), STACK_TOKEN_FILE), "utf8")).toBe(`${hex(32)}\n`);
+  });
+
+  it("starts the virtual desktop supervisor only when Docker answers", async () => {
+    await writeFile(path.join(root, "resources", "app", "supervisor.mjs"), "");
+    const docker = { RAKAZO_DOCKER_BINARY: "/fake/docker", PATH: "/usr/bin" };
+    const exists = (file: string) => file === "/fake/docker" || existsSync(file);
+    await controller({ env: docker, exists }).start();
+    expect(launched.map((entry) => path.basename(entry.args[0] ?? ""))).toEqual([
+      "supervisor.mjs",
+      "api.mjs",
+      "worker.mjs",
+    ]);
+    const supervisor = launched[0]!.env;
+    expect(supervisor).toMatchObject({
+      SUPERVISOR_HOST: "127.0.0.1",
+      SANDBOX_CONTROL_VIA_LOOPBACK: "true",
+      RAKAZO_COMPUTER_IMAGE: COMPUTER_IMAGE,
+    });
+    expect(launched[1]!.env.SANDBOX_SUPERVISOR_URL).toBe(
+      `http://127.0.0.1:${supervisor.SUPERVISOR_PORT}`,
+    );
+
+    launched = [];
+    await controller({ env: docker, exists }, (command) =>
+      command === "/fake/docker" ? { code: 1 } : undefined,
+    ).start();
+    expect(launched.map((entry) => path.basename(entry.args[0] ?? ""))).toEqual([
+      "api.mjs",
+      "worker.mjs",
+    ]);
+    expect(launched[0]!.env).not.toHaveProperty("SANDBOX_SUPERVISOR_URL");
   });
 
   it("opens the gate on the suggested port when none is chosen", async () => {

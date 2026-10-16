@@ -3245,6 +3245,17 @@ export function createRouter(deps: RouterDeps) {
           ),
         };
       }),
+      screenFrame: authed.computer.screenFrame.handler(async ({ context, input }) => {
+        const bot = await repos.getBot(context.actor, input.botId);
+        if (bot.computer?.kind !== "desktop" || !deps.sandbox.screenFrame) {
+          throw new ORPCError("NOT_FOUND", { message: "This computer has no host screen." });
+        }
+        const frame = await deps.sandbox.screenFrame(
+          toComputerRef(bot.computer),
+          computerContext(context.actor, bot.id, "screen.frame"),
+        );
+        return { imageBase64: Buffer.from(frame.image).toString("base64") };
+      }),
       screenUrl: authed.computer.screenUrl.handler(async ({ context, input }) => {
         let bot = await repos.getBot(context.actor, input.botId);
         if (await expireStaleComputerControl(deps, bot.computer)) {
@@ -6585,7 +6596,17 @@ async function computerStatus(
     botId,
     botName: bot.name,
   });
-  return toComputerStatus(botId, bot.computer, busyBotName);
+  const status = toComputerStatus(botId, bot.computer, busyBotName);
+  if (!deps.sandbox.virtualDesktops) return status;
+  const settings =
+    deps.env.sandboxProvider === "desktop"
+      ? null
+      : await deps.prisma.deploymentSettings.findUnique({
+          where: { id: "default" },
+          select: { computerHost: true },
+        });
+  const hostOn = deps.env.sandboxProvider === "desktop" || settings?.computerHost === "this-mac";
+  return hostOn ? { ...status, virtualDesktops: true } : status;
 }
 
 /** Hand the user's screen control for this bot back, continuing any run waiting on it. */
