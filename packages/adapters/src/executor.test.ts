@@ -56,6 +56,28 @@ describe("bot tool permissions", () => {
   });
 });
 
+describe("reaction tool availability", () => {
+  it("offers react_to_message in app chats only, not on calls, messengers or ticket work", () => {
+    const options = {
+      graphicalToolsAllowed: false,
+      groupId: null,
+      trigger: "user",
+      semanticMemoryEnabled: false,
+      messagingChannelRun: false,
+    };
+    const offered = (overrides: Partial<Parameters<typeof selectBuiltinToolsForRun>[0]>) =>
+      selectBuiltinToolsForRun({ ...options, ...overrides }).some(
+        (tool) => tool.name === "react_to_message",
+      );
+    expect(offered({})).toBe(true);
+    expect(offered({ groupId: "group-1" })).toBe(true);
+    expect(offered({ voiceCall: true })).toBe(false);
+    expect(offered({ messagingChannelRun: true })).toBe(false);
+    expect(offered({ trigger: "tickets" })).toBe(false);
+    expect(offered({ disabledBuiltinTools: ["react_to_message"] })).toBe(false);
+  });
+});
+
 describe("tool completion audit", () => {
   it("records result metadata without persisting tool contents", () => {
     const payload = toolCompletionAuditPayload({

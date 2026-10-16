@@ -3609,6 +3609,10 @@ msgid "React"
 msgstr "Reagieren"
 
 #: src/pages/Shell.tsx
+msgid "React {emoji}"
+msgstr ""
+
+#: src/pages/Shell.tsx
 msgid "Reactions"
 msgstr "Reaktionen"
 
@@ -3761,6 +3765,10 @@ msgstr "Erwähnung von {0} entfernen"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Remove message trigger"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Remove reaction {emoji}"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx

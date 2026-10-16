@@ -86,6 +86,28 @@ describe("thread event reduction", () => {
     expect(next?.cursor).toBe(4);
   });
 
+  it("drops a reaction that was removed or replaced", () => {
+    const initial = snapshot([
+      message("message-1", [{ kind: "text", text: "Done" }], 1),
+      {
+        ...message("reaction-1", [{ kind: "text", text: "👍" }], 2),
+        replyToMessageId: "message-1",
+      },
+    ]);
+
+    const next = reduceThreadSnapshot(
+      initial,
+      event({
+        type: "thread.message.reaction",
+        seq: 5,
+        payload: { messageId: "message-1", removedMessageIds: ["reaction-1"] },
+      }),
+    );
+
+    expect(next?.messages.map((message) => message.id)).toEqual(["message-1"]);
+    expect(next?.cursor).toBe(5);
+  });
+
   it("appends a quoted reply carrying its excerpt", () => {
     const initial = snapshot([message("message-1", [{ kind: "text", text: "Done" }], 1)]);
 

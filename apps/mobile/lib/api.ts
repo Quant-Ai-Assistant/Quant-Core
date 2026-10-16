@@ -40,6 +40,7 @@ import {
   takeLiveMessage,
   updateCloudAgentMessages,
   upsertMessageById,
+  withoutRemovedReactions,
 } from "@rakazo/core";
 import * as SecureStore from "expo-secure-store";
 import { promptAiConsent } from "./ai-consent";
@@ -1066,7 +1067,13 @@ export type MobileSnapshot = {
   cursor?: number;
   messages: MobileMessage[];
   olderCursor: number | null;
-  run: { id: string; botId?: string; status: string; error?: string | null } | null;
+  run: {
+    id: string;
+    botId?: string;
+    status: string;
+    trigger?: string;
+    error?: string | null;
+  } | null;
   activeRuns?: Array<{ id: string; botId?: string; status: string }>;
   members?: MobileGroup["members"];
   computer?: {
@@ -1441,6 +1448,13 @@ export function applyMobileThreadEvent(
       ...prev,
       cursor: event.seq ?? prev.cursor,
       messages: updateCloudAgentMessages(prev.messages, event.payload ?? {}),
+    };
+  }
+  if (event.type === "thread.message.reaction") {
+    return {
+      ...prev,
+      cursor: event.seq ?? prev.cursor,
+      messages: withoutRemovedReactions(prev.messages, event.payload),
     };
   }
   if (event.type === "thread.message.created" || event.type === "thread.message.updated") {

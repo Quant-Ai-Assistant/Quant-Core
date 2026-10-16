@@ -13,6 +13,7 @@ on a release branch first and reaches `main` only when the maintainer says so.
 | Feature | Branch | Notes |
 | --- | --- | --- |
 | "This Mac" settings: emergency stop, per-assistant interrupt and off switch, server on/off, don't lock the Mac | `feat/agent-controls` | Adds `Bot.pausedAt` (migration `20261016020000_bot_paused_at`). |
+| Telegram-style message reactions: one per person, tap again to remove; 👍/👎 on the bot's latest message answers it (e.g. closes a reminder); the bot can answer with a reaction instead of text, without a typing indicator | `feat/message-reactions` | No migration: reactions stay emoji-only replies. New built-in tool `react_to_message`; `threads.react` takes `reaction: null` to remove; turns started by a reaction use the existing `reaction` run trigger. |
 
 ## How to land a feature or fix
 

@@ -23,6 +23,7 @@ import {
   takeLiveMessage,
   updateCloudAgentMessages,
   upsertMessageById,
+  withoutRemovedReactions,
 } from "@rakazo/core";
 
 const runTriggers = new Set<string>(RUN_TRIGGERS);
@@ -470,6 +471,13 @@ export function reduceThreadSnapshot(
       ...prev,
       cursor: event.seq,
       messages: updateCloudAgentMessages(prev.messages, event.payload ?? {}),
+    };
+  }
+  if (event.type === "thread.message.reaction") {
+    return {
+      ...prev,
+      cursor: event.seq,
+      messages: withoutRemovedReactions(prev.messages, event.payload),
     };
   }
   if (event.type === "thread.message.created" || event.type === "thread.message.updated") {

@@ -3609,6 +3609,10 @@ msgid "React"
 msgstr "반응하기"
 
 #: src/pages/Shell.tsx
+msgid "React {emoji}"
+msgstr ""
+
+#: src/pages/Shell.tsx
 msgid "Reactions"
 msgstr "반응"
 
@@ -3761,6 +3765,10 @@ msgstr "{0} 멘션 삭제"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Remove message trigger"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Remove reaction {emoji}"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx

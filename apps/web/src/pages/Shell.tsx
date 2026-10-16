@@ -33,7 +33,7 @@ import {
   MESSAGE_REACTIONS,
   normalizeCreateBotProfile,
 } from "@rakazo/contracts";
-import type { ComposerMention, SlashActionId } from "@rakazo/core";
+import type { ComposerMention, MessageReactionSummary, SlashActionId } from "@rakazo/core";
 import {
   attachmentsForThread,
   buildComposerMentionOptions,
@@ -1811,8 +1811,9 @@ export function ShellPage() {
   }, []);
   const currentRuns = activeThreadRuns(activeSnapshot);
   const answerableAskMessageId = latestAnswerableAskMessageId(activeSnapshot);
-  const workingRuns = currentRuns.filter((run) =>
-    ["running", "queued", "leased"].includes(run.status),
+  // A turn started by a reaction usually ends in a reaction or nothing, so it never looks like typing.
+  const workingRuns = currentRuns.filter(
+    (run) => ["running", "queued", "leased"].includes(run.status) && run.trigger !== "reaction",
   );
   const transcriptRunning = workingRuns.length > 0;
   const composerRunning = currentRuns.some((run) => isActive(run.status));
@@ -2035,7 +2036,7 @@ export function ShellPage() {
     [],
   );
   const reactToMessage = useCallback(
-    async (message: ThreadMessage, reaction: MessageReaction) => {
+    async (message: ThreadMessage, reaction: MessageReaction | null) => {
       const botId = activeBotId.current;
       const groupId = activeGroupId.current;
       if (!botId && !groupId) return;
@@ -4886,7 +4887,7 @@ const Transcript = memo(function Transcript({
   onAnswer: (message: ThreadMessage, text: string, username?: string) => Promise<void>;
   onReply: (message: ThreadMessage) => void;
   onQuote: (message: ThreadMessage, quote: string) => void;
-  onReact: (message: ThreadMessage, reaction: MessageReaction) => Promise<void>;
+  onReact: (message: ThreadMessage, reaction: MessageReaction | null) => Promise<void>;
   onJumpToMessage: (messageId: string) => void;
   onOpenPeerMessages: (peer: { peerBotId: string; peerBotName: string }) => void;
   memberName?: (botId: string | undefined) => string | undefined;
@@ -5258,6 +5259,7 @@ const Transcript = memo(function Transcript({
                         side={message.role === "user" ? "start" : "end"}
                         onReply={onReply}
                         onReact={onReact}
+                        myReaction={messageReactions?.find((reaction) => reaction.mine)?.emoji}
                       />
                     )}
                   </div>
@@ -5286,23 +5288,12 @@ const Transcript = memo(function Transcript({
                   </time>
                 ) : null}
                 {!peerReceipt && messageReactions ? (
-                  <div
-                    data-testid="message-reactions"
-                    className={cn(
-                      "mt-1 flex flex-wrap gap-1",
-                      message.role === "user" && "justify-end",
-                    )}
-                  >
-                    {[...messageReactions].map(([emoji, count]) => (
-                      <span
-                        key={emoji}
-                        className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs"
-                      >
-                        {emoji}
-                        {count > 1 ? ` ${count}` : ""}
-                      </span>
-                    ))}
-                  </div>
+                  <MessageReactionChips
+                    message={message}
+                    reactions={messageReactions}
+                    peerBot={peerBot}
+                    onReact={onReact}
+                  />
                 ) : null}
               </div>
             </Fragment>
@@ -6437,16 +6428,80 @@ function formatRosterTime(isoDate?: string | null): string {
   }
 }
 
+function MessageReactionChips({
+  message,
+  reactions,
+  peerBot,
+  onReact,
+}: {
+  message: ThreadMessage;
+  reactions: MessageReactionSummary[];
+  peerBot: (botId: string) => { name?: string; color: string } | undefined;
+  onReact: (message: ThreadMessage, reaction: MessageReaction | null) => Promise<void>;
+}) {
+  const { t } = useLingui();
+  return (
+    <div
+      data-testid="message-reactions"
+      className={cn("mt-1 flex flex-wrap gap-1", message.role === "user" && "justify-end")}
+    >
+      {reactions.map(({ emoji, count, mine, botIds }) => {
+        const botId = botIds[0];
+        const bot = botId ? peerBot(botId) : undefined;
+        const content = (
+          <>
+            {emoji}
+            {botId ? (
+              <BotAvatar color={bot?.color ?? FALLBACK_BOT_COLOR} identity={botId} size={14} />
+            ) : null}
+            {count > 1 ? <span className="tabular-nums">{count}</span> : null}
+          </>
+        );
+        const chipClass = cn(
+          "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs",
+          mine ? "border-foreground bg-accent" : "border-border bg-muted",
+        );
+        // A bot's reaction is read-only; the user's own toggles off, and another emoji joins in.
+        if (!mine && botIds.length === count) {
+          return (
+            <span key={emoji} className={chipClass} title={bot?.name}>
+              {content}
+            </span>
+          );
+        }
+        return (
+          <button
+            key={emoji}
+            type="button"
+            aria-pressed={mine}
+            aria-label={mine ? t`Remove reaction ${emoji}` : t`React ${emoji}`}
+            className={cn(
+              chipClass,
+              "hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
+            )}
+            onClick={() => void onReact(message, mine ? null : emoji)}
+          >
+            {content}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function MessageHoverActions({
   message,
   side,
   onReply,
   onReact,
+  myReaction,
 }: {
   message: ThreadMessage;
   side: "start" | "end";
   onReply: (message: ThreadMessage) => void;
-  onReact: (message: ThreadMessage, reaction: MessageReaction) => Promise<void>;
+  onReact: (message: ThreadMessage, reaction: MessageReaction | null) => Promise<void>;
+  /** The user's current reaction; choosing it again removes it. */
+  myReaction?: MessageReaction;
 }) {
   const { t } = useLingui();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -6488,10 +6543,14 @@ function MessageHoverActions({
                   key={emoji}
                   type="button"
                   aria-label={emoji}
-                  className="grid h-11 w-11 place-items-center rounded-xl text-2xl hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                  aria-pressed={emoji === myReaction}
+                  className={cn(
+                    "grid h-11 w-11 place-items-center rounded-xl text-2xl hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
+                    emoji === myReaction && "bg-accent",
+                  )}
                   onClick={() => {
                     setReactionsOpen(false);
-                    void onReact(message, emoji);
+                    void onReact(message, emoji === myReaction ? null : emoji);
                   }}
                 >
                   {emoji}

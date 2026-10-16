@@ -82,27 +82,66 @@ describe("queued run supersession", () => {
 });
 
 describe("reaction messages", () => {
-  it("appends repeated reactions as quiet replies and deduplicates retries", async () => {
-    const messages = new Map<string, { id: string }>();
-    let messageSeq = 0;
+  type FakeMessage = {
+    id: string;
+    seq: number;
+    role: string;
+    botId?: string;
+    blocks: MessageBlock[];
+    replyToMessageId?: string;
+    clientNonce?: string;
+    runId?: string;
+  };
+  function reactionHarness(seed: FakeMessage[], options: { activeRuns?: number } = {}) {
+    const messages = [...seed];
+    let messageSeq = Math.max(0, ...seed.map((message) => message.seq));
     let eventSeq = 0;
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([]),
       message: {
-        findFirst: vi.fn().mockResolvedValue({ id: "parent" }),
+        findFirst: vi.fn(
+          async ({ where }: { where: { id: string } }) =>
+            messages.find((message) => message.id === where.id) ?? null,
+        ),
         findUnique: vi.fn(
           async ({ where }: { where: { threadId_clientNonce: { clientNonce: string } } }) =>
-            messages.get(where.threadId_clientNonce.clientNonce) ?? null,
+            messages.find(
+              (message) => message.clientNonce === where.threadId_clientNonce.clientNonce,
+            ) ?? null,
         ),
-        create: vi.fn(async ({ data }: { data: { clientNonce: string } }) => {
-          const message = { id: `reaction-${messages.size}`, ...data };
-          messages.set(data.clientNonce, message);
+        findMany: vi.fn(
+          async ({
+            where,
+          }: {
+            where: { replyToMessageId?: string; role?: string; seq?: { gt: number } };
+          }) =>
+            messages.filter(
+              (message) =>
+                (where.replyToMessageId === undefined ||
+                  message.replyToMessageId === where.replyToMessageId) &&
+                (where.role === undefined || message.role === where.role) &&
+                (where.seq === undefined || message.seq > where.seq.gt),
+            ),
+        ),
+        deleteMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => {
+          for (const id of where.id.in) {
+            messages.splice(
+              messages.findIndex((message) => message.id === id),
+              1,
+            );
+          }
+          return { count: where.id.in.length };
+        }),
+        create: vi.fn(async ({ data }: { data: Omit<FakeMessage, "id"> }) => {
+          const message = { id: `reaction-${data.seq}`, ...data };
+          messages.push(message);
           return message;
         }),
+        update: vi.fn(async () => ({})),
       },
       thread: {
         update: vi.fn(async ({ data }: { data: { nextMessageSeq?: unknown } }) =>
-          data.nextMessageSeq ? { nextMessageSeq: ++messageSeq } : { nextEventSeq: ++eventSeq },
+          data.nextMessageSeq ? { nextMessageSeq: ++messageSeq + 1 } : { nextEventSeq: ++eventSeq },
         ),
       },
       event: {
@@ -112,62 +151,89 @@ describe("reaction messages", () => {
           ...data,
         })),
       },
-      task: { create: vi.fn() },
-      run: { create: vi.fn() },
+      task: { create: vi.fn(async () => ({ id: "task-1" })) },
+      run: {
+        count: vi.fn(async () => options.activeRuns ?? 0),
+        create: vi.fn(async () => ({ id: "run-1", taskId: "task-1", status: "queued" })),
+      },
     };
     const prisma = {
       $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
     } as unknown as PrismaClient;
-    const actor = { spaceId: "space-1", userId: "user-1" } as Actor;
-    const target = { kind: "bot", botId: "bot-1", threadId: "thread-1" } as ThreadTarget;
-    for (const [clientNonce, reaction] of [
-      ["first", "❤️"],
-      ["second", "👍"],
-      ["third", "❤️"],
-      ["third", "❤️"],
-    ] as const) {
-      await reactToThreadMessage({ prisma }, actor, target, {
-        messageId: "parent",
-        reaction,
-        clientNonce,
-      });
-    }
-    expect(tx.message.create).toHaveBeenCalledTimes(3);
-    expect(tx.event.create).toHaveBeenCalledTimes(3);
-    expect(tx.message.create).toHaveBeenLastCalledWith({
+    const react = (
+      messageId: string,
+      reaction: "👍" | "👎" | "❤️" | null,
+      clientNonce: string,
+      canStartTurn = true,
+    ) =>
+      reactToThreadMessage(
+        { prisma },
+        { spaceId: "space-1", userId: "user-1" } as Actor,
+        { kind: "bot", botId: "bot-1", threadId: "thread-1" } as ThreadTarget,
+        { messageId, reaction, clientNonce, canStartTurn },
+      );
+    const reactions = () =>
+      messages.filter((message) => message.replyToMessageId).map((message) => message.blocks);
+    return { tx, react, reactions };
+  }
+  const text = (value: string): MessageBlock[] => [{ kind: "text", text: value }];
+  const userMessage = { id: "user-msg", seq: 1, role: "user", blocks: text("Hi") };
+  const reminder = {
+    id: "reminder",
+    seq: 2,
+    role: "bot",
+    botId: "bot-1",
+    blocks: text("Reminder: pay the internet bill"),
+  };
+
+  it("keeps one reaction per user, replacing and removing it, and deduplicates retries", async () => {
+    const { tx, react, reactions } = reactionHarness([userMessage, reminder]);
+    await react("user-msg", "❤️", "first");
+    await react("user-msg", "👍", "second");
+    await react("user-msg", "👍", "second");
+    expect(reactions()).toEqual([text("👍")]);
+    expect(tx.event.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        role: "user",
-        blocks: [{ kind: "text", text: "❤️" }],
-        replyToMessageId: "parent",
-        clientNonce: "third",
+        type: "thread.message.reaction",
+        payload: { messageId: "user-msg", removedMessageIds: [expect.any(String)] },
       }),
     });
-    expect(tx.event.create).toHaveBeenLastCalledWith({
-      data: expect.objectContaining({
-        type: "thread.message.created",
-        payload: {
-          messageId: "reaction-2",
-          role: "user",
-          blocks: [{ kind: "text", text: "❤️" }],
-          replyToMessageId: "parent",
-        },
-      }),
-    });
-    expect(tx.task.create).not.toHaveBeenCalled();
+    await react("user-msg", null, "third");
+    expect(reactions()).toEqual([]);
     expect(tx.run.create).not.toHaveBeenCalled();
-    expect(tx.message.findFirst).toHaveBeenCalledWith({
-      where: { id: "parent", threadId: "thread-1" },
-      select: { id: true },
-    });
     tx.message.findFirst.mockResolvedValueOnce(null);
-    await expect(
-      reactToThreadMessage({ prisma }, actor, target, {
-        messageId: "elsewhere",
-        reaction: "❤️",
-        clientNonce: "fourth",
+    await expect(react("elsewhere", "❤️", "fourth")).rejects.toThrow();
+  });
+
+  it("starts a turn when 👍 or 👎 answers the bot's latest message", async () => {
+    const { tx, react } = reactionHarness([userMessage, reminder]);
+    const result = await react("reminder", "👍", "yes");
+    expect(result.runs).toEqual([{ id: "run-1", taskId: "task-1", status: "queued" }]);
+    expect(tx.run.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ trigger: "reaction", status: "queued" }),
       }),
-    ).rejects.toThrow();
-    expect(tx.message.create).toHaveBeenCalledTimes(3);
+    );
+    expect(tx.task.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ prompt: "👍" }),
+    });
+  });
+
+  it("only records other reactions, older targets, busy bots and reactions without a model", async () => {
+    for (const [seed, args, activeRuns] of [
+      [[userMessage, reminder], ["reminder", "❤️", "love"], 0],
+      [[reminder, { ...userMessage, seq: 3 }], ["reminder", "👍", "old"], 0],
+      [[userMessage, reminder], ["reminder", "👍", "busy"], 1],
+      [[userMessage, reminder], ["reminder", "👍", "no-model", false], 0],
+      [[userMessage, reminder], ["user-msg", "👍", "own"], 0],
+    ] as const) {
+      const { tx, react, reactions } = reactionHarness([...seed], { activeRuns });
+      const [messageId, reaction, clientNonce, canStartTurn] = args;
+      const result = await react(messageId, reaction, clientNonce, canStartTurn);
+      expect(result.runs).toEqual([]);
+      expect(tx.run.create).not.toHaveBeenCalled();
+      expect(reactions()).toHaveLength(1);
+    }
   });
 });
 

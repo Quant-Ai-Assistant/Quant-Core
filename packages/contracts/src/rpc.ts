@@ -380,7 +380,8 @@ export const appContract = {
       .input(
         threadTarget.safeExtend({
           messageId: Id,
-          reaction: MessageReactionSchema,
+          /** Null removes the user's reaction. */
+          reaction: MessageReactionSchema.nullable(),
           clientNonce: z.string().min(1).max(200),
         }),
       )

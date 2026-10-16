@@ -11,13 +11,18 @@ import type {
   RunStatus,
   ThreadSnapshot,
 } from "@rakazo/contracts";
-import { GROUP_MEMBER_MIN, MessageBlock as MessageBlockSchema } from "@rakazo/contracts";
+import {
+  ANSWERING_REACTIONS,
+  GROUP_MEMBER_MIN,
+  MessageBlock as MessageBlockSchema,
+} from "@rakazo/contracts";
 import {
   ACTIVE_RUN_STATUSES,
   BACKGROUND_RUN_TRIGGERS,
   callIdFromClientNonce,
   isActive,
   isConversationalRun,
+  messageReaction,
   projectMessages,
   resolveGroupTargetBotIds,
   runFailureError,
@@ -33,6 +38,7 @@ import {
   expireComputerExecutionLeases,
   IsolationError,
   lockOwnedGroup,
+  setMessageReactionInTransaction,
   touchGroupUpdatedAt,
 } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
@@ -134,7 +140,7 @@ function sendRunClientNonce(
   return botId ? `send:${messageId}:${botId}` : `send:${messageId}`;
 }
 
-async function enqueueRunsNeedingContinue(
+export async function enqueueRunsNeedingContinue(
   jobs: JobPublisher,
   runs: Array<{ id: string; status: string }>,
 ) {
@@ -1018,8 +1024,8 @@ export async function sendThreadMessage(
 }
 
 /**
- * Append an emoji reply to the conversation so the next AI turn sees its target.
- * Clients render it beneath that message; the reaction itself does not start an AI turn.
+ * Set or remove the user's reaction on a message. A 👍 or 👎 on the bot's latest message
+ * answers it, so it starts a turn; any other reaction is only read on the bot's next turn.
  */
 export async function reactToThreadMessage(
   deps: { prisma: PrismaClient },
@@ -1027,15 +1033,17 @@ export async function reactToThreadMessage(
   target: ThreadTarget,
   input: {
     messageId: string;
-    reaction: MessageReaction;
+    reaction: MessageReaction | null;
     clientNonce: string;
+    /** False while no model is connected, so the reaction is kept without a turn. */
+    canStartTurn: boolean;
   },
 ) {
   return deps.prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM threads WHERE id = ${target.threadId} FOR UPDATE`;
     const parent = await tx.message.findFirst({
       where: { id: input.messageId, threadId: target.threadId },
-      select: { id: true },
+      select: { id: true, seq: true, role: true, botId: true },
     });
     if (!parent) throw new IsolationError();
     const existing = await tx.message.findUnique({
@@ -1044,27 +1052,80 @@ export async function reactToThreadMessage(
       },
       select: { id: true },
     });
-    if (existing) return { eventSeq: null };
+    if (existing) return { eventSeq: null, runs: [] };
     const botId = target.kind === "bot" ? target.botId : target.memberBotIds[0];
     if (!botId) throw new IsolationError();
-    const blocks: MessageBlock[] = [{ kind: "text", text: input.reaction }];
-    const message = await createThreadMessageInTransaction(tx, {
+    const { message, eventSeq } = await setMessageReactionInTransaction(tx, {
+      spaceId: actor.spaceId,
       threadId: target.threadId,
-      role: "user",
-      blocks,
-      replyToMessageId: parent.id,
+      eventBotId: botId,
+      parentId: parent.id,
+      reactor: { role: "user" },
+      reaction: input.reaction,
       clientNonce: input.clientNonce,
     });
     if (target.kind === "group") await touchGroupUpdatedAt(tx, target.groupId);
-    const event = await appendEventInTransaction(tx, {
-      spaceId: actor.spaceId,
-      threadId: target.threadId,
-      botId,
-      type: "thread.message.created",
-      payload: { messageId: message.id, role: "user", blocks, replyToMessageId: parent.id },
+    if (
+      !message ||
+      !input.reaction ||
+      !input.canStartTurn ||
+      target.kind !== "bot" ||
+      !ANSWERING_REACTIONS.has(input.reaction) ||
+      parent.role !== "bot" ||
+      parent.botId !== target.botId ||
+      !(await isLatestConversationMessage(tx, target.threadId, parent.seq)) ||
+      (await tx.run.count({
+        where: {
+          threadId: target.threadId,
+          botId: target.botId,
+          status: { in: [...ACTIVE_RUN_STATUSES] },
+        },
+      })) > 0
+    ) {
+      return { eventSeq, runs: [] };
+    }
+    const task = await tx.task.create({
+      data: {
+        spaceId: actor.spaceId,
+        botId: target.botId,
+        threadId: target.threadId,
+        userId: actor.userId,
+        prompt: input.reaction,
+        status: "queued",
+      },
     });
-    return { eventSeq: event.seq };
+    const run = await tx.run.create({
+      data: {
+        spaceId: actor.spaceId,
+        botId: target.botId,
+        threadId: target.threadId,
+        taskId: task.id,
+        userId: actor.userId,
+        status: "queued",
+        trigger: "reaction",
+        clientNonce: `reaction:${message.id}`,
+        sourceMessageId: message.id,
+      },
+      select: { id: true, taskId: true, status: true },
+    });
+    await tx.message.update({ where: { id: message.id }, data: { runId: run.id } });
+    return { eventSeq, runs: [run] };
   });
+}
+
+/** True when nothing but reactions came after the message at `seq`. */
+async function isLatestConversationMessage(
+  tx: Prisma.TransactionClient,
+  threadId: string,
+  seq: number,
+) {
+  const later = await tx.message.findMany({
+    where: { threadId, seq: { gt: seq } },
+    select: { role: true, blocks: true, replyToMessageId: true },
+  });
+  return later.every((message) =>
+    messageReaction({ ...message, blocks: message.blocks as MessageBlock[] }),
+  );
 }
 
 type StopRunsDeps = {
