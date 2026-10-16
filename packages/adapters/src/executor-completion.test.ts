@@ -10,6 +10,7 @@ import {
   LONG_WORK_PROGRESS_GUIDANCE,
   mayOpenModelStream,
   NO_RESPONSE,
+  REACTION_REPLY_GUIDANCE,
   ROUTINE_SILENT_REPLY_GUIDANCE,
   runAllowsSilentEmpty,
   runIdentityInstruction,
@@ -168,6 +169,17 @@ describe("completionMarksUnread", () => {
     expect(segments).toEqual([]);
     expect(text).toBe("");
     expect(completionMarksUnread("routine", text)).toBe(false);
+  });
+
+  it("lets a reaction-answered turn finish silently without marking unread", () => {
+    expect(runAllowsSilentEmpty("reaction")).toBe(true);
+    expect(runReplyGuidance("reaction")).toBe(REACTION_REPLY_GUIDANCE);
+    const segments = completionMessageSegments([], {
+      allowSilentEmpty: runAllowsSilentEmpty("reaction"),
+    });
+    expect(segments).toEqual([]);
+    expect(completionMarksUnread("reaction", "")).toBe(false);
+    expect(completionMarksUnread("reaction", "Moved it to tomorrow.")).toBe(true);
   });
 
   it("still invents done. for a user-triggered empty run", () => {

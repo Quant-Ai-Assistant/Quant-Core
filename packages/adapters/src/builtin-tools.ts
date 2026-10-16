@@ -2,6 +2,7 @@ import type { ConnectorTool } from "@rakazo/adapter-kit";
 import {
   BotSecretName,
   botSecretDestinationSchema,
+  MESSAGE_REACTIONS,
   SecretAskPurpose,
   SecretHttpRequest,
   TICKET_PRIORITIES,
@@ -398,6 +399,23 @@ export const builtinAgentTools: ConnectorTool[] = [
         },
       },
       required: ["message"],
+    },
+  },
+  {
+    name: "react_to_message",
+    description:
+      "React to a message in this chat with an emoji instead of writing a reply, like a 👍 in a messenger. Use it when your whole answer would only acknowledge the user (ok, done, will do), for example after setting a reminder they asked for. It defaults to the message that started this turn. A reaction does not end your turn.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        emoji: { type: "string", enum: [...MESSAGE_REACTIONS] },
+        messageId: {
+          type: "string",
+          description:
+            "The user's message to react to. Omit for the message that started this turn.",
+        },
+      },
+      required: ["emoji"],
     },
   },
   {
