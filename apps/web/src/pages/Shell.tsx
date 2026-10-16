@@ -154,7 +154,13 @@ import {
   useHoldToTalk,
 } from "../components/composer/HoldToTalk";
 import { ComputerWorkspace } from "../components/computer/ComputerWorkspace";
-import { ComputerPlaceSwitch, HostScreen, useHostLabel } from "../components/computer/HostScreen";
+import {
+  ComputerPlaceSwitch,
+  HostScreen,
+  useHostLabel,
+  useVirtualDesktopEngine,
+  VirtualDesktopSetup,
+} from "../components/computer/HostScreen";
 import { lazyOverlay } from "../components/ErrorBoundary";
 import { MessageHoverMetadata } from "../components/MessageHoverMetadata";
 import {
@@ -407,6 +413,7 @@ function readCollapsedRosterParents(userId: string | null | undefined): Set<stri
 export function ShellPage() {
   const { t } = useLingui();
   const hostLabel = useHostLabel();
+  const virtualDesktopEngine = useVirtualDesktopEngine();
   const { botId, groupId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -3872,6 +3879,8 @@ export function ShellPage() {
                     <div className="grid h-full place-items-center text-sm text-muted-foreground/80">
                       <Trans>Open in full window</Trans>
                     </div>
+                  ) : computer?.mode === "dedicated" && virtualDesktopEngine ? (
+                    <VirtualDesktopSetup {...virtualDesktopEngine} />
                   ) : computer?.kind === "desktop" ? (
                     <HostScreen botId={active.id} noScreen={<DesktopKindEmptyState />} />
                   ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (

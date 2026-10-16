@@ -1741,6 +1741,10 @@ msgid "Could not send that"
 msgstr "No se pudo enviar eso"
 
 #: src/components/computer/HostScreen.tsx
+msgid "Could not set up the virtual desktop"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
 msgid "Could not show this screen"
 msgstr ""
 
@@ -2126,6 +2130,10 @@ msgstr "Listo"
 msgid "Download"
 msgstr ""
 
+#: src/components/computer/HostScreen.tsx
+msgid "Download · {size}"
+msgstr ""
+
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
 #. placeholder {0}: state.availableVersion
@@ -2145,6 +2153,10 @@ msgstr "Descargar como Markdown"
 
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Download Executor"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Downloading the virtual desktop"
 msgstr ""
 
 #: src/components/DesktopUpdates.tsx
@@ -3900,6 +3912,7 @@ msgid "Restoring your workspace"
 msgstr ""
 
 #: src/components/AccountAccess.tsx
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Auth.tsx
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Retry"

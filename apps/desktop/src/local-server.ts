@@ -455,6 +455,8 @@ export interface LocalServerDeps {
   onState?: (state: DesktopLocalStackState) => void;
   sleep?: (ms: number, signal: AbortSignal) => Promise<void>;
   healthTimeoutMs?: number;
+  /** The built-in virtual desktop engine's Docker socket, used when Docker is not running. */
+  virtualDesktopSocket?: () => string | null;
 }
 
 /** Resolves early on abort so a stop never waits out a poll. */
@@ -489,6 +491,8 @@ export class LocalServerController {
   private gateChange: GateChange = { kind: "keep" };
   /** The gate port the next attempt applies; null keeps the saved one. */
   private gatePort: number | null = null;
+  /** What the running supervisor's computers run on; null with no supervisor. */
+  private engine: "docker" | "vm" | null = null;
 
   constructor(private readonly deps: LocalServerDeps) {
     this.currentWebUrl = deps.localWebUrl;
@@ -496,6 +500,11 @@ export class LocalServerController {
 
   webUrl(): string {
     return this.currentWebUrl;
+  }
+
+  /** Whether bots' virtual desktops run on Docker, on the app's own VM, or nowhere. */
+  supervisorEngine(): "docker" | "vm" | null {
+    return this.engine;
   }
 
   state(): DesktopLocalStackState {
@@ -788,8 +797,9 @@ export class LocalServerController {
   }
 
   /**
-   * With Docker running, starts the supervisor that gives each bot that asks for one its own
-   * virtual desktop. Without Docker every bot works on this computer, as before.
+   * Starts the supervisor that gives each bot that asks for one its own virtual desktop: on
+   * Docker when it is running, else on the app's own VM engine where this computer has one.
+   * Without either every bot works on this computer, as before.
    */
   private async startSupervisor(
     app: string,
@@ -799,21 +809,13 @@ export class LocalServerController {
   ): Promise<string | null> {
     const { deps } = this;
     if (!this.exists(path.join(app, "supervisor.mjs"))) return null;
-    const binary = resolveDockerBinary(deps.platform, deps.env, (file) => this.exists(file));
-    if (binary === null) return null;
-    const probe = await deps
-      .run(binary, ["info", "--format", "{{.ServerVersion}}"], {
-        cwd: deps.serverDir,
-        env: dockerSpawnEnv(deps.platform, deps.env, binary),
-        timeoutMs: DOCKER_PROBE_TIMEOUT_MS,
-        signal,
-      })
-      .catch(() => null);
-    if (probe?.code !== 0) return null;
+    this.engine = null;
+    const engine = await this.dockerEngineEnv(signal);
+    if (engine === null) return null;
     const port = await allocate();
     this.keepRunning("supervisor", app, {
       ...processEnv,
-      ...dockerSpawnEnv(deps.platform, deps.env, binary),
+      ...engine,
       SUPERVISOR_HOST: "127.0.0.1",
       SUPERVISOR_PORT: String(port),
       // Docker Desktop cannot route to container addresses from the host.
@@ -821,6 +823,31 @@ export class LocalServerController {
       RAKAZO_COMPUTER_IMAGE: processEnv.RAKAZO_COMPUTER_IMAGE || COMPUTER_IMAGE,
     });
     return `http://127.0.0.1:${port}`;
+  }
+
+  /** How the supervisor reaches Docker: the running Docker, else the built-in VM's socket. */
+  private async dockerEngineEnv(signal: AbortSignal): Promise<Record<string, string> | null> {
+    const { deps } = this;
+    const binary = resolveDockerBinary(deps.platform, deps.env, (file) => this.exists(file));
+    if (binary !== null) {
+      const probe = await deps
+        .run(binary, ["info", "--format", "{{.ServerVersion}}"], {
+          cwd: deps.serverDir,
+          env: dockerSpawnEnv(deps.platform, deps.env, binary),
+          timeoutMs: DOCKER_PROBE_TIMEOUT_MS,
+          signal,
+        })
+        .catch(() => null);
+      if (probe?.code === 0) {
+        this.engine = "docker";
+        return dockerSpawnEnv(deps.platform, deps.env, binary);
+      }
+    }
+    // The VM may still be downloading or booting; the supervisor connects on each request.
+    const socket = deps.virtualDesktopSocket?.() ?? null;
+    if (socket === null) return null;
+    this.engine = "vm";
+    return { DOCKER_HOST: "", DOCKER_SOCKET: socket };
   }
 
   /** Runs one bundled process and starts it again if it exits while the server is up. */

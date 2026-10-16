@@ -1741,6 +1741,10 @@ msgid "Could not send that"
 msgstr "Не удалось отправить это"
 
 #: src/components/computer/HostScreen.tsx
+msgid "Could not set up the virtual desktop"
+msgstr "Не удалось подготовить виртуальный стол"
+
+#: src/components/computer/HostScreen.tsx
 msgid "Could not show this screen"
 msgstr "Не удалось показать экран"
 
@@ -2126,6 +2130,10 @@ msgstr "Готово"
 msgid "Download"
 msgstr ""
 
+#: src/components/computer/HostScreen.tsx
+msgid "Download · {size}"
+msgstr "Скачать · {size}"
+
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
 #. placeholder {0}: state.availableVersion
@@ -2146,6 +2154,10 @@ msgstr "Скачать как Markdown"
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Download Executor"
 msgstr "Скачать Executor"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Downloading the virtual desktop"
+msgstr "Скачивание виртуального стола"
 
 #: src/components/DesktopUpdates.tsx
 msgid "Downloading…"
@@ -3900,6 +3912,7 @@ msgid "Restoring your workspace"
 msgstr "Восстановление вашего рабочего пространства"
 
 #: src/components/AccountAccess.tsx
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Auth.tsx
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Retry"

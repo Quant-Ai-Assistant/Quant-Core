@@ -1,11 +1,15 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ComputerMode } from "@rakazo/contracts";
-import { cn, Tabs, TabsList, TabsTrigger } from "@rakazo/ui-web";
+import type { ComputerMode, DesktopVirtualDesktopState } from "@rakazo/contracts";
+import { Button, cn, Tabs, TabsList, TabsTrigger } from "@rakazo/ui-web";
+import { Monitor } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { desktopBridge } from "../../lib/desktop";
 import { rpc } from "../../lib/rpc";
 import { errorText } from "../../lib/user-error";
+
+/** How often the panel asks the app how the virtual desktop download is going. */
+const ENGINE_POLL_MS = 1_000;
 
 /** How often the panel asks for a new picture of the host screen. */
 export const HOST_FRAME_INTERVAL_MS = 1_000;
@@ -117,13 +121,13 @@ export function ComputerPlaceSwitch({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    <div className="flex shrink-0 flex-col gap-1">
       <Tabs value={mode} onValueChange={(value) => void choose(value as ComputerMode)}>
         <TabsList aria-label={t`Where this bot works`}>
-          <TabsTrigger value="team" disabled={pending}>
+          <TabsTrigger value="team" disabled={pending} className="whitespace-nowrap">
             {host}
           </TabsTrigger>
-          <TabsTrigger value="dedicated" disabled={pending}>
+          <TabsTrigger value="dedicated" disabled={pending} className="whitespace-nowrap">
             {t`Virtual`}
           </TabsTrigger>
         </TabsList>
@@ -133,6 +137,97 @@ export function ComputerPlaceSwitch({
           {error}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The app's own virtual desktop engine while it still needs a download or is starting; null
+ * when there is nothing to show: a browser, a phone, Docker, or an engine that is ready.
+ */
+export function useVirtualDesktopEngine(): {
+  state: DesktopVirtualDesktopState;
+  install: () => void;
+} | null {
+  const bridge = desktopBridge()?.virtualDesktop;
+  const [state, setState] = useState<DesktopVirtualDesktopState | null>(null);
+
+  useEffect(() => {
+    if (!bridge) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const next = async () => {
+      const current = await bridge.state().catch(() => null);
+      if (cancelled) return;
+      setState(current);
+      if (current && current.phase !== "ready" && current.phase !== "unsupported") {
+        timer = setTimeout(next, ENGINE_POLL_MS);
+      }
+    };
+    void next();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [bridge]);
+
+  if (!bridge || !state || state.phase === "ready" || state.phase === "unsupported") return null;
+  return {
+    state,
+    install: () => {
+      setState({ ...state, phase: "downloading", percent: 0 });
+      void bridge.install().then(setState, () => undefined);
+    },
+  };
+}
+
+/** The virtual desktop before its first use: one download button, then its progress. */
+export function VirtualDesktopSetup({
+  state,
+  install,
+}: {
+  state: DesktopVirtualDesktopState;
+  install: () => void;
+}) {
+  const { t, i18n } = useLingui();
+  const size = new Intl.NumberFormat(i18n.locale, {
+    style: "unit",
+    unit: "gigabyte",
+    maximumFractionDigits: 1,
+  }).format(state.downloadBytes / 1e9);
+  const busy = state.phase === "downloading" || state.phase === "preparing";
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted/40 px-6 text-center">
+      <Monitor size={24} strokeWidth={1.6} className="text-muted-foreground" aria-hidden />
+      {busy ? (
+        <div
+          role="progressbar"
+          aria-label={t`Downloading the virtual desktop`}
+          aria-valuenow={state.percent ?? undefined}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          className="h-1 w-40 overflow-hidden rounded-full bg-muted"
+        >
+          <div
+            className={cn(
+              "h-full rounded-full bg-primary transition-[width]",
+              state.percent === null && "w-full animate-pulse",
+            )}
+            style={state.percent === null ? undefined : { width: `${state.percent}%` }}
+          />
+        </div>
+      ) : (
+        <>
+          {state.phase === "error" ? (
+            <span role="alert" className="text-[12px] text-destructive">
+              {t`Could not set up the virtual desktop`}
+            </span>
+          ) : null}
+          <Button variant="outline" size="sm" onClick={install}>
+            {state.phase === "error" ? t`Retry` : t`Download · ${size}`}
+          </Button>
+        </>
+      )}
     </div>
   );
 }

@@ -236,6 +236,22 @@ describe("local server start", () => {
     expect(launched[0]!.env).not.toHaveProperty("SANDBOX_SUPERVISOR_URL");
   });
 
+  it("starts the supervisor on the built-in VM when Docker is not running", async () => {
+    await writeFile(path.join(root, "resources", "app", "supervisor.mjs"), "");
+    const socket = "/vm/h/quant/sock/docker.sock";
+    // No Docker binary on this computer.
+    const exists = (file: string) => path.basename(file) !== "docker" && existsSync(file);
+    const stack = controller({ exists, virtualDesktopSocket: () => socket });
+    await stack.start();
+    expect(launched.map((entry) => path.basename(entry.args[0] ?? ""))).toEqual([
+      "supervisor.mjs",
+      "api.mjs",
+      "worker.mjs",
+    ]);
+    expect(launched[0]!.env).toMatchObject({ DOCKER_HOST: "", DOCKER_SOCKET: socket });
+    expect(stack.supervisorEngine()).toBe("vm");
+  });
+
   it("opens the gate on the suggested port when none is chosen", async () => {
     await controller().start({ kind: "set", access: { username: "me", password: "pw" } });
     await expect(readStackGate(stackPath())).resolves.toEqual({
