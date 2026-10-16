@@ -33,6 +33,7 @@ describe("desktop preload bridge", () => {
     expect(bridge.platform).toBe("linux");
     expect(Object.keys(bridge).sort()).toEqual([
       "edge",
+      "host",
       "localSettings",
       "oauth",
       "platform",
@@ -47,6 +48,7 @@ describe("desktop preload bridge", () => {
     ]);
     expect(Object.keys(bridge.update).sort()).toEqual(["check", "download", "install", "state"]);
     expect(Object.keys(bridge.edge ?? {}).sort()).toEqual(["apply", "check", "state"]);
+    expect(Object.keys(bridge.host ?? {}).sort()).toEqual(["setKeepAwake", "state", "stopServer"]);
 
     await bridge.oauth.open?.("https://provider.example.com/authorize");
     await bridge.oauth.cancel?.("https://provider.example.com/authorize");
@@ -83,6 +85,7 @@ describe("desktop preload bridge", () => {
     const [, bridge] = exposeInMainWorld.mock.calls[0] as [string, Record<string, unknown>];
     expect(Object.keys(bridge).sort()).toEqual([
       "edge",
+      "host",
       "localSettings",
       "oauth",
       "platform",

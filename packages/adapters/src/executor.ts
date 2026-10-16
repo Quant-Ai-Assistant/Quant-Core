@@ -102,6 +102,7 @@ import {
 import type { McpServer, Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
 import {
   appendEventInTransaction,
+  cancelPausedBotRun,
   createSpaceForMember,
   createThreadMessageInTransaction,
   effectiveMemoryScope,
@@ -3298,8 +3299,18 @@ export function createRunExecutor(deps: ExecutorDeps) {
       if (started.count !== 1) return;
       const leaseTarget = await deps.prisma.bot.findUniqueOrThrow({
         where: { id: run.botId },
-        select: { computerId: true, computerSwitching: true },
+        select: { computerId: true, computerSwitching: true, pausedAt: true },
       });
+      // A bot turned off from the desktop controls starts nothing until it is turned back on.
+      if (leaseTarget.pausedAt) {
+        const seq = await deps.prisma.$transaction((tx) => cancelPausedBotRun(tx, runId));
+        if (seq !== null) {
+          await deps.events.notify(run.threadId, seq).catch((error) => {
+            getLogger().error("paused bot run notification", error);
+          });
+        }
+        return;
+      }
       if (!leaseTarget.computerId) throw new Error("Bot has no computer");
       if (leaseTarget.computerSwitching) {
         await requeueComputerRun(deps, runId, workerId, fence, resumeCheckpoint, heldForTakeover);

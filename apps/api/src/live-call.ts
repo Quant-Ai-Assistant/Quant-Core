@@ -130,8 +130,11 @@ export async function startLiveCall(
   }
   const bot = await deps.prisma.bot.findFirstOrThrow({
     where: { id: target.botId, spaceId: actor.spaceId, userId: actor.userId },
-    select: { name: true, title: true, description: true, instructions: true },
+    select: { name: true, title: true, description: true, instructions: true, pausedAt: true },
   });
+  if (bot.pausedAt) {
+    throw new ORPCError("PRECONDITION_FAILED", { message: "This assistant is off." });
+  }
   const session = await provider.startLiveCall(
     {
       apiKey,

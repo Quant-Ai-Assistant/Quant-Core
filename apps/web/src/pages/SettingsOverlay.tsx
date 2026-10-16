@@ -7,6 +7,7 @@ import {
   Cpu,
   CreditCard,
   Gauge,
+  Laptop,
   Monitor,
   Phone,
   Settings,
@@ -16,6 +17,7 @@ import {
 import type { ComponentType } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { computersAreUnavailable } from "../components/ComputersUnavailableHint";
+import { desktopBridge } from "../lib/desktop";
 import {
   ComputerSettingsPanel,
   GeneralSettingsPanels,
@@ -24,6 +26,7 @@ import {
 } from "./AccountSettingsOverlay";
 import { BillingSettingsPanel } from "./BillingSettingsPanel";
 import { CallSettingsPanel } from "./CallSettingsPanel";
+import { HostSettingsPanel } from "./HostSettingsPanel";
 import { MemorySettingsOverlay } from "./MemorySettingsOverlay";
 import { ModelSettingsOverlay } from "./ModelSettingsOverlay";
 import { VoiceSettingsOverlay } from "./VoiceSettingsOverlay";
@@ -37,6 +40,7 @@ export type SettingsSection =
   | "usage"
   | "computer"
   | "billing"
+  | "host"
   | "updates";
 
 type NavItem = {
@@ -91,6 +95,7 @@ export function SettingsOverlay({
   onVoiceStatusMaybeChanged?: () => void | Promise<void>;
 }) {
   const { t } = useLingui();
+  const desktop = desktopBridge();
   const panelRef = useRef<HTMLDivElement>(null);
   const usageRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<SettingsSection>(initialSection);
@@ -153,6 +158,15 @@ export function SettingsOverlay({
     { id: "usage", label: t`Usage`, icon: Gauge },
     ...(showComputer ? [{ id: "computer" as const, label: t`Computer`, icon: Monitor }] : []),
     ...(billingEnabled ? [{ id: "billing" as const, label: t`Billing`, icon: CreditCard }] : []),
+    ...(desktop?.host
+      ? [
+          {
+            id: "host" as const,
+            label: desktop.platform === "darwin" ? t`This Mac` : t`This computer`,
+            icon: Laptop,
+          },
+        ]
+      : []),
     { id: "updates", label: t`Updates`, icon: CloudDownload },
   ];
 
@@ -291,6 +305,9 @@ export function SettingsOverlay({
                 />
               ) : null}
               {section === "billing" && billingEnabled ? <BillingSettingsPanel /> : null}
+              {section === "host" && desktop?.host ? (
+                <HostSettingsPanel avatarStyle={avatarStyle} />
+              ) : null}
               {section === "updates" ? (
                 <UpdatesSettingsPanel isDeploymentOwner={isDeploymentOwner} />
               ) : null}

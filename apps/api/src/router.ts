@@ -290,6 +290,7 @@ import {
   resolveThreadTarget,
   sendThreadMessage,
   setThreadUnreadState,
+  stopBotRuns,
   stopThreadRuns,
   threadHead,
   threadSnapshot,
@@ -1911,6 +1912,68 @@ export function createRouter(deps: RouterDeps) {
             signal: new AbortController().signal,
           },
           { deleteMemories: input.deleteMemories },
+        );
+        return { ok: true as const };
+      }),
+      controls: authed.bots.controls.handler(async ({ context }) => {
+        const bots = await deps.prisma.bot.findMany({
+          where: {
+            spaceId: context.actor.spaceId,
+            userId: context.actor.userId,
+            archivedAt: null,
+          },
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            pausedAt: true,
+            runs: {
+              where: { status: { in: [...ACTIVE_RUN_STATUSES] } },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { status: true },
+            },
+          },
+          orderBy: [{ pinned: "desc" }, { position: "asc" }, { createdAt: "asc" }],
+        });
+        return bots.map((bot) => ({
+          id: bot.id,
+          name: bot.name,
+          color: bot.color,
+          status: bot.runs[0]?.status ?? "idle",
+          paused: bot.pausedAt !== null,
+        }));
+      }),
+      stop: authed.bots.stop.handler(async ({ context, input }) => {
+        const bot = await repos.getBot(context.actor, input.botId);
+        await stopBotRuns(deps, context.actor, [bot.id]);
+        return { ok: true as const };
+      }),
+      setPaused: authed.bots.setPaused.handler(async ({ context, input }) => {
+        const bot = await repos.getBot(context.actor, input.botId);
+        // Off first, so no run can start between the stop and the flag.
+        await deps.prisma.bot.update({
+          where: { id: bot.id },
+          data: { pausedAt: input.paused ? new Date() : null },
+        });
+        if (input.paused) await stopBotRuns(deps, context.actor, [bot.id]);
+        return { ok: true as const };
+      }),
+      setAllPaused: authed.bots.setAllPaused.handler(async ({ context, input }) => {
+        const owned = { spaceId: context.actor.spaceId, userId: context.actor.userId };
+        if (!input.paused) {
+          await deps.prisma.bot.updateMany({ where: owned, data: { pausedAt: null } });
+          return { ok: true as const };
+        }
+        await deps.prisma.bot.updateMany({
+          where: { ...owned, pausedAt: null },
+          data: { pausedAt: new Date() },
+        });
+        const bots = await deps.prisma.bot.findMany({ where: owned, select: { id: true } });
+        await stopBotRuns(
+          deps,
+          context.actor,
+          bots.map((bot) => bot.id),
         );
         return { ok: true as const };
       }),

@@ -1067,21 +1067,52 @@ export async function reactToThreadMessage(
   });
 }
 
-export async function stopThreadRuns(
-  deps: {
-    prisma: PrismaClient;
-    sandbox: SandboxProvider;
-    events: ThreadEvents;
-  },
+type StopRunsDeps = {
+  prisma: PrismaClient;
+  sandbox: SandboxProvider;
+  events: ThreadEvents;
+};
+
+export async function stopThreadRuns(deps: StopRunsDeps, actor: Actor, target: ThreadTarget) {
+  await stopRunsInThread(deps, actor, {
+    threadId: target.threadId,
+    botIds: target.kind === "bot" ? [target.botId] : target.memberBotIds,
+    onlyTheseBots: false,
+  });
+}
+
+/**
+ * Cancels what these bots are doing in every thread they work in (their own and the groups
+ * they are in), leaving the other members of a group alone. The caller owns the bots.
+ */
+export async function stopBotRuns(deps: StopRunsDeps, actor: Actor, botIds: readonly string[]) {
+  if (botIds.length === 0) return;
+  const active = await deps.prisma.run.findMany({
+    where: {
+      spaceId: actor.spaceId,
+      botId: { in: [...botIds] },
+      status: { in: [...ACTIVE_RUN_STATUSES] },
+    },
+    select: { threadId: true },
+    distinct: ["threadId"],
+  });
+  for (const { threadId } of active) {
+    await stopRunsInThread(deps, actor, { threadId, botIds, onlyTheseBots: true });
+  }
+}
+
+async function stopRunsInThread(
+  deps: StopRunsDeps,
   actor: Actor,
-  target: ThreadTarget,
+  scope: { threadId: string; botIds: readonly string[]; onlyTheseBots: boolean },
 ) {
   const { runIds, computers, leases, eventSeq } = await deps.prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM threads WHERE id = ${target.threadId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM threads WHERE id = ${scope.threadId} FOR UPDATE`;
     const cancelled = await tx.run.updateManyAndReturn({
       where: {
-        threadId: target.threadId,
+        threadId: scope.threadId,
         status: { in: [...ACTIVE_RUN_STATUSES] },
+        ...(scope.onlyTheseBots ? { botId: { in: [...scope.botIds] } } : {}),
       },
       data: { status: "cancelled", completedAt: new Date() },
       select: { id: true, botId: true },
@@ -1089,8 +1120,8 @@ export async function stopThreadRuns(
     const ids = cancelled.map((run) => run.id);
     await tx.steeringMessage.deleteMany({
       where: {
-        botId: { in: target.kind === "bot" ? [target.botId] : target.memberBotIds },
-        message: { threadId: target.threadId },
+        botId: { in: [...scope.botIds] },
+        message: { threadId: scope.threadId },
       },
     });
     // Snapshot teardown coordinates before commit. Once cancellation becomes
@@ -1131,7 +1162,7 @@ export async function stopThreadRuns(
     for (const run of cancelled) {
       const event = await appendEventInTransaction(tx, {
         spaceId: actor.spaceId,
-        threadId: target.threadId,
+        threadId: scope.threadId,
         botId: run.botId,
         type: "run.cancelled",
         runId: run.id,
@@ -1151,7 +1182,7 @@ export async function stopThreadRuns(
   });
   if (eventSeq !== null) {
     // The events are durable; subscribers refetch from their persisted cursor.
-    await deps.events.notify(target.threadId, eventSeq).catch((error) => {
+    await deps.events.notify(scope.threadId, eventSeq).catch((error) => {
       getLogger().error("thread stop realtime notification", error);
     });
   }
