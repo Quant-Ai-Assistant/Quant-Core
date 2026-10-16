@@ -17,6 +17,7 @@ import {
   attachmentsForThread,
   buildComposerMentionOptions,
   cloudAgentHttpsUrl,
+  computerUseCount,
   formatFileSize,
   formatMessageTime,
   forwardProbeAfterPage,
@@ -96,6 +97,7 @@ import { BotAvatar } from "../components/bot-avatar";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ComputerCard } from "../components/ComputerCard";
 import { ComposerReplyPreview } from "../components/composer-reply-preview";
+import { ComputerUseBadge } from "../components/computer-use-badge";
 import { FailedSendBubble } from "../components/failed-send-bubble";
 import { GlassSurface } from "../components/glass-surface";
 import type { ImageArtifactPreviewTarget } from "../components/image-artifact-viewer";
@@ -2222,17 +2224,36 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
           index={options?.index ?? 0}
         />
       );
+      const computerBotId = message.role === "bot" ? (message.botId ?? botId) : undefined;
+      const withBadge =
+        computerBotId && computerUseCount(message.blocks) > 0 ? (
+          <View key={message.id}>
+            {row}
+            <ComputerUseBadge
+              message={message}
+              onOpen={() =>
+                openComputer(
+                  computerBotId,
+                  memberName(snap?.members, computerBotId) ?? displayName ?? t("Bot"),
+                )
+              }
+            />
+          </View>
+        ) : (
+          row
+        );
       // The list is inverted, so its cells' "down" is up: a new message rises from the composer.
       return isArriving(arrivals.current.state, message.id, Date.now()) ? (
         <Animated.View key={message.id} entering={FadeInDown.duration(ARRIVE_MS)}>
-          {row}
+          {withBadge}
         </Animated.View>
       ) : (
-        row
+        withBadge
       );
     },
     [
       messagesById,
+      openComputer,
       snap?.members,
       snap?.activeRuns,
       snap?.run,

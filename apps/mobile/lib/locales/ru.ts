@@ -843,4 +843,7 @@ export const RU_MESSAGES: Record<string, string> = {
   "checked at {time}": "проверено в {time}",
   "checked just now": "проверено только что",
   "{received} of {total}": "{received} из {total}",
+  "Computer \u00b7 1 action": "Компьютер · 1 действие",
+  "Computer \u00b7 {count} actions": "Компьютер · действий: {count}",
+  "Working on the computer": "Работает на компьютере",
 };

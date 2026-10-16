@@ -113,6 +113,10 @@ msgstr "Компьютер {botName}"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable} зарезервирована и не может использоваться как переменная команды. Выберите другое имя."
 
+#: src/pages/Shell.tsx
+msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
+msgstr "{count, plural, one {Компьютер · # действие} few {Компьютер · # действия} many {Компьютер · # действий} other {Компьютер · # действия}}"
+
 #: src/lib/billing.ts
 msgid "{count} days"
 msgstr ""
@@ -5085,6 +5089,10 @@ msgstr "Где работает бот"
 #: src/lib/ticket-status.ts
 msgid "Won't do"
 msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Working on the computer"
+msgstr "Работает на компьютере"
 
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx

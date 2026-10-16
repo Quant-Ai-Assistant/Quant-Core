@@ -818,4 +818,7 @@ export const ZH_MESSAGES: Record<string, string> = {
   "checked at {time}": "检查于 {time}",
   "checked just now": "刚刚检查",
   "{received} of {total}": "{received} / {total}",
+  "Computer \u00b7 1 action": "电脑 · 1 个操作",
+  "Computer \u00b7 {count} actions": "电脑 · {count} 个操作",
+  "Working on the computer": "正在使用电脑",
 };

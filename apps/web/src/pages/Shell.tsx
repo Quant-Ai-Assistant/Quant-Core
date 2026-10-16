@@ -1,6 +1,6 @@
 import { i18n } from "@lingui/core";
 import { t } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { ChatMarkdown, LinkifiedText } from "@rakazo/chat-ui/web";
 import type {
   AgentSkillCatalogEntry,
@@ -41,6 +41,7 @@ import {
   attachmentsForThread,
   buildComposerMentionOptions,
   clampMentionHighlightIndex,
+  computerUseCount,
   cronFromPreset,
   formatMessageTime,
   groupVoiceChats,
@@ -95,6 +96,7 @@ import {
   Bell,
   Box,
   ChevronDown,
+  ChevronRight,
   CircleAlert,
   Clock,
   Clock3,
@@ -5414,6 +5416,12 @@ const Transcript = memo(function Transcript({
                     )}
                   </div>
                 </div>
+                {message.role === "bot" ? (
+                  <ComputerUseBadge
+                    message={message}
+                    onOpen={() => onOpenComputer(message.botId)}
+                  />
+                ) : null}
                 {!peerReceipt && !message.id.startsWith("progress:") ? (
                   <time
                     dateTime={message.createdAt}
@@ -6454,6 +6462,37 @@ export const Composer = memo(function Composer({
 });
 
 type ComposerLayout = { barHeight: number; fieldX: number; fieldY: number };
+
+/** Says a reply used the bot's computer, and opens its screen. Absent when it did not. */
+function ComputerUseBadge({ message, onOpen }: { message: ThreadMessage; onOpen: () => void }) {
+  const { t } = useLingui();
+  const count = computerUseCount(message.blocks);
+  if (count === 0) return null;
+  const live = message.id.startsWith("progress:");
+  return (
+    <button
+      type="button"
+      data-testid="computer-use-badge"
+      onClick={onOpen}
+      className={cn(
+        "mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[12px] transition-colors hover:text-foreground",
+        live ? "text-foreground" : "text-muted-foreground",
+      )}
+    >
+      {live ? (
+        <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-foreground" />
+      ) : (
+        <Monitor size={13} strokeWidth={1.8} aria-hidden />
+      )}
+      {live ? (
+        t`Working on the computer`
+      ) : (
+        <Plural value={count} one="Computer · # action" other="Computer · # actions" />
+      )}
+      <ChevronRight size={12} strokeWidth={1.8} aria-hidden />
+    </button>
+  );
+}
 
 /** A new message rises from the composer, as in Telegram; reduced motion keeps it still. */
 const ARRIVE_CLASS =

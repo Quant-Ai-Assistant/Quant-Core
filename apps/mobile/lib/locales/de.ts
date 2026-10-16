@@ -842,4 +842,7 @@ export const DE_MESSAGES: Record<string, string> = {
   "checked at {time}": "geprüft um {time}",
   "checked just now": "gerade geprüft",
   "{received} of {total}": "{received} von {total}",
+  "Computer \u00b7 1 action": "Computer · 1 Aktion",
+  "Computer \u00b7 {count} actions": "Computer · {count} Aktionen",
+  "Working on the computer": "Arbeitet am Computer",
 };

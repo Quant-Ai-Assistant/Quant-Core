@@ -345,6 +345,20 @@ export function appendToolCallSegment(
   return [...segments, { kind: "steps", steps }];
 }
 
+const COMPUTER_STEP_LABELS = new Set(
+  ["computer_observe", "computer_act"].map((name) => humanizeToolName(name)),
+);
+
+/** How many times a reply looked at or acted on the bot's computer; 0 when it never did. */
+export function computerUseCount(blocks: readonly MessageBlock[]): number {
+  let count = 0;
+  for (const block of blocks) {
+    if (block.kind !== "steps") continue;
+    for (const step of block.steps) if (COMPUTER_STEP_LABELS.has(step.label)) count += step.count;
+  }
+  return count;
+}
+
 export function humanizeToolName(name: string): string {
   const spaced = name.replace(/_/g, " ").trim();
   if (!spaced) return name;

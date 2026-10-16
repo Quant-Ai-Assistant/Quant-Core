@@ -113,6 +113,10 @@ msgstr "Ordinateur de {botName}"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable} est réservée et ne peut pas être utilisée comme variable de commande. Choisissez un autre nom."
 
+#: src/pages/Shell.tsx
+msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
+msgstr ""
+
 #: src/lib/billing.ts
 msgid "{count} days"
 msgstr ""
@@ -5084,6 +5088,10 @@ msgstr ""
 
 #: src/lib/ticket-status.ts
 msgid "Won't do"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Working on the computer"
 msgstr ""
 
 #: src/lib/roster-status.ts
