@@ -287,6 +287,7 @@ import {
 } from "./thread-message-pages.js";
 import {
   reactToThreadMessage,
+  replayExistingSend,
   resolveThreadTarget,
   sendThreadMessage,
   setThreadUnreadState,
@@ -307,6 +308,7 @@ import {
   updateVoiceSpeechModel,
   voiceContext,
 } from "./voice.js";
+import { transcribeVoiceMessage } from "./voice-message.js";
 
 const MAX_COMPUTER_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 /** Each command writes a running and a done event, so this keeps about 100 commands. */
@@ -2248,7 +2250,17 @@ export function createRouter(deps: RouterDeps) {
         if (target.kind === "bot") {
           await assertTeachingSendAllowed(deps.prisma, context.actor.spaceId, target.botId);
         }
-        return sendThreadMessage(deps, context.actor, target, input);
+        const { voice, ...message } = input;
+        if (!voice) return sendThreadMessage(deps, context.actor, target, message);
+        // A replayed send must not transcribe the recording a second time.
+        const replayed = await replayExistingSend(deps, target.threadId, input.clientNonce);
+        if (replayed) return replayed;
+        const transcript = await transcribeVoiceMessage(deps, context.actor, voice);
+        return sendThreadMessage(deps, context.actor, target, {
+          ...message,
+          text: transcript || undefined,
+          voice: { ...voice, transcribed: Boolean(transcript) },
+        });
       }),
       react: authed.threads.react.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);

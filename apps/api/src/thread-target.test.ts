@@ -8,6 +8,7 @@ import type { ThreadTarget } from "./thread-target.js";
 import {
   cancelSupersededQueuedRuns,
   reactToThreadMessage,
+  resolveVoiceBlock,
   sendThreadMessage,
   stopBotRuns,
   stopThreadRuns,
@@ -3530,5 +3531,31 @@ describe("stopBotRuns", () => {
       [],
     );
     expect(prisma.run.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveVoiceBlock", () => {
+  const voice = { artifactId: "a1", durationMs: 3_200, waveform: [0.1, 1], transcribed: true };
+
+  it("draws a recording as a voice block", async () => {
+    const resolve = vi.fn(async () => ({ artifacts: [{ id: "a1", mimeType: "audio/mp4" }] }));
+    await expect(resolveVoiceBlock(voice, resolve)).resolves.toEqual({
+      kind: "voice",
+      artifactId: "a1",
+      mimeType: "audio/mp4",
+      durationMs: 3_200,
+      waveform: [0.1, 1],
+      transcribed: true,
+    });
+    expect(resolve).toHaveBeenCalledWith(["a1"]);
+  });
+
+  it("refuses an attachment that is not a recording", async () => {
+    const resolve = async () => ({ artifacts: [{ id: "a1", mimeType: "image/png" }] });
+    await expect(resolveVoiceBlock(voice, resolve)).rejects.toThrow("not a recording");
+  });
+
+  it("has nothing to draw without a voice message", async () => {
+    await expect(resolveVoiceBlock(undefined, vi.fn())).resolves.toBeUndefined();
   });
 });

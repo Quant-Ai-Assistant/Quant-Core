@@ -4,42 +4,48 @@ import { act, createElement } from "react";
 import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { HoldEngine, HoldToTalk } from "./hold-to-talk";
-import { LOCK_DISTANCE, TAP_MS, useHoldToTalk } from "./hold-to-talk";
+import type { ClipRecorder, HoldToTalk, VoiceClip } from "./hold-to-talk";
+import {
+  CANCEL_DISTANCE,
+  LOCK_DISTANCE,
+  levelFromDecibels,
+  TAP_MS,
+  useHoldToTalk,
+  waveformBars,
+} from "./hold-to-talk";
 
-vi.mock("./api", () => ({ captureApiRequestContext: vi.fn() }));
-vi.mock("./dictation", () => ({}));
-vi.mock("./i18n", () => ({ t: (text: string) => text, getActiveUiLocale: () => "en" }));
+vi.mock("./i18n", () => ({ t: (text: string) => text }));
 vi.mock("./user-error", () => ({
   errorText: (error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback,
 }));
-vi.mock("expo-file-system", () => ({ File: class {} }));
 
-function fakeEngine(text: string) {
-  const engine: HoldEngine = {
+const CLIP: VoiceClip = { uri: "file:///voice.m4a", durationMs: 2_000, waveform: [0.4, 1] };
+
+function fakeRecorder() {
+  const recorder: ClipRecorder = {
     start: vi.fn(async () => {}),
-    finish: vi.fn(async () => text),
+    finish: vi.fn(async () => CLIP),
     cancel: vi.fn(),
   };
-  return engine;
+  return recorder;
 }
 
-describe("hold to talk", () => {
+describe("hold to record", () => {
   let root: Root;
   let talk: HoldToTalk;
-  let engine: HoldEngine;
-  const onText = vi.fn();
+  let recorder: ClipRecorder;
+  const onClip = vi.fn();
 
   function Harness() {
-    talk = useHoldToTalk({ transcribe: false, onText, engine: () => engine });
+    talk = useHoldToTalk({ onClip, recorder: () => recorder });
     return null;
   }
 
   beforeEach(() => {
     vi.useFakeTimers();
-    onText.mockClear();
-    engine = fakeEngine("hello");
+    onClip.mockClear();
+    recorder = fakeRecorder();
     root = createRoot(document.createElement("div"));
     act(() => root.render(createElement(Harness)));
   });
@@ -49,31 +55,51 @@ describe("hold to talk", () => {
     vi.useRealTimers();
   });
 
-  it("sends what was said when the finger lifts", async () => {
+  it("sends the whole recording when the finger lifts", async () => {
     act(() => talk.press());
-    expect(engine.start).toHaveBeenCalled();
+    expect(recorder.start).toHaveBeenCalled();
     act(() => vi.advanceTimersByTime(TAP_MS + 10));
     await act(async () => talk.release());
-    expect(onText).toHaveBeenCalledWith("hello");
+    expect(onClip).toHaveBeenCalledWith(CLIP);
     expect(talk.recording).toBeNull();
   });
 
   it("treats a quick tap as a question and shows how to hold", () => {
     act(() => talk.press());
     act(() => talk.release());
-    expect(engine.cancel).toHaveBeenCalled();
-    expect(onText).not.toHaveBeenCalled();
-    expect(talk.notice).toBe("Hold to talk, release to send");
+    expect(recorder.cancel).toHaveBeenCalled();
+    expect(onClip).not.toHaveBeenCalled();
+    expect(talk.notice).toBe("Hold to record, release to send");
   });
 
-  it("locks after sliding up, then sends or discards by hand", async () => {
+  it("throws the recording away when the finger slides left", () => {
     act(() => talk.press());
-    act(() => talk.move(LOCK_DISTANCE));
+    act(() => talk.move(0, CANCEL_DISTANCE));
+    expect(recorder.cancel).toHaveBeenCalled();
+    expect(talk.recording).toBeNull();
+  });
+
+  it("locks after sliding up, then sends or discards by hand", () => {
+    act(() => talk.press());
+    act(() => talk.move(LOCK_DISTANCE, 0));
     expect(talk.recording?.locked).toBe(true);
     act(() => talk.release());
-    expect(engine.finish).not.toHaveBeenCalled();
+    expect(recorder.finish).not.toHaveBeenCalled();
     act(() => talk.cancel());
-    expect(engine.cancel).toHaveBeenCalled();
-    expect(onText).not.toHaveBeenCalled();
+    expect(recorder.cancel).toHaveBeenCalled();
+    expect(onClip).not.toHaveBeenCalled();
+  });
+});
+
+describe("voice levels", () => {
+  it("maps metering decibels onto 0 to 1", () => {
+    expect(levelFromDecibels(-160)).toBe(0);
+    expect(levelFromDecibels(-25)).toBe(0.5);
+    expect(levelFromDecibels(0)).toBe(1);
+    expect(levelFromDecibels(undefined)).toBe(0);
+  });
+
+  it("averages loudness into bars scaled to the loudest", () => {
+    expect(waveformBars([0.1, 0.1, 0.4, 0.4], 2)).toEqual([0.25, 1]);
   });
 });

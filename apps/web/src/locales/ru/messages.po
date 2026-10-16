@@ -476,6 +476,10 @@ msgstr "Разрешить один раз"
 msgid "Allow purchase actions without asking"
 msgstr "Разрешить действия по покупке без запроса"
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Allow the microphone to record"
+msgstr "Разрешите доступ к микрофону для записи"
+
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
 msgstr ""
@@ -1626,6 +1630,10 @@ msgstr "Не удалось связаться с сервером"
 msgid "Could not reach the update server."
 msgstr "Не удалось связаться с сервером обновлений."
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Could not record"
+msgstr "Не удалось записать"
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "Не удалось удалить"
@@ -2497,6 +2505,7 @@ msgid "Hide password"
 msgstr "Скрыть пароль"
 
 #: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Hide transcript"
 msgstr "Скрыть расшифровку"
 
@@ -2512,12 +2521,8 @@ msgid "High"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk"
-msgstr "Удерживайте, чтобы говорить"
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk, release to send"
-msgstr "Удерживайте и говорите, отпустите — отправится"
+msgid "Hold to record, release to send"
+msgstr "Удерживайте для записи, отпустите — отправится"
 
 #: src/pages/RoutineSchedule.tsx
 msgid "hour"
@@ -2716,10 +2721,6 @@ msgstr "Прослушивание"
 msgctxt "call status"
 msgid "Listening"
 msgstr "слушает"
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Listening…"
-msgstr "Слушаю…"
 
 #: src/pages/Shell.tsx
 msgid "Load earlier messages"
@@ -3541,6 +3542,10 @@ msgstr "Вставьте свой ключ API"
 msgid "Paste your API key, then test again."
 msgstr "Вставьте API-ключ и повторите тест."
 
+#: src/pages/shell/voice-message.tsx
+msgid "Pause voice message"
+msgstr "Пауза"
+
 #: src/pages/RoutineEditor.tsx
 msgid "Paused"
 msgstr "Приостановлено"
@@ -3565,6 +3570,10 @@ msgstr "Выберите модель из списка или введите id
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "Закрепить"
+
+#: src/pages/shell/voice-message.tsx
+msgid "Play voice message"
+msgstr "Слушать голосовое"
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -3663,6 +3672,10 @@ msgstr "Переподключить OAuth"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Reconnecting"
 msgstr "Повторное подключение"
+
+#: src/components/composer/HoldToTalk.tsx
+msgid "Record voice message"
+msgstr "Записать голосовое сообщение"
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Recording may have started, but the view could not refresh"
@@ -4174,6 +4187,7 @@ msgid "Send reset link"
 msgstr "Отправить ссылку для сброса"
 
 #: src/components/AskCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Sending…"
 msgstr "Отправка…"
 
@@ -4280,6 +4294,7 @@ msgid "Show tool activity"
 msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Show transcript"
 msgstr "Показать расшифровку"
 
@@ -4350,8 +4365,8 @@ msgid "Slack not enabled"
 msgstr "Slack не включен"
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Slide up to lock"
-msgstr "Проведите вверх, чтобы закрепить"
+msgid "Slide to cancel"
+msgstr "Влево — отмена"
 
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Software update"
@@ -4753,10 +4768,6 @@ msgstr "Источники инструментов"
 #: src/pages/PluginsOverlay.tsx
 msgid "Tools"
 msgstr "Инструменты"
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Transcribing…"
-msgstr "Распознаю…"
 
 #: src/components/call/CallCard.tsx
 msgid "Transcript"

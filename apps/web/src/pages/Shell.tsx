@@ -35,6 +35,7 @@ import {
 } from "@rakazo/contracts";
 import type { ComposerMention, SlashActionId } from "@rakazo/core";
 import {
+  attachmentExtensionForMimeType,
   attachmentsForThread,
   buildComposerMentionOptions,
   clampMentionHighlightIndex,
@@ -261,6 +262,7 @@ import {
 } from "../lib/transcript-scroll";
 import { speaker } from "../lib/tts";
 import { errorText } from "../lib/user-error";
+import { transcriptionLanguage, type VoiceRecording } from "../lib/voice-recorder";
 import { ActivityList } from "./ActivityList";
 import type { ContextMenuPosition } from "./BotContextMenu";
 import { CreateGroupForm, GroupSettings, memberName } from "./GroupPanel";
@@ -299,6 +301,7 @@ import {
   McpApprovalCard,
 } from "./shell/message-cards";
 import { commitSpaceRename, sidebarGroupsForSpaces } from "./shell/space-sidebar";
+import { VoiceMessageBubble, voiceTranscript } from "./shell/voice-message";
 import { WindowChrome } from "./WindowChrome";
 
 const BotContextMenu = lazyOverlay(() =>
@@ -2266,6 +2269,58 @@ export function ShellPage() {
       t,
     ],
   );
+  /** Uploads a recording and sends it as a voice message; the server transcribes it. */
+  const sendVoiceMessage = useCallback(
+    async (recording: VoiceRecording, clientNonce: string) => {
+      const botTarget = activeBotId.current;
+      const groupTarget = activeGroupId.current;
+      if (!botTarget && !groupTarget) return false;
+      setSendError(null);
+      try {
+        const contentBase64 = await readFileAsBase64(recording.blob);
+        const name = `voice${attachmentExtensionForMimeType(recording.mimeType)}`;
+        const artifact = await rpc.artifacts.create(
+          groupTarget
+            ? { groupId: groupTarget, name, mimeType: recording.mimeType, contentBase64 }
+            : { botId: botTarget!, name, mimeType: recording.mimeType, contentBase64 },
+        );
+        const voice = {
+          artifactId: artifact.id,
+          durationMs: Math.round(recording.durationMs),
+          waveform: recording.waveform,
+          transcript: recording.transcript,
+          language: transcriptionLanguage(),
+        };
+        const target = groupTarget ? { groupId: groupTarget } : { botId: botTarget! };
+        const sent = await rpc.threads.send({
+          ...target,
+          clientNonce,
+          voice,
+          replyToMessageId: activeReplyTarget?.id,
+          replyQuote: activeReplyQuote ?? undefined,
+        });
+        clearReply();
+        if (botTarget && activeBotId.current === botTarget) {
+          updateSnapshot((current) =>
+            applyThreadSendReceipt(
+              current,
+              { botId: botTarget, runId: sent.runId, taskId: sent.taskId },
+              terminalRunReceipts.current,
+            ),
+          );
+          void refreshThreadRef.current(botTarget).catch(() => undefined);
+        } else if (groupTarget) {
+          void refreshGroupThreadRef.current(groupTarget).catch(() => undefined);
+        }
+        void refreshBots().catch(() => undefined);
+        return true;
+      } catch (error) {
+        setSendError(errorText(error, t`Failed to send message`));
+        return false;
+      }
+    },
+    [activeReplyTarget?.id, activeReplyQuote, clearReply, t],
+  );
   const stopRun = useCallback(async () => {
     if (sending) return;
     sendingRef.current = true;
@@ -3766,7 +3821,8 @@ export function ShellPage() {
             onSend={sendMessage}
             onStop={stopRun}
             phoneCallsEnabled={bootstrapMe?.phoneCallsEnabled === true}
-            dictationTranscribe={voiceStatus ? Boolean(voiceStatus.transcribe) : undefined}
+            browserTranscript={voiceStatus ? !voiceStatus.voiceMessages : undefined}
+            onSendVoice={sendVoiceMessage}
             artifactTarget={transcriptArtifactTarget}
             replyTarget={activeReplyTarget}
             replyQuote={activeReplyQuote}
@@ -5464,7 +5520,8 @@ export const Composer = memo(function Composer({
   onSend,
   onStop,
   phoneCallsEnabled,
-  dictationTranscribe,
+  browserTranscript,
+  onSendVoice,
   replyTarget,
   replyQuote,
   replyTargetName,
@@ -5491,8 +5548,9 @@ export const Composer = memo(function Composer({
   onSend: (text: string, mentions: ComposerMention[], clientNonce: string) => Promise<boolean>;
   onStop: () => Promise<void>;
   phoneCallsEnabled?: boolean;
-  /** Hold-to-talk falls back to the voice provider's transcription; undefined while unknown. */
-  dictationTranscribe?: boolean;
+  /** The server cannot transcribe voice messages, so the browser's own words go along. */
+  browserTranscript?: boolean;
+  onSendVoice: (recording: VoiceRecording, clientNonce: string) => Promise<boolean>;
   artifactTarget: ArtifactTarget;
   replyTarget?: ThreadMessage | null;
   replyQuote?: string | null;
@@ -5507,16 +5565,9 @@ export const Composer = memo(function Composer({
   const [draft, setDraft] = useState("");
   const onCall = useCallSession() !== null;
   const talk = useHoldToTalk({
-    transcribe: dictationTranscribe,
+    browserTranscript,
     disabled: disabled || onCall || !phoneCallsEnabled,
-    onText: (text) => {
-      // A refused send keeps the words: they land in the field to edit or retry.
-      void onSend(text, [], newClientNonce())
-        .then((accepted) => {
-          if (accepted === false) setDraft((current) => (current ? `${current} ${text}` : text));
-        })
-        .catch(() => setDraft((current) => (current ? `${current} ${text}` : text)));
-    },
+    onRecording: (recording) => void onSendVoice(recording, newClientNonce()),
   });
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionHighlightIndex, setMentionHighlightIndex] = useState(0);
@@ -6963,6 +7014,25 @@ const MessageView = memo(function MessageView({
               <McpApprovalCard botId={botId} threadId={message.threadId} block={block} />
             </div>
           );
+        }
+        if (block.kind === "voice") {
+          return (
+            <div
+              key={i}
+              className={`flex w-full ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <VoiceMessageBubble
+                target={artifactTarget}
+                block={block}
+                transcript={voiceTranscript(message.blocks)}
+                fromUser={message.role === "user"}
+              />
+            </div>
+          );
+        }
+        // A voice message's transcript lives inside its bubble.
+        if (block.kind === "text" && message.blocks.some((item) => item.kind === "voice")) {
+          return null;
         }
         if (block.kind === "image") {
           return (

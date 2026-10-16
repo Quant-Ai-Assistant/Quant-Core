@@ -833,4 +833,12 @@ export const RU_MESSAGES: Record<string, string> = {
   "Model for tasks": "Модель для задач",
   "Bot's model": "Модель бота",
   "Install the latest fixes": "Установить свежие исправления",
+  "Allow the microphone to record": "Разрешите доступ к микрофону для записи",
+  "Could not record": "Не удалось записать",
+  "Hold to record, release to send": "Удерживайте для записи, отпустите — отправится",
+  "Record voice message": "Записать голосовое сообщение",
+  "Slide to cancel": "Влево — отмена",
+  "Voice message": "Голосовое сообщение",
+  "Play voice message": "Слушать голосовое",
+  "Pause voice message": "Пауза",
 };

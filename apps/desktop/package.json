@@ -80,7 +80,11 @@
       ],
       "notarize": false,
       "identity": "-",
-      "hardenedRuntime": false
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Quant records your voice messages and calls.",
+        "NSSpeechRecognitionUsageDescription": "Quant turns your voice messages into text on this Mac."
+      }
     },
     "win": {
       "icon": "assets/icon.ico",

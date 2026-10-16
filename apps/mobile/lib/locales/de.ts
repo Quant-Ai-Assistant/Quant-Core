@@ -832,4 +832,12 @@ export const DE_MESSAGES: Record<string, string> = {
   "Model for tasks": "Modell für Aufgaben",
   "Bot's model": "Modell des Bots",
   "Install the latest fixes": "Neueste Korrekturen installieren",
+  "Allow the microphone to record": "Erlaube das Mikrofon für die Aufnahme",
+  "Could not record": "Aufnahme fehlgeschlagen",
+  "Hold to record, release to send": "Zum Aufnehmen halten, zum Senden loslassen",
+  "Record voice message": "Sprachnachricht aufnehmen",
+  "Slide to cancel": "Zum Abbrechen wischen",
+  "Voice message": "Sprachnachricht",
+  "Play voice message": "Sprachnachricht abspielen",
+  "Pause voice message": "Sprachnachricht pausieren",
 };

@@ -808,4 +808,12 @@ export const ZH_MESSAGES: Record<string, string> = {
   "Model for tasks": "任务模型",
   "Bot's model": "机器人的模型",
   "Install the latest fixes": "安装最新修复",
+  "Allow the microphone to record": "请允许使用麦克风录音",
+  "Could not record": "无法录音",
+  "Hold to record, release to send": "按住录音，松开发送",
+  "Record voice message": "录制语音消息",
+  "Slide to cancel": "滑动取消",
+  "Voice message": "语音消息",
+  "Play voice message": "播放语音消息",
+  "Pause voice message": "暂停语音消息",
 };

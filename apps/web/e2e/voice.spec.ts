@@ -31,7 +31,9 @@ test("voice settings connect a key, speak a reply, and open a call", async ({ pa
     page.getByTestId("composer-bar").getByRole("button", { name: "Voice", exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByTestId("composer-bar").getByRole("button", { name: "Hold to talk", exact: true }),
+    page
+      .getByTestId("composer-bar")
+      .getByRole("button", { name: "Record voice message", exact: true }),
   ).toHaveCount(1);
   // Calls are live conversations: without the OpenAI voice connection there is no call button.
   await expect(page.getByTestId("call-button")).toHaveCount(0);
@@ -121,18 +123,26 @@ test("voice settings connect a key, speak a reply, and open a call", async ({ pa
   await expect(page.getByTestId("call-view")).toHaveCount(0);
   await expect(page.getByTestId("call-return-bar")).toHaveCount(0);
 
-  const mic = page.getByRole("button", { name: "Hold to talk", exact: true });
+  const mic = page.getByRole("button", { name: "Record voice message", exact: true });
   const micBounds = await mic.boundingBox();
   if (!micBounds) throw new Error("Missing composer microphone");
   await page.mouse.move(micBounds.x + micBounds.width / 2, micBounds.y + micBounds.height / 2);
   await page.mouse.down();
   await expect(page.getByTestId("hold-to-talk-strip")).toBeVisible();
-  await captureScreenshot(page, testInfo, "composer-mic-dictation");
+  await captureScreenshot(page, testInfo, "composer-voice-recording");
   // Lock and discard so the screenshot's recording never sends a chat message.
   await page.mouse.move(micBounds.x + micBounds.width / 2, micBounds.y - 100);
   await page.mouse.up();
   await page.getByRole("button", { name: "Discard recording" }).click();
   await expect(page.getByTestId("hold-to-talk-strip")).toHaveCount(0);
+
+  // Hold, speak and release: the recording itself lands in the chat as a voice message.
+  await page.mouse.move(micBounds.x + micBounds.width / 2, micBounds.y + micBounds.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(1_500);
+  await page.mouse.up();
+  await expect(page.getByTestId("transcript").getByTestId("voice-message")).toBeVisible();
+  await captureScreenshot(page, testInfo, "voice-message");
 
   await openUserSettings(page, "voice");
   const settings = page.getByTestId("voice-settings");

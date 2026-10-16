@@ -17,10 +17,11 @@ import {
 
 describe("toVoiceStatus", () => {
   it("treats a saved key without a voice as configured but not ready", () => {
-    expect(toVoiceStatus({ provider: "elevenlabs", voiceId: "" })).toEqual({
+    expect(toVoiceStatus({ provider: "elevenlabs", voiceId: "" }, "linux")).toEqual({
       configured: true,
       ready: false,
       transcribe: true,
+      voiceMessages: true,
       provider: "elevenlabs",
       voiceId: "",
     });
@@ -31,11 +32,16 @@ describe("toVoiceStatus", () => {
     expect(toVoiceStatus({ provider: "cartesia", voiceId: "katie" }).transcribe).toBe(false);
   });
 
+  it("transcribes voice messages on a Mac with no provider", () => {
+    expect(toVoiceStatus(null, "darwin").voiceMessages).toBe(true);
+  });
+
   it("is off when nothing is connected", () => {
-    expect(toVoiceStatus(null)).toEqual({
+    expect(toVoiceStatus(null, "linux")).toEqual({
       configured: false,
       ready: false,
       transcribe: false,
+      voiceMessages: false,
       provider: null,
       voiceId: "",
     });

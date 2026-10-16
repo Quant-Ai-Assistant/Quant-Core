@@ -33,6 +33,8 @@ export type SendPayload = {
   attachments: PickedAttachment[];
   replyTargetId?: string;
   replyQuote: string | null;
+  /** A voice message: its recording is the attachment with this id. */
+  voice?: { attachmentId: string; durationMs: number; waveform: number[]; language?: string };
 };
 
 export type SendAttempt = {
@@ -70,6 +72,7 @@ export async function deliverSend(
   }
   if (!plan.shouldSend) return undefined;
   const artifactIds: string[] = [];
+  let voiceArtifactId: string | undefined;
   for (const [index, pending] of attachments.entries()) {
     let id = attempt.artifactIds.get(pending.id);
     if (!id) {
@@ -87,7 +90,8 @@ export async function deliverSend(
       id = artifact.id;
       attempt.artifactIds.set(pending.id, id);
     }
-    artifactIds.push(id);
+    if (pending.id === payload.voice?.attachmentId) voiceArtifactId = id;
+    else artifactIds.push(id);
   }
   const sent = await request<{ seq: number }>("threads/send", {
     ...(groupTarget ? { groupId: groupTarget } : { botId: botTarget! }),
@@ -97,6 +101,15 @@ export async function deliverSend(
     artifactIds: artifactIds.length ? artifactIds : undefined,
     replyToMessageId: reroutedToGroup ? undefined : payload.replyTargetId,
     replyQuote: reroutedToGroup ? undefined : (payload.replyQuote ?? undefined),
+    voice:
+      payload.voice && voiceArtifactId
+        ? {
+            artifactId: voiceArtifactId,
+            durationMs: payload.voice.durationMs,
+            waveform: payload.voice.waveform,
+            language: payload.voice.language,
+          }
+        : undefined,
   });
   return sent.seq;
 }
