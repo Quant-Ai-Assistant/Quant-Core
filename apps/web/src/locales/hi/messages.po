@@ -4187,6 +4187,7 @@ msgid "Send reset link"
 msgstr "रीसेट लिंक भेजें"
 
 #: src/components/AskCard.tsx
+#: src/pages/Shell.tsx
 #: src/pages/shell/voice-message.tsx
 msgid "Sending…"
 msgstr "भेजा जा रहा है…"
@@ -4991,6 +4992,10 @@ msgstr ""
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Voice"
 msgstr "आवाज़"
+
+#: src/pages/Shell.tsx
+msgid "Voice message"
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Wait a moment and test again."

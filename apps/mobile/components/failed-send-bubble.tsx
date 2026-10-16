@@ -1,22 +1,33 @@
 import { ActionSheetIOS, Alert, Image, Platform, Pressable, Text, View } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useI18n } from "../lib/i18n";
 import { useMobileTokens } from "../lib/native";
 import type { SendAttempt } from "../lib/thread-feedback";
 import { NativeSymbol } from "./native-symbol";
 
+/** Rises out of the composer; an inverted list flips its cells, so its "down" is up. */
+const RISE_MS = 220;
+
+/**
+ * A send that has no message yet. While it is on its way it looks like the message it will
+ * become, with a clock, and gives way to it in place; a failed send says so and offers a retry.
+ */
 export function FailedSendBubble({
   attempt,
   onRetry,
   onDelete,
+  inverted,
 }: {
   attempt: SendAttempt;
   onRetry: () => void;
   onDelete: () => void;
+  inverted: boolean;
 }) {
   const { t } = useI18n();
   const tokens = useMobileTokens();
   const { payload, state } = attempt;
-  const sending = state === "pending";
+  // A send waits in the queue for a moment before it goes; only an error makes it unsent.
+  const sending = state === "pending" || (state === "queued" && !attempt.error);
   const retryable = state === "failed" || state === "queued";
   const caption = sending
     ? t("Sending…")
@@ -53,6 +64,71 @@ export function FailedSendBubble({
     }
   }
 
+  const entering = (inverted ? FadeInDown : FadeInUp).duration(RISE_MS);
+  if (sending) {
+    return (
+      <Animated.View
+        entering={entering}
+        accessible
+        accessibilityLabel={messageLabel ? `${messageLabel}. ${caption}` : caption}
+        style={{ alignSelf: "flex-end", maxWidth: "90%", marginTop: 12 }}
+      >
+        <View
+          style={{
+            backgroundColor: tokens.secondary,
+            padding: 12,
+            borderRadius: 20,
+            gap: 8,
+          }}
+        >
+          {payload.replyPreview ? (
+            <Text
+              numberOfLines={3}
+              style={{
+                color: tokens.mutedForeground,
+                fontSize: 13,
+                borderLeftWidth: 2,
+                borderLeftColor: tokens.border,
+                paddingLeft: 8,
+              }}
+            >
+              {payload.replyPreview}
+            </Text>
+          ) : null}
+          {payload.displayText ? (
+            <Text style={{ color: tokens.secondaryForeground, fontSize: 15.5, lineHeight: 23 }}>
+              {payload.displayText}
+            </Text>
+          ) : payload.voice ? (
+            <Text style={{ color: tokens.secondaryForeground, fontSize: 15.5, lineHeight: 23 }}>
+              {t("Voice message")}
+            </Text>
+          ) : null}
+          {payload.attachments.map((attachment) =>
+            attachment.previewUri ? (
+              <Image
+                key={attachment.id}
+                source={{ uri: attachment.previewUri }}
+                style={{ width: 180, height: 120, borderRadius: 12 }}
+              />
+            ) : payload.voice?.attachmentId === attachment.id ? null : (
+              <Text key={attachment.id} style={{ color: tokens.secondaryForeground, fontSize: 13 }}>
+                {attachment.name}
+              </Text>
+            ),
+          )}
+          <View style={{ alignSelf: "flex-end", marginTop: -4 }}>
+            <NativeSymbol
+              ios="clock"
+              android="time-outline"
+              size={12}
+              color={tokens.mutedForeground}
+            />
+          </View>
+        </View>
+      </Animated.View>
+    );
+  }
   return (
     <Pressable
       accessibilityRole="button"

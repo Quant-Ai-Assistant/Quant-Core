@@ -35,6 +35,8 @@ import {
 } from "@rakazo/contracts";
 import type { ComposerMention, SlashActionId } from "@rakazo/core";
 import {
+  type AppearState,
+  appearState,
   attachmentExtensionForMimeType,
   attachmentsForThread,
   buildComposerMentionOptions,
@@ -44,12 +46,14 @@ import {
   groupVoiceChats,
   inferAttachmentMimeType,
   isActive,
+  isArriving,
   isPeerReceiptBlocks,
   isRunTerminalEvent,
   isToolActivityBlock,
   latestAnswerableAskMessageId,
   mentionChipKey,
   nestRosterByParent,
+  noteArrivals,
   plainTextFromMarkdown,
   projectMessageReactions,
   reorderBotTo,
@@ -93,6 +97,7 @@ import {
   ChevronDown,
   CircleAlert,
   Clock,
+  Clock3,
   Copy,
   FolderOpen,
   Gauge,
@@ -301,7 +306,7 @@ import {
   McpApprovalCard,
 } from "./shell/message-cards";
 import { commitSpaceRename, sidebarGroupsForSpaces } from "./shell/space-sidebar";
-import { VoiceMessageBubble, voiceTranscript } from "./shell/voice-message";
+import { formatVoiceTime, VoiceMessageBubble, voiceTranscript } from "./shell/voice-message";
 import { WindowChrome } from "./WindowChrome";
 
 const BotContextMenu = lazyOverlay(() =>
@@ -2107,6 +2112,15 @@ export function ShellPage() {
     revokePendingAttachmentPreviews([attachment]);
     setPendingAttachments((current) => current.filter((item) => item.id !== attachment.id));
   }, []);
+  /** Sends on their way, drawn as the message they will become until it arrives. */
+  const [pendingSends, setPendingSends] = useState<PendingSend[]>([]);
+  const dropPendingSend = useCallback((clientNonce: string) => {
+    setPendingSends((current) => current.filter((send) => send.clientNonce !== clientNonce));
+  }, []);
+  const activePendingSends = useMemo(() => {
+    const threadKey = inGroup ? groupId : active?.id;
+    return pendingSends.filter((send) => send.threadKey === threadKey);
+  }, [pendingSends, inGroup, groupId, active?.id]);
   const sendMessage = useCallback(
     async (text: string, mentions: ComposerMention[], clientNonce: string) => {
       const initialBotTarget = activeBotId.current;
@@ -2136,6 +2150,17 @@ export function ShellPage() {
       sendingRef.current = true;
       setSending(true);
       setSendError(null);
+      if (plan.shouldSend && !reroutedToGroup && originThreadKey) {
+        setPendingSends((current) => [
+          ...current,
+          {
+            clientNonce,
+            threadKey: originThreadKey,
+            text: trimmed,
+            attachments: attachments.map((pending) => pending.file.name),
+          },
+        ]);
+      }
       const dropDelayedSetup = () => {
         // Only after successful engagement so a failed upload/send keeps the setup card.
         if (initialBotTarget && focusPromptBotIdRef.current === initialBotTarget) {
@@ -2241,10 +2266,16 @@ export function ShellPage() {
         }
         if (groupTarget && activeGroupId.current === groupTarget) setAttachmentNotice(null);
         if (botTarget && activeBotId.current === botTarget) setAttachmentNotice(null);
-        if (groupTarget) void refreshGroupThreadRef.current(groupTarget).catch(() => undefined);
-        else if (botTarget) void refreshThreadRef.current(botTarget).catch(() => undefined);
+        const refreshed = groupTarget
+          ? refreshGroupThreadRef.current(groupTarget)
+          : botTarget
+            ? refreshThreadRef.current(botTarget)
+            : Promise.resolve();
+        // The message normally replaces its bubble first; this only cleans up after it.
+        void refreshed.catch(() => undefined).finally(() => dropPendingSend(clientNonce));
         return true;
       } catch (error) {
+        dropPendingSend(clientNonce);
         if (reroutedToGroup && groupTarget) {
           setSendError(errorText(error, t`Failed to send message`));
         } else if (groupTarget && activeGroupId.current === groupTarget) {
@@ -2262,6 +2293,7 @@ export function ShellPage() {
       activeReplyTarget?.id,
       activeReplyQuote,
       clearReply,
+      dropPendingSend,
       flushPendingBrowserNotifications,
       navigate,
       pendingAttachments,
@@ -2276,6 +2308,11 @@ export function ShellPage() {
       const groupTarget = activeGroupId.current;
       if (!botTarget && !groupTarget) return false;
       setSendError(null);
+      const threadKey = groupTarget ?? botTarget!;
+      setPendingSends((current) => [
+        ...current,
+        { clientNonce, threadKey, text: "", attachments: [], voiceMs: recording.durationMs },
+      ]);
       try {
         const contentBase64 = await readFileAsBase64(recording.blob);
         const name = `voice${attachmentExtensionForMimeType(recording.mimeType)}`;
@@ -2308,18 +2345,20 @@ export function ShellPage() {
               terminalRunReceipts.current,
             ),
           );
-          void refreshThreadRef.current(botTarget).catch(() => undefined);
-        } else if (groupTarget) {
-          void refreshGroupThreadRef.current(groupTarget).catch(() => undefined);
         }
         void refreshBots().catch(() => undefined);
+        const refreshed = groupTarget
+          ? refreshGroupThreadRef.current(groupTarget)
+          : refreshThreadRef.current(botTarget!);
+        void refreshed.catch(() => undefined).finally(() => dropPendingSend(clientNonce));
         return true;
       } catch (error) {
+        dropPendingSend(clientNonce);
         setSendError(errorText(error, t`Failed to send message`));
         return false;
       }
     },
-    [activeReplyTarget?.id, activeReplyQuote, clearReply, t],
+    [activeReplyTarget?.id, activeReplyQuote, clearReply, dropPendingSend, t],
   );
   const stopRun = useCallback(async () => {
     if (sending) return;
@@ -3757,6 +3796,7 @@ export function ShellPage() {
         ) : (
           <Transcript
             key={activeSnapshot?.threadId}
+            pendingSends={activePendingSends}
             scrollRef={messageScroll}
             scrollRequest={scrollRequest}
             onScrollRequestHandled={clearScrollRequest}
@@ -4918,6 +4958,7 @@ export function ShellPage() {
 }
 
 const Transcript = memo(function Transcript({
+  pendingSends,
   scrollRef,
   scrollRequest,
   onScrollRequestHandled,
@@ -4948,6 +4989,7 @@ const Transcript = memo(function Transcript({
   onSpeak,
   onOpenComputer,
 }: {
+  pendingSends: PendingSend[];
   scrollRef: RefObject<HTMLDivElement | null>;
   scrollRequest: { messageId: string; nonce: number } | null;
   onScrollRequestHandled: () => void;
@@ -4991,6 +5033,22 @@ const Transcript = memo(function Transcript({
     [messages],
   );
   const reactionView = useMemo(() => projectMessageReactions(messages), [messages]);
+  // A send gives way in the same frame its message arrives, so it is never shown twice.
+  const waitingSends = pendingSends.filter(
+    (send) => !messages.some((message) => message.clientNonce === send.clientNonce),
+  );
+  const arrivals = useRef<{ messages: ThreadMessage[]; state: AppearState } | null>(null);
+  if (!arrivals.current) {
+    arrivals.current = { messages, state: appearState() };
+    noteArrivals(arrivals.current.state, messages, { first: true, now: Date.now() });
+  } else if (arrivals.current.messages !== messages) {
+    arrivals.current.messages = messages;
+    noteArrivals(arrivals.current.state, messages, {
+      first: arrivals.current.state.seen.size === 0,
+      now: Date.now(),
+    });
+  }
+  const arrivalState = arrivals.current.state;
   const separatorIds = timeSeparatorIds(
     reactionView.visibleMessages.filter((message) =>
       messageHasVisibleBlocks(message.blocks, showToolActivity),
@@ -5164,6 +5222,17 @@ const Transcript = memo(function Transcript({
     if (following.current) snapToEnd();
   }, [messages, running, snapToEnd]);
 
+  // Your own send always brings the thread to its end, where the message is rising in.
+  const waitingCount = waitingSends.length;
+  const previousWaiting = useRef(waitingCount);
+  useLayoutEffect(() => {
+    if (waitingCount > previousWaiting.current) {
+      following.current = true;
+      snapToEnd();
+    }
+    previousWaiting.current = waitingCount;
+  }, [waitingCount, snapToEnd]);
+
   useLayoutEffect(() => {
     const button = jumpButtonRef.current;
     if (atEnd && button && document.activeElement === button) {
@@ -5280,7 +5349,10 @@ const Transcript = memo(function Transcript({
               ) : null}
               <div
                 data-message-id={message.id}
-                className={peerReceipt ? "relative py-0.5" : "group/message relative hover:z-20"}
+                className={cn(
+                  peerReceipt ? "relative py-0.5" : "group/message relative hover:z-20",
+                  isArriving(arrivalState, message.id, Date.now()) && ARRIVE_CLASS,
+                )}
               >
                 <div
                   className={
@@ -5388,6 +5460,9 @@ const Transcript = memo(function Transcript({
             </Fragment>
           );
         })}
+        {waitingSends.map((send) => (
+          <PendingSendBubble key={send.clientNonce} send={send} />
+        ))}
         {running &&
         !messages.some(
           (message) =>
@@ -6379,6 +6454,40 @@ export const Composer = memo(function Composer({
 });
 
 type ComposerLayout = { barHeight: number; fieldX: number; fieldY: number };
+
+/** A new message rises from the composer, as in Telegram; reduced motion keeps it still. */
+const ARRIVE_CLASS =
+  "animate-in fade-in slide-in-from-bottom-3 duration-200 ease-out motion-reduce:animate-none";
+
+/** A send on its way: drawn as the user's message until the real one replaces it. */
+type PendingSend = {
+  clientNonce: string;
+  threadKey: string;
+  text: string;
+  attachments: string[];
+  voiceMs?: number;
+};
+
+function PendingSendBubble({ send }: { send: PendingSend }) {
+  const { t } = useLingui();
+  return (
+    <div data-testid="pending-send" className={cn("flex justify-end", ARRIVE_CLASS)}>
+      <div className="flex max-w-[min(84%,calc(100%_-_8rem))] items-end gap-2 rounded-[20px] bg-chat-user px-[18px] py-3 text-[15.5px] leading-[1.45] text-chat-user-foreground [@media(hover:none)]:max-w-[84%]">
+        <span className="min-w-0 whitespace-pre-wrap wrap-anywhere" dir="auto">
+          {send.voiceMs !== undefined
+            ? `${t`Voice message`} · ${formatVoiceTime(send.voiceMs)}`
+            : [send.text, ...send.attachments].filter(Boolean).join("\n")}
+        </span>
+        <Clock3
+          size={12}
+          strokeWidth={2}
+          aria-label={t`Sending…`}
+          className="mb-1 shrink-0 opacity-60"
+        />
+      </div>
+    </div>
+  );
+}
 
 /** Screen coordinates; the bar grows upward from its bottom edge. */
 function readComposerLayout(

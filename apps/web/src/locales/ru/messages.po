@@ -4187,6 +4187,7 @@ msgid "Send reset link"
 msgstr "Отправить ссылку для сброса"
 
 #: src/components/AskCard.tsx
+#: src/pages/Shell.tsx
 #: src/pages/shell/voice-message.tsx
 msgid "Sending…"
 msgstr "Отправка…"
@@ -4991,6 +4992,10 @@ msgstr "Виртуальный"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Voice"
 msgstr "Голос"
+
+#: src/pages/Shell.tsx
+msgid "Voice message"
+msgstr "Голосовое сообщение"
 
 #: src/lib/model-connection-preflight.ts
 msgid "Wait a moment and test again."

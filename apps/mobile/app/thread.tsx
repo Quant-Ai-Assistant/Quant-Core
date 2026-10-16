@@ -12,6 +12,7 @@ import { canReactToThreadMessage, MESSAGE_REACTIONS } from "@rakazo/contracts";
 import type { SlashActionId, ThreadItem } from "@rakazo/core";
 import {
   abortableDelay,
+  appearState,
   appendNewerThreadPage,
   attachmentsForThread,
   buildComposerMentionOptions,
@@ -21,11 +22,13 @@ import {
   forwardProbeAfterPage,
   groupVoiceChats,
   isApprovalAskBlock,
+  isArriving,
   isPeerReceiptBlocks,
   isRunTerminalEvent,
   isSecretAskBlock,
   latestAnswerableAskMessageId,
   leaveThreadWindow,
+  noteArrivals,
   openThreadWindow,
   plainTextFromMarkdown,
   projectMessageReactions,
@@ -85,7 +88,7 @@ import {
   View,
 } from "react-native";
 import { KeyboardAvoidingView, useKeyboardState } from "react-native-keyboard-controller";
-import { useReducedMotion } from "react-native-reanimated";
+import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppConnectCard } from "../components/AppConnectCard";
 import { AskActions } from "../components/AskActions";
@@ -269,6 +272,9 @@ function speakableMessageText(message: MobileMessage): string {
     .filter((line) => line.length > 0 && !ATTACHMENT_PLACEHOLDER_LINE.test(line))
     .join("\n");
 }
+
+/** How long a new message takes to rise into the thread. */
+const ARRIVE_MS = 220;
 
 export default function ThreadRoute() {
   const generation = useSyncExternalStore(subscribeSessionGeneration, currentSessionGeneration);
@@ -1763,6 +1769,16 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
     }
   }
 
+  /** Keys of the user's sends this thread already shows. */
+  const shownNonces = useMemo(
+    () =>
+      new Set(
+        (snap && (snap.groupId ?? snap.botId) === threadKey ? snap.messages : []).flatMap(
+          (message) => (message.clientNonce ? [message.clientNonce] : []),
+        ),
+      ),
+    [snap, threadKey],
+  );
   const afterDeliveredRef = useRef(afterDelivered);
   afterDeliveredRef.current = afterDelivered;
   useEffect(() => subscribeDelivered((attempt) => afterDeliveredRef.current(attempt)), []);
@@ -1773,9 +1789,10 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
         snap.messages.flatMap((message) =>
           message.role === "user" && message.seq !== undefined ? [message.seq] : [],
         ),
+        shownNonces,
       );
     }
-  }, [snap, threadKey]);
+  }, [snap, threadKey, shownNonces]);
 
   async function stop() {
     if (readOnly) return;
@@ -1977,6 +1994,15 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
   );
   // Group calls in reading order, then reverse for the inverted list.
   const liveItems = useMemo(() => groupVoiceChats(visibleMessages).reverse(), [visibleMessages]);
+  const arrivals = useRef({ key: threadKey, messages: visibleMessages, state: appearState() });
+  if (arrivals.current.key !== threadKey) {
+    arrivals.current = { key: threadKey, messages: visibleMessages, state: appearState() };
+    noteArrivals(arrivals.current.state, visibleMessages, { first: true, now: Date.now() });
+  } else if (arrivals.current.messages !== visibleMessages) {
+    const first = arrivals.current.state.seen.size === 0;
+    arrivals.current.messages = visibleMessages;
+    noteArrivals(arrivals.current.state, visibleMessages, { first, now: Date.now() });
+  }
   const messagesById = useMemo(
     () => new Map((snap?.messages ?? []).map((message) => [message.id, message])),
     [snap?.messages],
@@ -2168,7 +2194,7 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
         ? (snap?.activeRuns?.find((run) => run.botId === activityBotId)?.status ??
           (snap?.run?.botId === activityBotId ? snap.run.status : currentBotStatus))
         : undefined;
-      return (
+      const row = (
         <MessageRow
           key={message.id}
           message={message}
@@ -2195,6 +2221,14 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
           enableJump={options?.enableJump ?? false}
           index={options?.index ?? 0}
         />
+      );
+      // The list is inverted, so its cells' "down" is up: a new message rises from the composer.
+      return isArriving(arrivals.current.state, message.id, Date.now()) ? (
+        <Animated.View key={message.id} entering={FadeInDown.duration(ARRIVE_MS)}>
+          {row}
+        </Animated.View>
+      ) : (
+        row
       );
     },
     [
@@ -2313,14 +2347,18 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
       </Pressable>
     ) : null;
 
-  const failedSendBubbles = feedback.unsentSends.map((attempt) => (
-    <FailedSendBubble
-      key={attempt.clientNonce}
-      attempt={attempt}
-      onRetry={() => void deliver(attempt, true)}
-      onDelete={() => feedback.discard(attempt)}
-    />
-  ));
+  // A send whose message is already on screen gives way in the same frame, never shown twice.
+  const failedSendBubbles = feedback.unsentSends
+    .filter((attempt) => !shownNonces.has(attempt.clientNonce))
+    .map((attempt) => (
+      <FailedSendBubble
+        key={attempt.clientNonce}
+        attempt={attempt}
+        onRetry={() => void deliver(attempt, true)}
+        onDelete={() => feedback.discard(attempt)}
+        inverted={!showPinnedPage}
+      />
+    ));
 
   return (
     <KeyboardAvoidingView

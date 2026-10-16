@@ -687,6 +687,11 @@ describe("thread message pages", () => {
     const page = await loadMessagePage(prisma, "thread-1", undefined, 2);
 
     expect(page.messages.map((message) => message.callId)).toEqual([undefined, "call-1"]);
+    // The sender's key lets its device swap the bubble it drew for the real message.
+    expect(page.messages.map((message) => message.clientNonce)).toEqual([
+      "plain-nonce",
+      "call:call-1:abc",
+    ]);
   });
 });
 
