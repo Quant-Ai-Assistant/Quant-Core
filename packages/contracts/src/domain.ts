@@ -94,6 +94,17 @@ export const BotSchema = z.object({
 });
 export type Bot = z.infer<typeof BotSchema>;
 
+/** One row of the desktop's assistant controls: what the bot is doing and whether it is off. */
+export const BotControlSchema = z.object({
+  id: Id,
+  name: z.string(),
+  color: z.string(),
+  /** The active run's status, or "idle". */
+  status: z.string(),
+  paused: z.boolean(),
+});
+export type BotControl = z.infer<typeof BotControlSchema>;
+
 export const ReorderBotsInput = z.object({
   botIds: z
     .array(Id)

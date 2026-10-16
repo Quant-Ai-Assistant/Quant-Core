@@ -135,6 +135,7 @@ export async function openUserSettings(
     | "usage"
     | "computer"
     | "billing"
+    | "host"
     | "updates",
 ) {
   await page.getByTestId("user-menu-trigger").click();

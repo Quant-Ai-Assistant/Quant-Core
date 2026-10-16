@@ -35,6 +35,7 @@ import {
   ArtifactWithContentSchema,
   AvatarStyleSchema,
   BillingStatusSchema,
+  BotControlSchema,
   BotMcpServerSchema,
   BotSchema,
   BotSectionSchema,
@@ -302,6 +303,16 @@ export const appContract = {
     restore: oc.input(botId).output(z.object({ ok: z.literal(true) })),
     remove: oc
       .input(z.object({ botId: Id, deleteMemories: z.boolean().default(false) }))
+      .output(z.object({ ok: z.literal(true) })),
+    controls: oc.output(z.array(BotControlSchema)),
+    /** Cancels whatever the bot is doing now; it stays on. */
+    stop: oc.input(botId).output(z.object({ ok: z.literal(true) })),
+    /** Turning a bot off also cancels what it is doing. */
+    setPaused: oc
+      .input(z.object({ botId: Id, paused: z.boolean() }))
+      .output(z.object({ ok: z.literal(true) })),
+    setAllPaused: oc
+      .input(z.object({ paused: z.boolean() }))
       .output(z.object({ ok: z.literal(true) })),
     rotateWebhookSecret: oc.input(botId).output(
       z.object({

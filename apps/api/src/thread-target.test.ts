@@ -9,6 +9,7 @@ import {
   cancelSupersededQueuedRuns,
   reactToThreadMessage,
   sendThreadMessage,
+  stopBotRuns,
   stopThreadRuns,
   threadHead,
   threadSnapshot,
@@ -3465,5 +3466,69 @@ describe("stopThreadRuns", () => {
     expect(transaction.event.deleteMany).not.toHaveBeenCalled();
     expect(transaction.thread.update).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
+  });
+});
+
+describe("stopBotRuns", () => {
+  it("cancels only this bot's runs in each thread it works in", async () => {
+    let nextEventSeq = 0;
+    const transaction = {
+      $queryRaw: vi.fn(),
+      thread: { update: vi.fn(async () => ({ nextEventSeq: ++nextEventSeq })) },
+      run: {
+        updateManyAndReturn: vi.fn(async ({ where }: { where: { threadId: string } }) => [
+          { id: `run-${where.threadId}`, botId: "bot-a" },
+        ]),
+        findUnique: vi.fn().mockResolvedValue({ status: "cancelled" }),
+      },
+      steeringMessage: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      computer: { findMany: vi.fn().mockResolvedValue([]) },
+      computerExecutionLease: { findMany: vi.fn().mockResolvedValue([]) },
+      event: {
+        create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => data),
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    const findMany = vi.fn().mockResolvedValue([{ threadId: "own" }, { threadId: "group" }]);
+    const prisma = {
+      run: { findMany },
+      $transaction: vi.fn(async (callback: (client: typeof transaction) => unknown) =>
+        callback(transaction),
+      ),
+      computer: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      computerExecutionLease: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    } as unknown as PrismaClient;
+    const notify = vi.fn().mockResolvedValue(undefined);
+
+    await stopBotRuns(
+      { prisma, sandbox: {} as SandboxProvider, events: { notify } as never },
+      { spaceId: "workspace-1", userId: "user-1" } as Actor,
+      ["bot-a"],
+    );
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ spaceId: "workspace-1", botId: { in: ["bot-a"] } }),
+      }),
+    );
+    expect(transaction.run.updateManyAndReturn).toHaveBeenCalledTimes(2);
+    for (const threadId of ["own", "group"]) {
+      expect(transaction.run.updateManyAndReturn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ threadId, botId: { in: ["bot-a"] } }),
+        }),
+      );
+      expect(notify).toHaveBeenCalledWith(threadId, expect.any(Number));
+    }
+  });
+
+  it("does nothing for no bots", async () => {
+    const prisma = { run: { findMany: vi.fn() } } as unknown as PrismaClient;
+    await stopBotRuns(
+      { prisma, sandbox: {} as SandboxProvider, events: {} as never },
+      { spaceId: "workspace-1", userId: "user-1" } as Actor,
+      [],
+    );
+    expect(prisma.run.findMany).not.toHaveBeenCalled();
   });
 });

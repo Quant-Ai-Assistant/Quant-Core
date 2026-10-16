@@ -55,7 +55,23 @@ export interface RakazoDesktopOAuthCallback {
   state?: string;
 }
 
+export interface DesktopHostState {
+  keepAwake: boolean;
+  /** The server this app runs itself; null when it is connected to another one. */
+  server: { running: boolean; port: number | null } | null;
+}
+
+/** Controls over the computer the desktop app runs on. */
+export interface RakazoDesktopHost {
+  state: () => Promise<DesktopHostState>;
+  setKeepAwake: (on: boolean) => Promise<DesktopHostState>;
+  /** Stops the server this app runs and frees its port; a small window offers to start it. */
+  stopServer: () => Promise<void>;
+}
+
 export interface RakazoDesktop {
+  /** Optional: older desktop apps have no host controls. */
+  host?: RakazoDesktopHost;
   /** Only the isolated local settings window is authorized to call this bridge. */
   localSettings?: {
     request: (pathname: string, body: string) => Promise<{ status: number; body: string }>;

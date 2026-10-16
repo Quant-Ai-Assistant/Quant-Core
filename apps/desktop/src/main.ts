@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { DesktopReachability, DesktopSetup } from "@rakazo/contracts";
+import type { DesktopHostState, DesktopReachability, DesktopSetup } from "@rakazo/contracts";
 import { LOCAL_SETTINGS_PAGE } from "@rakazo/contracts/local-settings";
 import {
   app,
@@ -12,6 +12,7 @@ import {
   Menu,
   nativeImage,
   net,
+  powerSaveBlocker,
   type Session,
   safeStorage,
   session,
@@ -31,6 +32,7 @@ import { runDocker } from "./docker-cli.js";
 import type { BuildInfo } from "./edge-update.js";
 import { activeBuild, EdgeUpdater, forgetStaleBuild, systemExtract } from "./edge-update.js";
 import { startFrontServer } from "./front-server.js";
+import { KeepAwake, readKeepAwake, writeKeepAwake } from "./keep-awake.js";
 import {
   envTemplatePath,
   GATE_DEFAULT_PORT,
@@ -141,6 +143,9 @@ let localStack: LocalServerController;
 let tray: Tray | null = null;
 /** Set once the local server has stopped, so the next quit goes through. */
 let serverStopped = false;
+/** Shown instead of the app while the person has turned the server this app runs off. */
+let serverOffWindow: BrowserWindow | null = null;
+const keepAwake = new KeepAwake(powerSaveBlocker);
 
 markOnce("rk:main:module-evaluated");
 if (PERFORMANCE_USER_DATA) {
@@ -168,6 +173,60 @@ function windowFrom(event: Electron.IpcMainInvokeEvent) {
 
 function fromMainWindow(event: Electron.IpcMainInvokeEvent) {
   return mainWindow !== null && windowFrom(event) === mainWindow;
+}
+
+function fromServerOffWindow(event: Electron.IpcMainInvokeEvent) {
+  return serverOffWindow !== null && windowFrom(event) === serverOffWindow;
+}
+
+async function hostState(userDataDir: string): Promise<DesktopHostState> {
+  return {
+    keepAwake: keepAwake.on(),
+    server:
+      currentSetup?.mode === "new"
+        ? {
+            running: localStack.ready(),
+            port: (await readStackGate(stackDir(userDataDir)))?.port ?? null,
+          }
+        : null,
+  };
+}
+
+function showServerOffWindow() {
+  if (serverOffWindow !== null && !serverOffWindow.isDestroyed()) {
+    serverOffWindow.show();
+    serverOffWindow.focus();
+    return;
+  }
+  const icon = developmentIcon();
+  const win = new BrowserWindow({
+    ...setupWindowOptions(process.platform),
+    width: 480,
+    height: 360,
+    minHeight: 300,
+    ...(icon ? { icon } : {}),
+    webPreferences: {
+      preload: path.join(import.meta.dirname, "server-off-preload.cjs"),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+    },
+  });
+  serverOffWindow = win;
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.once("closed", () => {
+    if (serverOffWindow === win) serverOffWindow = null;
+  });
+  void win.loadFile(path.join(import.meta.dirname, "server-off.html"));
+}
+
+/** Stops the server this app runs, freeing its port; the app stays in the tray until it is on. */
+async function stopOwnServer() {
+  if (currentSetup?.mode !== "new") return;
+  showServerOffWindow();
+  clearTimeout(warmWindowTimer);
+  if (mainWindow !== null && !mainWindow.isDestroyed()) mainWindow.destroy();
+  await localStack.stop();
 }
 
 /** Dock/taskbar icon for unpackaged launches; packaged builds get theirs from electron-builder. */
@@ -1139,6 +1198,27 @@ app.whenReady().then(async () => {
     },
   );
   ipcMain.handle("desktop.platform", () => process.platform);
+  keepAwake.set(await readKeepAwake(userDataDir));
+  ipcMain.handle("desktop.host.state", (event) =>
+    fromMainWindow(event) ? hostState(userDataDir) : null,
+  );
+  ipcMain.handle("desktop.host.setKeepAwake", async (event, on: unknown) => {
+    if (!fromMainWindow(event) || typeof on !== "boolean") return null;
+    keepAwake.set(on);
+    await writeKeepAwake(userDataDir, on).catch(() => undefined);
+    return hostState(userDataDir);
+  });
+  ipcMain.handle("desktop.host.stopServer", async (event) => {
+    if (fromMainWindow(event)) await stopOwnServer();
+  });
+  ipcMain.handle("desktop.serverOff.start", async (event) => {
+    if (!fromServerOffWindow(event)) return;
+    await openLocalServer(userDataDir);
+    serverOffWindow?.destroy();
+  });
+  ipcMain.handle("desktop.serverOff.quit", (event) => {
+    if (fromServerOffWindow(event)) app.quit();
+  });
   ipcMain.handle("desktop.window.close", (event) => {
     windowFrom(event)?.close();
   });
@@ -1402,6 +1482,12 @@ async function openLocalServer(userDataDir: string) {
 
 /** Brings back whatever window the app has: setup, the app itself, or a fresh one. */
 function showApp() {
+  const serverOff =
+    currentSetup?.mode === "new" && localStack !== undefined && localStack.state().phase === "idle";
+  if ((serverOffWindow !== null && !serverOffWindow.isDestroyed()) || serverOff) {
+    showServerOffWindow();
+    return;
+  }
   if (setupWindow !== null && !setupWindow.isDestroyed()) {
     setupWindow.show();
     setupWindow.focus();

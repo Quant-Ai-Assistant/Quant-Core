@@ -429,6 +429,10 @@ msgstr "Connexions d'agent"
 msgid "Agents:"
 msgstr "Agents :"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "All assistants are off"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "All bots"
 msgstr "Tous les bots"
@@ -619,6 +623,10 @@ msgstr "Demander avant d'envoyer un e-mail externe"
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Ask the server owner to configure this provider."
 msgstr "Demandez au propriétaire du serveur de configurer ce fournisseur."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Assistants"
+msgstr ""
 
 #. placeholder {0}: preset.time
 #: src/pages/RoutineSchedule.tsx
@@ -2090,6 +2098,14 @@ msgstr "Docker limite l'accès à votre ordinateur pour une sécurité renforcé
 msgid "Don’t have an account?"
 msgstr "Vous n'avez pas de compte ?"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this computer"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this Mac"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
@@ -2161,6 +2177,10 @@ msgstr "Cette adresse e-mail ne peut pas s’inscrire"
 #: src/lib/user-error.ts
 msgid "Email verification required"
 msgstr "Vérification de l’e-mail requise"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Emergency stop"
+msgstr ""
 
 #: src/pages/BillingSettingsPanel.tsx
 msgid "Ends {day}"
@@ -2499,6 +2519,10 @@ msgstr "Comment vérifier"
 msgid "I’m done"
 msgstr "J'ai terminé"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Idle"
+msgstr ""
+
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
 msgstr "Ignorer"
@@ -2559,6 +2583,14 @@ msgstr "Options d'intégration"
 #: src/pages/Shell.tsx
 msgid "Integrations"
 msgstr "Intégrations"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupt"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupts whatever assistants are doing and turns them off"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 #: src/pages/RoutineSchedule.tsx
@@ -3109,6 +3141,10 @@ msgstr "Nouvel espace"
 msgid "New ticket"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "No"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr "Aucune connexion d'agent pour le moment."
@@ -3234,6 +3270,10 @@ msgstr "Aucun outil disponible."
 msgid "No trigger"
 msgstr "Aucun déclencheur"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "None of them will reply until you start them"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "None yet"
 msgstr "Aucun pour le moment"
@@ -3290,6 +3330,10 @@ msgstr "Échec de la connexion OAuth"
 #: src/pages/McpServersOverlay.tsx
 msgid "OAuth expired"
 msgstr "OAuth expiré"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Off"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "On a schedule"
@@ -3925,8 +3969,14 @@ msgid "running"
 msgstr "en cours"
 
 #: src/pages/ActivityList.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Running"
 msgstr "En cours"
+
+#. placeholder {0}: hostState.server.port
+#: src/pages/HostSettingsPanel.tsx
+msgid "Running · port {0}"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running · Stop"
@@ -4112,6 +4162,10 @@ msgstr "Alerte Sentry"
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Serenity endpoint is required."
 msgstr "Le point de terminaison Serenity est obligatoire."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Server"
+msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/AccountSettingsOverlay.tsx
@@ -4335,6 +4389,10 @@ msgstr "SSO est temporairement indisponible. Réessayez."
 msgid "Start {trialDays}-day free trial"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Start all"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
 msgstr "Démarrer l'enregistrement"
@@ -4363,6 +4421,14 @@ msgstr "Étapes"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Stop"
 msgstr "Arrêter"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all assistants?"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Stop speaking"
@@ -4500,9 +4566,17 @@ msgstr ""
 msgid "The provider is rate-limiting requests."
 msgstr "Le fournisseur limite le débit des requêtes."
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "The screen stays on and never asks for the password"
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "The selected memory provider is not available in this build."
 msgstr "Le fournisseur de mémoire sélectionné n'est pas disponible dans cette version."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Their current work stops, and none of them will reply until you start them."
+msgstr ""
 
 #: src/pages/shell/bot-credentials.tsx
 msgid "These saved settings can't be read. Remove it and add it again."
@@ -4548,6 +4622,10 @@ msgstr "Cette conversation est en lecture seule"
 msgid "this computer"
 msgstr "cet ordinateur"
 
+#: src/pages/SettingsOverlay.tsx
+msgid "This computer"
+msgstr ""
+
 #. placeholder {0}: pendingDelete.versionCount
 #: src/pages/Artifacts.tsx
 msgid "This deletes all {0} versions of this artifact. This can't be undone."
@@ -4560,6 +4638,10 @@ msgstr "Ce fichier n'est pas un texte UTF-8 valide."
 #: src/pages/HostComputerPrompt.tsx
 msgid "this Mac"
 msgstr "ce Mac"
+
+#: src/pages/SettingsOverlay.tsx
+msgid "This Mac"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "This month"
@@ -4879,6 +4961,10 @@ msgstr "Patientez un instant et testez à nouveau."
 msgid "Waiting for the API to come back…"
 msgstr "En attente du retour de l'API…"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Waiting for you"
+msgstr ""
+
 #: src/lib/roster-status.ts
 msgid "Waiting in line…"
 msgstr "En attente dans la file…"
@@ -4954,6 +5040,7 @@ msgstr ""
 
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Working…"
 msgstr "En cours…"
 
@@ -4963,6 +5050,10 @@ msgstr ""
 
 #: src/lib/billing.ts
 msgid "year"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Yes, stop"
 msgstr ""
 
 #: src/pages/Shell.tsx

@@ -2,6 +2,11 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("rakazoDesktop", {
   platform: process.platform,
+  host: {
+    state: () => ipcRenderer.invoke("desktop.host.state"),
+    setKeepAwake: (on) => ipcRenderer.invoke("desktop.host.setKeepAwake", on),
+    stopServer: () => ipcRenderer.invoke("desktop.host.stopServer"),
+  },
   localSettings: {
     request: (pathname, body) =>
       ipcRenderer.invoke("desktop.localSettings.request", pathname, body),

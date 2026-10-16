@@ -429,6 +429,10 @@ msgstr "Подключения агента"
 msgid "Agents:"
 msgstr "Агенты:"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "All assistants are off"
+msgstr "Все ассистенты выключены"
+
 #: src/pages/Artifacts.tsx
 msgid "All bots"
 msgstr ""
@@ -619,6 +623,10 @@ msgstr "Спросите перед отправкой внешнего элек
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Ask the server owner to configure this provider."
 msgstr "Попросите владельца сервера настроить этого провайдера."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Assistants"
+msgstr "Ассистенты"
 
 #. placeholder {0}: preset.time
 #: src/pages/RoutineSchedule.tsx
@@ -2090,6 +2098,14 @@ msgstr "Docker ограничивает доступ к вашему компь�
 msgid "Don’t have an account?"
 msgstr "У вас нет учетной записи?"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this computer"
+msgstr "Не блокировать компьютер"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this Mac"
+msgstr "Не блокировать Mac"
+
 #: src/lib/ticket-status.ts
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
@@ -2161,6 +2177,10 @@ msgstr "Регистрация с этим адресом электронной
 #: src/lib/user-error.ts
 msgid "Email verification required"
 msgstr "Требуется подтверждение электронной почты"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Emergency stop"
+msgstr "Экстренная остановка"
 
 #: src/pages/BillingSettingsPanel.tsx
 msgid "Ends {day}"
@@ -2499,6 +2519,10 @@ msgstr "Как проверить"
 msgid "I’m done"
 msgstr "Готово"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Idle"
+msgstr "Свободен"
+
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
 msgstr "игнорировать"
@@ -2559,6 +2583,14 @@ msgstr "Параметры интеграции"
 #: src/pages/Shell.tsx
 msgid "Integrations"
 msgstr "Интеграции"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupt"
+msgstr "Прервать"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupts whatever assistants are doing and turns them off"
+msgstr "Прерывает всё, что делают ассистенты, и выключает их"
 
 #: src/pages/RoutineEditor.tsx
 #: src/pages/RoutineSchedule.tsx
@@ -3109,6 +3141,10 @@ msgstr "Новое пространство"
 msgid "New ticket"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "No"
+msgstr "Нет"
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr "Агентских подключений пока нет."
@@ -3234,6 +3270,10 @@ msgstr "Нет доступных инструментов."
 msgid "No trigger"
 msgstr "Нет триггера"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "None of them will reply until you start them"
+msgstr "Никто не ответит, пока вы их не запустите"
+
 #: src/pages/ScratchpadSection.tsx
 msgid "None yet"
 msgstr "Пока нет"
@@ -3290,6 +3330,10 @@ msgstr "Соединение OAuth не удалось"
 #: src/pages/McpServersOverlay.tsx
 msgid "OAuth expired"
 msgstr "Срок действия OAuth истек"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Off"
+msgstr "Выключен"
 
 #: src/pages/RoutineEditor.tsx
 msgid "On a schedule"
@@ -3925,8 +3969,14 @@ msgid "running"
 msgstr "выполняется"
 
 #: src/pages/ActivityList.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Running"
 msgstr "Выполняется"
+
+#. placeholder {0}: hostState.server.port
+#: src/pages/HostSettingsPanel.tsx
+msgid "Running · port {0}"
+msgstr "Работает · порт {0}"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running · Stop"
@@ -4112,6 +4162,10 @@ msgstr "Оповещение Sentry"
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Serenity endpoint is required."
 msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Server"
+msgstr "Сервер"
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/AccountSettingsOverlay.tsx
@@ -4335,6 +4389,10 @@ msgstr "SSO временно недоступен. Попробуйте снов
 msgid "Start {trialDays}-day free trial"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Start all"
+msgstr "Запустить всех"
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
 msgstr "Начать запись"
@@ -4363,6 +4421,14 @@ msgstr "Шаги"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Stop"
 msgstr "Остановить"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all"
+msgstr "Остановить всех"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all assistants?"
+msgstr "Остановить всех ассистентов?"
 
 #: src/pages/Shell.tsx
 msgid "Stop speaking"
@@ -4500,9 +4566,17 @@ msgstr "Для последних изменений нужен следующи
 msgid "The provider is rate-limiting requests."
 msgstr "Поставщик ограничивает частоту запросов."
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "The screen stays on and never asks for the password"
+msgstr "Экран не гаснет и не просит пароль"
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "The selected memory provider is not available in this build."
 msgstr "Выбранный поставщик памяти недоступен в этой сборке."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Their current work stops, and none of them will reply until you start them."
+msgstr "Текущая работа прервётся, и никто не ответит, пока вы их не запустите."
 
 #: src/pages/shell/bot-credentials.tsx
 msgid "These saved settings can't be read. Remove it and add it again."
@@ -4548,6 +4622,10 @@ msgstr "Этот чат доступен только для просмотра"
 msgid "this computer"
 msgstr "этот компьютер"
 
+#: src/pages/SettingsOverlay.tsx
+msgid "This computer"
+msgstr "Этот компьютер"
+
 #. placeholder {0}: pendingDelete.versionCount
 #: src/pages/Artifacts.tsx
 msgid "This deletes all {0} versions of this artifact. This can't be undone."
@@ -4560,6 +4638,10 @@ msgstr ""
 #: src/pages/HostComputerPrompt.tsx
 msgid "this Mac"
 msgstr "этот Mac"
+
+#: src/pages/SettingsOverlay.tsx
+msgid "This Mac"
+msgstr "Этот Mac"
 
 #: src/pages/Artifacts.tsx
 msgid "This month"
@@ -4879,6 +4961,10 @@ msgstr "Подождите немного и повторите тест."
 msgid "Waiting for the API to come back…"
 msgstr "Ждём возвращения API…"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Waiting for you"
+msgstr "Ждёт вас"
+
 #: src/lib/roster-status.ts
 msgid "Waiting in line…"
 msgstr "Ожидание в очереди…"
@@ -4954,6 +5040,7 @@ msgstr ""
 
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Working…"
 msgstr "Выполняется…"
 
@@ -4964,6 +5051,10 @@ msgstr ""
 #: src/lib/billing.ts
 msgid "year"
 msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Yes, stop"
+msgstr "Да, остановить"
 
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
