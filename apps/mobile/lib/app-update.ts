@@ -1,5 +1,5 @@
 import * as Application from "expo-application";
-import { File, Paths } from "expo-file-system";
+import { DownloadTask, File, Paths } from "expo-file-system";
 import * as IntentLauncher from "expo-intent-launcher";
 
 /** Releases publish the Android build as this asset; the tag's patch number is its versionCode. */
@@ -12,17 +12,30 @@ const FLAG_ACTIVITY_NEW_TASK = 0x10000000;
 
 export type AppUpdate =
   | { available: false; current: number | null }
-  | { available: true; current: number | null; versionCode: number; tag: string; apkUrl: string };
+  | {
+      available: true;
+      current: number | null;
+      versionCode: number;
+      tag: string;
+      apkUrl: string;
+      /** The APK's size in bytes, when GitHub reports it. */
+      size: number | null;
+    };
 
 type Release = {
   tag_name?: unknown;
-  assets?: Array<{ name?: unknown; browser_download_url?: unknown }>;
+  assets?: Array<{ name?: unknown; browser_download_url?: unknown; size?: unknown }>;
 };
 
 /** The versionCode a release tag carries: `v0.1.42` is build 42. */
 export function releaseVersionCode(tag: string): number | null {
   const match = RELEASE_TAG.exec(tag);
   return match ? Number(match[3]) : null;
+}
+
+/** The installed version as people read it, such as `0.1.20`. */
+export function installedVersionName(): string | null {
+  return Application.nativeApplicationVersion || null;
 }
 
 export function installedVersionCode(): number | null {
@@ -44,14 +57,30 @@ export async function checkForAppUpdate(fetchImpl: typeof fetch = fetch): Promis
   const apkUrl = typeof asset?.browser_download_url === "string" ? asset.browser_download_url : "";
   if (versionCode === null || !apkUrl.startsWith("https://")) return { available: false, current };
   if (current !== null && versionCode <= current) return { available: false, current };
-  return { available: true, current, versionCode, tag, apkUrl };
+  const size = typeof asset?.size === "number" && asset.size > 0 ? asset.size : null;
+  return { available: true, current, versionCode, tag, apkUrl, size };
 }
 
-/** Downloads the APK and hands it to Android's installer, which asks the user to confirm. */
-export async function installAppUpdate(update: Extract<AppUpdate, { available: true }>) {
+/**
+ * Downloads the APK, reporting bytes as they arrive, and hands it to Android's installer, which
+ * asks the user to confirm. The signal cancels the download.
+ */
+export async function installAppUpdate(
+  update: Extract<AppUpdate, { available: true }>,
+  options: {
+    onProgress?: (received: number, total: number | null) => void;
+    signal?: AbortSignal;
+  } = {},
+) {
   const target = new File(Paths.cache, `quant-${update.versionCode}.apk`);
   if (target.exists) target.delete();
-  const downloaded = await File.downloadFileAsync(update.apkUrl, target);
+  const task = new DownloadTask(update.apkUrl, target, {
+    signal: options.signal,
+    onProgress: ({ bytesWritten, totalBytes }) =>
+      options.onProgress?.(bytesWritten, totalBytes > 0 ? totalBytes : update.size),
+  });
+  const downloaded = await task.downloadAsync();
+  if (!downloaded) return;
   await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
     data: downloaded.contentUri,
     type: "application/vnd.android.package-archive",

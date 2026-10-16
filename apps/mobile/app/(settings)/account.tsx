@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppMark } from "../../components/app-mark";
+import { AppUpdateCard } from "../../components/app-update-card";
 import { useAvatarStyle } from "../../components/avatar-style";
 import { BotAvatar } from "../../components/bot-avatar";
 import { NativeActionButton } from "../../components/native-action-button";
@@ -38,8 +39,6 @@ import {
   selectedSpaceId,
   signOut,
 } from "../../lib/api";
-import type { AppUpdate } from "../../lib/app-update";
-import { checkForAppUpdate, installAppUpdate } from "../../lib/app-update";
 import { formatUpdateLabel, getAppVersionInfo } from "../../lib/app-version";
 import {
   getCachedAppearancePreference,
@@ -60,7 +59,6 @@ import {
 } from "../../lib/live-notifications";
 import { presentMessageActionSheet } from "../../lib/message-action-sheet";
 import { native, useResolvedAppearance, useThemedStyles } from "../../lib/native";
-import { checkForOtaUpdate, installOtaUpdate } from "../../lib/ota-update";
 import { registerPushToken } from "../../lib/push";
 import {
   getCachedRemoteImagesEnabled,
@@ -134,36 +132,6 @@ export default function Account() {
   const versionInfo = getAppVersionInfo();
   const updateLabel = formatUpdateLabel(versionInfo.update, t);
   const versionAccessibility = [versionInfo.nativeLabel, updateLabel].filter(Boolean).join(". ");
-  const [appUpdate, setAppUpdate] = useState<AppUpdate | null>(null);
-  const [appUpdateState, setAppUpdateState] = useState<"idle" | "checking" | "installing">("idle");
-  const [appUpdateError, setAppUpdateError] = useState<string | null>(null);
-  /** An update from main is ready to install over the air; a newer APK takes precedence. */
-  const [otaAvailable, setOtaAvailable] = useState(false);
-
-  async function checkOrInstallUpdate() {
-    setAppUpdateError(null);
-    try {
-      if (appUpdate?.available) {
-        setAppUpdateState("installing");
-        await installAppUpdate(appUpdate);
-        return;
-      }
-      if (otaAvailable) {
-        setAppUpdateState("installing");
-        await installOtaUpdate();
-        return;
-      }
-      setAppUpdateState("checking");
-      const release = await checkForAppUpdate();
-      setAppUpdate(release);
-      if (!release.available) setOtaAvailable(await checkForOtaUpdate());
-    } catch (error) {
-      setAppUpdateError(errorText(error, t("Could not check for updates")));
-    } finally {
-      setAppUpdateState("idle");
-    }
-  }
-
   useEffect(() => {
     void rpc<MobileMe>("me")
       .then(setMe)
@@ -637,31 +605,7 @@ export default function Account() {
 
         <View style={styles.about}>
           <AppMark />
-          {Platform.OS === "android" ? (
-            <SettingsGroup>
-              <SettingsRow
-                accessibilityRole="button"
-                disabled={appUpdateState !== "idle"}
-                dimmed={appUpdateState !== "idle"}
-                onPress={() => void checkOrInstallUpdate()}
-                title={
-                  appUpdateState === "checking"
-                    ? t("Checking for updates…")
-                    : appUpdateState === "installing"
-                      ? t("Downloading the update…")
-                      : appUpdate?.available
-                        ? t("Install update {version}", { version: appUpdate.tag })
-                        : otaAvailable
-                          ? t("Install the latest fixes")
-                          : t("Check for updates")
-                }
-                value={
-                  appUpdate && !appUpdate.available && !otaAvailable ? t("Up to date") : undefined
-                }
-              />
-              {appUpdateError ? <Text style={styles.error}>{appUpdateError}</Text> : null}
-            </SettingsGroup>
-          ) : null}
+          {Platform.OS === "android" ? <AppUpdateCard /> : null}
           {versionInfo.nativeLabel || updateLabel ? (
             <View
               accessibilityLabel={versionAccessibility}
