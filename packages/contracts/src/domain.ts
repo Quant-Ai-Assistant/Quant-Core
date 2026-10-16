@@ -877,6 +877,8 @@ export const ComputerStatusSchema = z.object({
   busyBotName: z.string().nullable(),
   canUpdate: z.boolean(),
   terminalAvailable: z.boolean(),
+  /** The bot can switch between this host's screen (team) and its own virtual desktop. */
+  virtualDesktops: z.boolean().optional(),
 });
 export type ComputerStatus = z.infer<typeof ComputerStatusSchema>;
 
@@ -1249,6 +1251,8 @@ export const VoiceStatusSchema = z.object({
   voiceId: z.string(),
   /** Calls are available: the calls OpenAI key is connected. */
   live: z.boolean().optional(),
+  /** The server transcribes voice messages (AAC/MP4 recordings) without help from the device. */
+  voiceMessages: z.boolean().optional(),
 });
 export type VoiceStatus = z.infer<typeof VoiceStatusSchema>;
 

@@ -178,6 +178,11 @@ export class DesktopSandboxProvider implements SandboxProvider {
     if (box) applyPlaceholderAction(box, input);
   }
 
+  async screenFrame(_computer: ComputerRef, context: AdapterContext) {
+    if (!this.screen) throw new Error("this computer has no screen");
+    return { image: await this.screen.frame(context.signal), mimeType: "image/jpeg" as const };
+  }
+
   async observe(computer: ComputerRef, context?: AdapterContext) {
     const box = this.requiredBox(computer);
     if (this.screen) return this.screen.observe(box.ref.id, context?.signal);

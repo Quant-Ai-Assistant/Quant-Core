@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { ArtifactStore } from "@rakazo/adapter-kit";
-import type { Actor } from "@rakazo/contracts";
+import type { Actor, MessageBlock } from "@rakazo/contracts";
 import { ATTACHMENT_MAX_COUNT } from "@rakazo/contracts";
 import {
   AttachmentValidationError,
@@ -597,8 +597,11 @@ export async function resolveGroupSendAttachments(
 export function buildUserMessageBlocks(
   text: string | undefined,
   attachmentBlocks: ReturnType<typeof messageBlockForArtifact>[],
+  voice?: Extract<MessageBlock, { kind: "voice" }>,
 ) {
-  const blocks = [];
+  const blocks: MessageBlock[] = [];
+  // A voice message leads; its transcript follows as the text the bot and history read.
+  if (voice) blocks.push(voice);
   const caption = text?.trim();
   if (caption) blocks.push({ kind: "text" as const, text: caption });
   blocks.push(...attachmentBlocks);

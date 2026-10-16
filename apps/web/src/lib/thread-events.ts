@@ -494,6 +494,10 @@ export function reduceThreadSnapshot(
       botId: event.botId,
       runId: event.runId,
       callId: typeof event.payload.callId === "string" ? event.payload.callId : known?.callId,
+      clientNonce:
+        typeof event.payload.clientNonce === "string"
+          ? event.payload.clientNonce
+          : known?.clientNonce,
       ...replyMetadata(event.payload, known),
       createdAt: known?.createdAt ?? event.createdAt,
     };

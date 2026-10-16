@@ -1,4 +1,5 @@
 import type { MessageBlock } from "@rakazo/contracts";
+import { callRequestBlock } from "./call-request.js";
 import { speechFromBlocks } from "./speech-text.js";
 
 /** The fields grouping reads; web `ThreadMessage` and mobile `MobileMessage` both satisfy it. */
@@ -121,4 +122,61 @@ export function voiceChatDuration(group: VoiceChatGroup): number {
   if (!first || !last) return 0;
   const seconds = (Date.parse(last.createdAt ?? "") - Date.parse(first.createdAt ?? "")) / 1000;
   return Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+}
+
+export type VoiceChatEntry = {
+  /** The caller placed it (`outgoing`) or the bot rang them (`incoming`). */
+  direction: "outgoing" | "incoming";
+  outcome: "answered" | "ringing" | "missed" | "declined" | "cancelled";
+  seconds: number;
+  startedAt?: string;
+  /** Who said what, in order; lines with no words are kept so a jump can find them. */
+  transcript: Array<{ id: string; role: string; text: string }>;
+};
+
+/**
+ * What a call reads as in the chat, like a phone's call log: its direction, how it went,
+ * how long it ran, and its transcript (the bot's reason and opening included).
+ */
+export function describeVoiceChat(group: VoiceChatGroup, now = Date.now()): VoiceChatEntry {
+  const request = callRequestBlock(group.messages[0]?.blocks);
+  const seconds = voiceChatDuration(group);
+  const ringing = request?.status === "ringing" && Date.parse(request.expiresAt) > now;
+  // A call that rang out reads as missed even before the server's ring-out lands.
+  const outcome: VoiceChatEntry["outcome"] = request
+    ? ringing
+      ? "ringing"
+      : request.status === "declined"
+        ? "declined"
+        : request.status === "missed" || request.status === "ringing"
+          ? "missed"
+          : "answered"
+    : seconds === 0
+      ? "cancelled"
+      : "answered";
+  const unanswered = outcome !== "answered";
+  const transcript = [
+    ...(request?.reason && unanswered
+      ? [{ id: `${group.key}:reason`, role: "bot", text: request.reason }]
+      : []),
+    ...(request?.opening && !unanswered
+      ? [{ id: `${group.key}:opening`, role: "bot", text: request.opening }]
+      : []),
+    ...group.messages.map((message) => ({
+      id: message.id,
+      role: message.role,
+      // The request and the marker are the entry's own lines, never transcript turns.
+      text:
+        message === group.marker || callRequestBlock(message.blocks)
+          ? ""
+          : speechFromBlocks(message.blocks).trim(),
+    })),
+  ];
+  return {
+    direction: request ? "incoming" : "outgoing",
+    outcome,
+    seconds,
+    startedAt: group.messages[0]?.createdAt,
+    transcript,
+  };
 }

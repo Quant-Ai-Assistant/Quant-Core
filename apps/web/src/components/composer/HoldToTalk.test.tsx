@@ -5,12 +5,13 @@ import { act } from "react";
 import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DictationSnapshot } from "../../lib/dictation";
-import { dictation } from "../../lib/dictation";
+import type { VoiceRecording } from "../../lib/voice-recorder";
 import {
+  CANCEL_DISTANCE_PX,
   HoldToTalkControls,
   HoldToTalkStrip,
   LOCK_DISTANCE_PX,
+  type Recorder,
   TAP_MS,
   useHoldToTalk,
 } from "./HoldToTalk";
@@ -20,40 +21,31 @@ vi.mock("@lingui/react/macro", () => {
   return { useLingui: () => ({ t }), Trans: ({ children }: { children: ReactNode }) => children };
 });
 
-const watchers = new Set<(snapshot: DictationSnapshot) => void>();
-let onFinal: ((text: string) => void) | null = null;
-let transcript = "";
+const RECORDING: VoiceRecording = {
+  blob: new Blob(["audio"], { type: "audio/mp4" }),
+  mimeType: "audio/mp4",
+  durationMs: 2_000,
+  waveform: [0.2, 1],
+};
 
-function emit(snapshot: DictationSnapshot) {
-  for (const watcher of [...watchers]) watcher(snapshot);
+function fakeRecorder(): Recorder & { start: ReturnType<typeof vi.fn> } {
+  return {
+    onLevel: null,
+    onLimit: null,
+    start: vi.fn(async () => undefined),
+    stop: vi.fn(async () => RECORDING),
+    cancel: vi.fn(),
+  };
 }
 
-vi.mock("../../lib/dictation", () => ({
-  dictation: {
-    subscribe: vi.fn((watcher: (snapshot: DictationSnapshot) => void) => {
-      watchers.add(watcher);
-      watcher({ status: "idle", transcript: "" });
-      return () => watchers.delete(watcher);
-    }),
-    listen: vi.fn(async (opts: { onFinal: (text: string) => void }) => {
-      onFinal = opts.onFinal;
-      emit({ status: "listening", transcript: "" });
-    }),
-    submitHold: vi.fn(() => {
-      const final = onFinal;
-      onFinal = null;
-      emit({ status: "idle", transcript: "" });
-      if (transcript) final?.(transcript);
-    }),
-    stop: vi.fn(() => {
-      onFinal = null;
-      emit({ status: "idle", transcript: "" });
-    }),
-  },
-}));
-
-function Harness({ onText }: { onText: (text: string) => void }) {
-  const talk = useHoldToTalk({ transcribe: false, onText });
+function Harness({
+  recorder,
+  onRecording,
+}: {
+  recorder: Recorder;
+  onRecording: (recording: VoiceRecording) => void;
+}) {
+  const talk = useHoldToTalk({ recorder, onRecording });
   return (
     <div>
       <HoldToTalkStrip talk={talk} />
@@ -62,26 +54,26 @@ function Harness({ onText }: { onText: (text: string) => void }) {
   );
 }
 
-describe("hold to talk", () => {
+describe("hold to record", () => {
   let root: Root | undefined;
   let container: HTMLDivElement | undefined;
-  const onText = vi.fn();
+  let recorder: ReturnType<typeof fakeRecorder>;
+  const onRecording = vi.fn();
 
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.clearAllMocks();
-    transcript = "";
+    recorder = fakeRecorder();
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    act(() => root?.render(<Harness onText={onText} />));
+    act(() => root?.render(<Harness recorder={recorder} onRecording={onRecording} />));
   });
 
   afterEach(() => {
     act(() => root?.unmount());
     container?.remove();
-    watchers.clear();
     vi.useRealTimers();
   });
 
@@ -91,77 +83,78 @@ describe("hold to talk", () => {
     return found;
   }
 
-  function pointer(target: Element, type: string, clientY = 400) {
+  function pointer(target: Element, type: string, clientX = 400, clientY = 400) {
     act(() => {
-      target.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientY }));
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY }));
     });
   }
 
-  function heard(text: string) {
-    transcript = text;
-    act(() => emit({ status: "listening", transcript: text }));
-  }
-
-  it("sends what was said when the hold is released", () => {
-    const mic = button("Hold to talk");
+  it("sends the whole recording when the hold is released", async () => {
+    const mic = button("Record voice message");
     pointer(mic, "pointerdown");
-    expect(dictation.listen).toHaveBeenCalledWith(expect.objectContaining({ transcribe: false }));
-    heard("buy milk tomorrow");
-    expect(container?.textContent).toContain("buy milk tomorrow");
-
+    expect(recorder.start).toHaveBeenCalledOnce();
     act(() => vi.advanceTimersByTime(TAP_MS + 100));
     pointer(mic, "pointerup");
+    await act(async () => {});
 
-    expect(dictation.submitHold).toHaveBeenCalledOnce();
-    expect(onText).toHaveBeenCalledWith("buy milk tomorrow");
+    expect(recorder.stop).toHaveBeenCalledOnce();
+    expect(onRecording).toHaveBeenCalledWith(RECORDING);
     expect(container?.querySelector('[data-testid="hold-to-talk-strip"]')).toBeNull();
   });
 
   it("treats a quick tap as a tap: nothing is sent and the hint shows", () => {
-    const mic = button("Hold to talk");
+    const mic = button("Record voice message");
     pointer(mic, "pointerdown");
     pointer(mic, "pointerup");
 
-    expect(dictation.submitHold).not.toHaveBeenCalled();
-    expect(dictation.stop).toHaveBeenCalledWith("cancel");
-    expect(onText).not.toHaveBeenCalled();
-    expect(container?.textContent).toContain("Hold to talk, release to send");
+    expect(recorder.stop).not.toHaveBeenCalled();
+    expect(recorder.cancel).toHaveBeenCalled();
+    expect(container?.textContent).toContain("Hold to record, release to send");
   });
 
-  it("locks when the hold slides up, then sends only on Send", () => {
-    const mic = button("Hold to talk");
+  it("throws the recording away when the hold slides left", () => {
+    const mic = button("Record voice message");
     pointer(mic, "pointerdown", 400);
-    pointer(mic, "pointermove", 400 - LOCK_DISTANCE_PX - 1);
-    heard("call the plumber");
-    act(() => vi.advanceTimersByTime(TAP_MS + 100));
-    pointer(mic, "pointerup", 400 - LOCK_DISTANCE_PX - 1);
+    pointer(mic, "pointermove", 400 - CANCEL_DISTANCE_PX - 1);
 
-    expect(dictation.submitHold).not.toHaveBeenCalled();
-    expect(container?.textContent).toContain("call the plumber");
+    expect(recorder.cancel).toHaveBeenCalled();
+    expect(onRecording).not.toHaveBeenCalled();
+    expect(container?.querySelector('[data-testid="hold-to-talk-strip"]')).toBeNull();
+  });
+
+  it("locks when the hold slides up, then sends only on Send", async () => {
+    const mic = button("Record voice message");
+    pointer(mic, "pointerdown", 400, 400);
+    pointer(mic, "pointermove", 400, 400 - LOCK_DISTANCE_PX - 1);
+    act(() => vi.advanceTimersByTime(TAP_MS + 100));
+    pointer(mic, "pointerup", 400, 400 - LOCK_DISTANCE_PX - 1);
+    expect(recorder.stop).not.toHaveBeenCalled();
 
     act(() => button("Send recording").click());
-    expect(onText).toHaveBeenCalledWith("call the plumber");
+    await act(async () => {});
+    expect(onRecording).toHaveBeenCalledWith(RECORDING);
   });
 
   it("discards a locked recording", () => {
-    const mic = button("Hold to talk");
-    pointer(mic, "pointerdown", 400);
-    pointer(mic, "pointermove", 400 - LOCK_DISTANCE_PX - 1);
-    heard("never mind");
+    const mic = button("Record voice message");
+    pointer(mic, "pointerdown", 400, 400);
+    pointer(mic, "pointermove", 400, 400 - LOCK_DISTANCE_PX - 1);
 
     act(() => button("Discard recording").click());
 
-    expect(dictation.stop).toHaveBeenCalledWith("cancel");
-    expect(onText).not.toHaveBeenCalled();
+    expect(recorder.cancel).toHaveBeenCalled();
+    expect(onRecording).not.toHaveBeenCalled();
     expect(container?.querySelector('[data-testid="hold-to-talk-strip"]')).toBeNull();
   });
 
   it("starts locked from the keyboard, since a key cannot be held and slid", () => {
     act(() => {
-      button("Hold to talk").dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 }));
+      button("Record voice message").dispatchEvent(
+        new MouseEvent("click", { bubbles: true, detail: 0 }),
+      );
     });
 
-    expect(dictation.listen).toHaveBeenCalledOnce();
+    expect(recorder.start).toHaveBeenCalledOnce();
     expect(button("Send recording")).toBeTruthy();
   });
 });

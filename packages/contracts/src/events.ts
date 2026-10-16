@@ -259,6 +259,16 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     size: z.number().int().nonnegative(),
   }),
   z.object({
+    /** A recorded voice message. Its transcript, when there is one, is the message's text. */
+    kind: z.literal("voice"),
+    artifactId: Id,
+    mimeType: z.string(),
+    durationMs: z.number().int().nonnegative(),
+    /** Loudness per bar, 0 to 1, for drawing the message. */
+    waveform: z.array(z.number().min(0).max(1)).max(128),
+    transcribed: z.boolean(),
+  }),
+  z.object({
     kind: z.literal("handoff"),
     fromBotId: Id,
     toBotId: Id,
@@ -382,6 +392,8 @@ export const ThreadMessageSchema = z.object({
   runId: Id.optional(),
   /** Set when the message was sent from a live voice call; groups one call's transcript. */
   callId: z.string().optional(),
+  /** The sender's key for a user message, so its device swaps its draft for it in place. */
+  clientNonce: z.string().optional(),
   createdAt: z.string(),
 });
 export type ThreadMessage = z.infer<typeof ThreadMessageSchema>;

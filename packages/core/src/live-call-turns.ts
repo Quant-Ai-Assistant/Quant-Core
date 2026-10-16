@@ -128,3 +128,21 @@ export function createLiveCallFeed(handlers: LiveCallFeedHandlers): {
     },
   };
 }
+
+/** What a call shows for the tool the bot is using; new tools fall back to `other`. */
+export type LiveToolKind = "computer" | "web" | "page" | "files" | "terminal" | "memory" | "other";
+
+export function liveToolKind(tool: string): LiveToolKind {
+  if (tool.startsWith("computer_")) return "computer";
+  if (tool === "web_search" || tool === "web_fetch") return "web";
+  if (tool.startsWith("browser_")) return "page";
+  if (["read_file", "write_file", "list_files", "attach_file", "open_path"].includes(tool)) {
+    return "files";
+  }
+  if (tool === "shell") return "terminal";
+  if (tool === "remember" || tool === "save_shared_memory") return "memory";
+  return "other";
+}
+
+/** How often a call asks what the bot is using while it is connected. */
+export const LIVE_TOOL_POLL_MS = 1_500;

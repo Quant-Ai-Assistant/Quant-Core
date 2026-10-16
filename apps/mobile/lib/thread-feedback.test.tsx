@@ -54,6 +54,22 @@ vi.mock("react-native", () => ({
   Alert: { alert: vi.fn() },
 }));
 vi.mock("../components/native-symbol", () => ({ NativeSymbol: () => null }));
+vi.mock("react-native-reanimated", () => {
+  const rise = { duration: () => ({}) };
+  return {
+    default: {
+      View: ({
+        children,
+        accessibilityLabel,
+      }: {
+        children?: ReactNode;
+        accessibilityLabel?: string;
+      }) => createElement("div", { "aria-label": accessibilityLabel }, children),
+    },
+    FadeInDown: rise,
+    FadeInUp: rise,
+  };
+});
 vi.mock("./native", () => ({ useMobileTokens: () => ({}) }));
 vi.mock("./i18n", () => ({
   t: (text: string) => text,
@@ -71,6 +87,7 @@ function Probe({ threadKey }: { threadKey: string }) {
       attempt={attempt}
       onRetry={retry}
       onDelete={() => feedback.discard(attempt)}
+      inverted
     />
   ));
 }
@@ -182,8 +199,10 @@ describe("scoped mobile outbox", () => {
     act(() => {
       sending = feedback.send(attempt);
     });
+    // On its way it reads as the message itself, with a clock rather than a caption.
     expect(container.textContent).toContain("Hello");
-    expect(container.textContent).toContain("Sending…");
+    expect(container.textContent).not.toContain("Sending…");
+    expect(container.querySelector('[aria-label="Hello, photo.png. Sending…"]')).not.toBeNull();
     await vi.waitFor(() => expect(finish).toBeTypeOf("function"));
     const writes = disk.save.mock.calls.length;
     act(() => confirmEchoes("bot-1", []));
@@ -195,6 +214,29 @@ describe("scoped mobile outbox", () => {
     act(() => confirmEchoes("bot-1", [42]));
     expect(container.textContent).toBe("");
   });
+  it("gives way as soon as its message is on screen, before the send returns", async () => {
+    let finish!: (value: unknown) => void;
+    request.mockImplementation((proc) =>
+      proc === "artifacts/create"
+        ? { id: "artifact-a" }
+        : new Promise((resolve) => {
+            finish = resolve;
+          }),
+    );
+    const attempt = feedback.sendAttempt(payload());
+    let sending!: Promise<boolean>;
+    act(() => {
+      sending = feedback.send(attempt);
+    });
+    await vi.waitFor(() => expect(finish).toBeTypeOf("function"));
+    act(() => confirmEchoes("bot-1", [], [attempt.clientNonce]));
+    expect(container.textContent).toBe("");
+    await act(async () => {
+      finish({ seq: 42 });
+      await sending;
+    });
+    expect(container.textContent).toBe("");
+  });
   it("keeps sends ordered, persisted and scoped while offline, and retries on reconnect", async () => {
     reachable = false;
     const first = feedback.sendAttempt(payload("First"));
@@ -204,7 +246,8 @@ describe("scoped mobile outbox", () => {
       await feedback.send(second);
     });
     expect(request).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("Not sent · Tap to retry");
+    // Offline sends wait with a clock, like any other send on its way.
+    expect(container.textContent).not.toContain("Not sent");
     expect(disk.save).toHaveBeenLastCalledWith([first, second]);
     reachable = true;
     await act(async () => {

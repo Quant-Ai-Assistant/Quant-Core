@@ -72,18 +72,21 @@ vi.mock("react-native-gesture-handler", () => {
   };
 });
 const hold = vi.hoisted(() => ({
-  onText: (_text: string) => {},
+  onClip: (_clip: { uri: string; durationMs: number; waveform: number[] }) => {},
   disabled: false as boolean | undefined,
 }));
 vi.mock("./hold-to-talk", () => ({
-  useHoldToTalk: (options: { onText: (text: string) => void; disabled?: boolean }) => {
-    hold.onText = options.onText;
+  useHoldToTalk: (options: {
+    onClip: (clip: { uri: string; durationMs: number; waveform: number[] }) => void;
+    disabled?: boolean;
+  }) => {
+    hold.onClip = options.onClip;
     hold.disabled = options.disabled;
     return {
       recording: null,
-      transcribing: false,
-      transcript: "",
+      levels: [],
       lift: 0,
+      slide: 0,
       notice: null,
       press: () => {},
       move: () => {},
@@ -116,7 +119,8 @@ const props: Omit<ComponentProps<typeof ThreadComposer>, "ref"> = {
   attachFrom: vi.fn(),
   send: vi.fn(async () => {}),
   stop: vi.fn(async () => {}),
-  holdToTalk: { transcribe: false },
+  voiceMessages: true,
+  sendVoice: vi.fn(),
   onSlashAction: vi.fn(),
 };
 
@@ -234,15 +238,14 @@ describe("thread composer isolation", () => {
     expect(container.querySelector('[data-testid="hold-to-talk"]')).not.toBeNull();
   });
 
-  it("sends dictated text through the draft, so a refused send keeps the words", () => {
-    act(() => hold.onText("hello there"));
-    expect(container.querySelector("input")!.value).toBe("hello there");
-    expect(props.send).toHaveBeenCalled();
-    expect(composer.current!.snapshot().promptText).toBe("hello there");
+  it("hands a finished recording to the thread as a voice message", () => {
+    const clip = { uri: "file:///voice.m4a", durationMs: 2_000, waveform: [0.5, 1] };
+    act(() => hold.onClip(clip));
+    expect(props.sendVoice).toHaveBeenCalledWith(clip);
   });
 
   it("shows Send instead of the microphone where hold-to-talk is unavailable", () => {
-    render({ holdToTalk: null });
+    render({ voiceMessages: false });
     expect(container.querySelector('[data-testid="hold-to-talk"]')).toBeNull();
     expect(container.querySelector('button[aria-label="Send"]')).not.toBeNull();
   });

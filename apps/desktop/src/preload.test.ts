@@ -38,6 +38,7 @@ describe("desktop preload bridge", () => {
       "oauth",
       "platform",
       "update",
+      "virtualDesktop",
       "window",
     ]);
     expect(Object.keys(bridge.window).sort()).toEqual([
@@ -63,6 +64,8 @@ describe("desktop preload bridge", () => {
     await bridge.edge?.state();
     await bridge.edge?.check();
     await bridge.edge?.apply();
+    await bridge.virtualDesktop?.state();
+    await bridge.virtualDesktop?.install();
     expect(invoke.mock.calls.map(([channel]) => channel)).toEqual([
       "desktop.oauth.open",
       "desktop.oauth.cancel",
@@ -77,6 +80,8 @@ describe("desktop preload bridge", () => {
       "desktop.edge.state",
       "desktop.edge.check",
       "desktop.edge.apply",
+      "desktop.virtualDesktop.state",
+      "desktop.virtualDesktop.install",
     ]);
   });
 
@@ -90,6 +95,7 @@ describe("desktop preload bridge", () => {
       "oauth",
       "platform",
       "update",
+      "virtualDesktop",
       "window",
     ]);
   });

@@ -323,6 +323,7 @@ export async function provisionComputer(
         homePath,
         providerRef: existing.providerRef ?? undefined,
         providerKind: existing.kind as ComputerRef["kind"],
+        scope: parseComputerMode(existing.scope),
       },
       context,
     );

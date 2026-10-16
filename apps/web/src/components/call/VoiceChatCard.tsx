@@ -1,13 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
 import type { VoiceChatGroup } from "@rakazo/core";
-import {
-  callRequestBlock,
-  speechFromBlocks,
-  voiceChatDuration,
-  voiceChatSummary,
-} from "@rakazo/core";
-import { Button, buttonVariants, cn } from "@rakazo/ui-web";
-import { ChevronDown, Phone, PhoneIncoming, PhoneMissed } from "lucide-react";
+import { callRequestBlock, describeVoiceChat, formatMessageTime } from "@rakazo/core";
+import { Button, cn } from "@rakazo/ui-web";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, Phone } from "lucide-react";
 import { useState } from "react";
 
 export function VoiceChatCard({
@@ -19,134 +14,109 @@ export function VoiceChatCard({
   revealMessageId?: string;
   onCallBack?: () => void;
 }) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const [open, setOpen] = useState(false);
   const revealed =
     revealMessageId != null && group.messages.some((message) => message.id === revealMessageId);
   // A jump looks the row up in the same commit. Expand during render so the row exists,
   // and leave the card open after the request clears.
   if (revealed && !open) setOpen(true);
-  /** Present when the bot placed this call; the card then follows the call's outcome. */
+  const entry = describeVoiceChat(group);
   const request = callRequestBlock(group.messages[0]?.blocks);
-  const seconds = voiceChatDuration(group);
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const rest = seconds % 60;
+  const hours = Math.floor(entry.seconds / 3600);
+  const minutes = Math.floor((entry.seconds % 3600) / 60);
+  const rest = entry.seconds % 60;
   const duration =
     hours > 0
       ? t`${hours} h ${minutes} min`
       : minutes > 0
         ? t`${minutes} min ${rest} s`
         : t`${rest} s`;
-  const ringing = request?.status === "ringing" && Date.parse(request.expiresAt) > Date.now();
-  // A call that rang out reads as missed even before the server's ring-out lands.
-  const missed =
-    request?.status === "declined" ||
-    request?.status === "missed" ||
-    (request?.status === "ringing" && !ringing);
-  const title = !request
-    ? t`Phone call`
-    : ringing
-      ? t`Calling you…`
-      : missed
-        ? t`Missed call`
-        : t`Incoming call`;
-  const detail = !request
-    ? duration
-    : ringing
-      ? ""
-      : request.status === "declined"
-        ? t`You declined`
-        : request.status === "missed" || request.status === "ringing"
-          ? t`No answer`
-          : duration;
-  const summary = missed || ringing ? (request?.reason ?? "") : voiceChatSummary(group);
-  // The opening was spoken, not posted: show it as the call's first bot turn.
-  const transcript = [
-    ...(request && !missed && !ringing && request.opening
-      ? [{ id: `${group.key}:opening`, role: "bot", text: request.opening }]
-      : []),
-    ...group.messages.map((message) => ({
-      id: message.id,
-      role: message.role,
-      // The request and the marker are the card's own lines, never transcript turns.
-      text:
-        message === group.marker || callRequestBlock(message.blocks)
-          ? ""
-          : speechFromBlocks(message.blocks).trim(),
-    })),
-  ];
+  const ringing = entry.outcome === "ringing";
+  const missed = entry.outcome === "missed" || entry.outcome === "declined";
+  const title =
+    entry.outcome === "cancelled"
+      ? t`Cancelled call`
+      : entry.outcome === "ringing"
+        ? t`Calling you…`
+        : entry.outcome === "declined"
+          ? t`Declined call`
+          : entry.outcome === "missed"
+            ? t`Missed call`
+            : entry.direction === "outgoing"
+              ? t`Outgoing call`
+              : t`Incoming call`;
+  const time = entry.startedAt ? formatMessageTime(entry.startedAt, i18n.locale || "en") : "";
+  const detail = [time, entry.outcome === "answered" ? duration : ""].filter(Boolean).join(" · ");
+  const transcript = entry.transcript;
   const expandable = transcript.some((line) => line.text);
-  const Icon = !request ? Phone : missed ? PhoneMissed : PhoneIncoming;
+  // The caller's own call sits on their side; the bot's call on the bot's.
+  const mine = entry.direction === "outgoing";
+  const Arrow = mine ? ArrowUpRight : ArrowDownLeft;
   return (
     <div
       data-testid="voice-chat-card"
       data-call-status={request?.status}
-      className={cn(
-        "w-full max-w-[min(74%,calc(100%_-_6rem))] rounded-[20px] border border-border bg-card",
-        // The user's own call sits on their side; the bot's call on the bot's.
-        request ? "me-auto" : "ms-auto",
-      )}
+      className={cn("flex w-full flex-col gap-1", mine ? "items-end" : "items-start")}
     >
-      <div className="flex items-center gap-2 px-3 py-2">
-        <button
-          type="button"
-          aria-expanded={expandable ? open : undefined}
-          disabled={!expandable}
-          onClick={() => setOpen((wasOpen) => !wasOpen)}
-          className="flex min-w-0 flex-1 items-center gap-2 text-start disabled:cursor-default"
-        >
-          <Icon
-            className={cn(
-              "size-4 shrink-0",
-              missed ? "text-destructive" : ringing ? "text-success" : "text-muted-foreground",
-            )}
-            aria-hidden="true"
-          />
-          <span className="text-sm font-medium text-foreground">{title}</span>
-          {detail ? (
-            <span className="truncate text-xs tabular-nums text-muted-foreground">{detail}</span>
-          ) : null}
-          {expandable ? (
-            <span
-              className={cn(
-                buttonVariants({ variant: "ghost", size: "icon-sm" }),
-                "ms-auto pointer-events-none text-muted-foreground",
-              )}
-            >
-              <span className="sr-only">{open ? t`Hide transcript` : t`Show transcript`}</span>
-              <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
-            </span>
-          ) : null}
-        </button>
-        {missed && onCallBack ? (
-          <Button size="sm" className="shrink-0 rounded-full" onClick={onCallBack}>
-            {t`Call back`}
+      <div
+        className={cn(
+          "flex w-[min(280px,100%)] items-center gap-3 rounded-[20px] py-2.5 ps-4 pe-2.5",
+          mine
+            ? "bg-chat-user text-chat-user-foreground"
+            : "border border-border bg-card text-foreground",
+        )}
+      >
+        <div className="min-w-0 flex-1">
+          <p className={cn("text-[14.5px] font-medium", missed && !mine && "text-destructive")}>
+            {title}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1 text-[12px] tabular-nums opacity-70">
+            <Arrow
+              aria-hidden="true"
+              className={cn("size-3.5 shrink-0", missed && !mine && "text-destructive opacity-100")}
+            />
+            {detail}
+          </p>
+        </div>
+        {onCallBack && !ringing ? (
+          <Button
+            size="icon"
+            variant={mine ? "secondary" : "default"}
+            className="size-9 shrink-0 rounded-full"
+            aria-label={t`Call again`}
+            onClick={onCallBack}
+          >
+            <Phone className="size-4" />
           </Button>
         ) : null}
       </div>
-      {!open && summary ? (
-        <p className="truncate px-3 pb-2 text-sm text-muted-foreground" dir="auto">
-          {summary}
-        </p>
+      {expandable ? (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+          className="inline-flex items-center gap-0.5 px-1 text-[12px] text-muted-foreground hover:text-foreground"
+        >
+          {open ? t`Hide transcript` : t`Transcript`}
+          <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+        </button>
       ) : null}
       {open ? (
-        <div className="space-y-1.5 px-3 pb-3 text-sm">
+        <div
+          className={cn(
+            "w-[min(420px,100%)] space-y-1 border-s-2 border-border ps-3 text-[13px] leading-[1.5] text-muted-foreground",
+          )}
+        >
           {transcript.map((line) => {
             if (!line.text) {
               return <span key={line.id} data-message-id={line.id} className="sr-only" />;
             }
             return (
-              <p
-                key={line.id}
-                data-message-id={line.id}
-                dir="auto"
-                className={cn(
-                  line.role === "user"
-                    ? "text-end text-muted-foreground"
-                    : "rounded-md bg-muted/60 px-3 py-2 text-foreground",
-                )}
-              >
+              <p key={line.id} data-message-id={line.id} dir="auto">
+                <span className="font-medium text-foreground">
+                  {line.role === "user" ? t`You:` : t`Bot:`}
+                </span>{" "}
                 {line.text}
               </p>
             );

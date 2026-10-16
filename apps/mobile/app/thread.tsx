@@ -12,20 +12,24 @@ import { canReactToThreadMessage, MESSAGE_REACTIONS } from "@rakazo/contracts";
 import type { MessageReactionSummary, SlashActionId, ThreadItem } from "@rakazo/core";
 import {
   abortableDelay,
+  appearState,
   appendNewerThreadPage,
   attachmentsForThread,
   buildComposerMentionOptions,
   cloudAgentHttpsUrl,
+  computerUseCount,
   formatFileSize,
   formatMessageTime,
   forwardProbeAfterPage,
   groupVoiceChats,
   isApprovalAskBlock,
+  isArriving,
   isPeerReceiptBlocks,
   isRunTerminalEvent,
   isSecretAskBlock,
   latestAnswerableAskMessageId,
   leaveThreadWindow,
+  noteArrivals,
   openThreadWindow,
   plainTextFromMarkdown,
   projectMessageReactions,
@@ -40,6 +44,7 @@ import {
   withLiveStreamingProgress,
 } from "@rakazo/core";
 import * as Clipboard from "expo-clipboard";
+import { File } from "expo-file-system";
 import {
   useFocusEffect,
   useIsFocused,
@@ -84,7 +89,7 @@ import {
   View,
 } from "react-native";
 import { KeyboardAvoidingView, useKeyboardState } from "react-native-keyboard-controller";
-import { useReducedMotion } from "react-native-reanimated";
+import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppConnectCard } from "../components/AppConnectCard";
 import { AskActions } from "../components/AskActions";
@@ -92,6 +97,7 @@ import { BotAvatar } from "../components/bot-avatar";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ComputerCard } from "../components/ComputerCard";
 import { ComposerReplyPreview } from "../components/composer-reply-preview";
+import { ComputerUseBadge } from "../components/computer-use-badge";
 import { FailedSendBubble } from "../components/failed-send-bubble";
 import { GlassSurface } from "../components/glass-surface";
 import type { ImageArtifactPreviewTarget } from "../components/image-artifact-viewer";
@@ -111,6 +117,7 @@ import type { ThreadComposerHandle } from "../components/thread-composer";
 import { ThreadComposer } from "../components/thread-composer";
 import { TimeSeparator } from "../components/time-separator";
 import { VoiceChatCard } from "../components/VoiceChatCard";
+import { VoiceMessageBubble } from "../components/voice-message-bubble";
 import { WorkingIndicator } from "../components/WorkingIndicator";
 import type {
   MobileBot,
@@ -146,7 +153,8 @@ import { findSwitchTarget, ringOnArrival, takeRingOnArrival } from "../lib/bot-s
 import { startCall, useCallSession } from "../lib/call-session";
 import { transparentColor } from "../lib/color";
 import { cancelFocusPrompt, focusPromptThreadActive } from "../lib/focus-prompt";
-import { dateLocaleForUi, t, useI18n } from "../lib/i18n";
+import type { VoiceClip } from "../lib/hold-to-talk";
+import { dateLocaleForUi, getActiveUiLocale, t, useI18n } from "../lib/i18n";
 import { isInlineImageMimeType } from "../lib/inline-image";
 import { integrationsCacheScope, isIntegrationsScopeCurrent } from "../lib/integrations-cache";
 import { saveLastBotId } from "../lib/last-bot";
@@ -266,6 +274,9 @@ function speakableMessageText(message: MobileMessage): string {
     .filter((line) => line.length > 0 && !ATTACHMENT_PLACEHOLDER_LINE.test(line))
     .join("\n");
 }
+
+/** How long a new message takes to rise into the thread. */
+const ARRIVE_MS = 220;
 
 export default function ThreadRoute() {
   const generation = useSyncExternalStore(subscribeSessionGeneration, currentSessionGeneration);
@@ -471,28 +482,17 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
   const inGroup = Boolean(groupId);
   const call = useCallSession();
   const onCall = Boolean(botId) && call?.botId === botId;
-  /** The server allows calls; null until it says so. Gates the call button and hold-to-talk. */
-  const [callFeatures, setCallFeatures] = useState<{ transcribe: boolean; live: boolean } | null>(
-    null,
-  );
+  /** The server allows calls; null until it says so. Gates the call button and voice messages. */
+  const [callFeatures, setCallFeatures] = useState<{ live: boolean } | null>(null);
   useEffect(() => {
     let cancelled = false;
     void Promise.all([
       rpc<MobileMe>("me"),
-      rpc<{ ready: boolean; transcribe: boolean; live?: boolean }>("voice/status").catch(
-        () => null,
-      ),
+      rpc<{ live?: boolean }>("voice/status").catch(() => null),
     ])
       .then(([me, voice]) => {
         if (cancelled) return;
-        setCallFeatures(
-          me.phoneCallsEnabled
-            ? {
-                transcribe: Boolean(voice?.ready && voice.transcribe),
-                live: Boolean(voice?.live),
-              }
-            : null,
-        );
+        setCallFeatures(me.phoneCallsEnabled ? { live: Boolean(voice?.live) } : null);
       })
       .catch(() => undefined);
     return () => {
@@ -1680,6 +1680,59 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
     await deliver(attempt);
   }
 
+  /** Sends a recording as a voice message; the server transcribes it for the bot. */
+  async function sendVoice(clip: VoiceClip) {
+    if (readOnly) return;
+    const botTarget = groupId ? undefined : botId;
+    const groupTarget = groupId;
+    const originThreadKey = groupTarget ?? botTarget;
+    if (!originThreadKey) return;
+    let attempt: SendAttempt;
+    try {
+      const file = new File(clip.uri);
+      const contentBase64 = await file.base64();
+      try {
+        file.delete();
+      } catch {
+        // The clip is disposable; a leftover in the cache is fine.
+      }
+      const attachment = {
+        id: `voice-${Date.now()}`,
+        name: "voice.m4a",
+        mimeType: "audio/mp4" as const,
+        contentBase64,
+      };
+      attempt = feedback.sendAttempt({
+        originThreadKey,
+        displayText: "",
+        replyPreview: replyQuote ?? (replyTarget ? previewMessageText(replyTarget) : null),
+        initialBotTarget: botTarget,
+        botTarget,
+        groupTarget,
+        reroutedToGroup: false,
+        plan: resolveComposerSendPlan({ text: "", mentions: [], hasAttachments: true }),
+        attachments: [attachment],
+        voice: {
+          attachmentId: attachment.id,
+          durationMs: Math.round(clip.durationMs),
+          waveform: clip.waveform,
+          language: getActiveUiLocale().split("-")[0],
+        },
+        replyTargetId: replyTarget?.id,
+        replyQuote,
+      });
+    } catch (error) {
+      Alert.alert(t("Failed to send message"), errorText(error));
+      return;
+    }
+    setReplyTarget(null);
+    setReplyQuote(null);
+    if (pinnedAroundRef.current) showLatest();
+    performScroll(scrollBehavior.current.jumpToLatest());
+    publishThreadScrollState(scrollBehavior.current.state());
+    await deliver(attempt);
+  }
+
   async function deliver(attempt: SendAttempt, force = false) {
     if (!readOnly) await feedback.send(attempt, force);
   }
@@ -1718,6 +1771,16 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
     }
   }
 
+  /** Keys of the user's sends this thread already shows. */
+  const shownNonces = useMemo(
+    () =>
+      new Set(
+        (snap && (snap.groupId ?? snap.botId) === threadKey ? snap.messages : []).flatMap(
+          (message) => (message.clientNonce ? [message.clientNonce] : []),
+        ),
+      ),
+    [snap, threadKey],
+  );
   const afterDeliveredRef = useRef(afterDelivered);
   afterDeliveredRef.current = afterDelivered;
   useEffect(() => subscribeDelivered((attempt) => afterDeliveredRef.current(attempt)), []);
@@ -1728,9 +1791,10 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
         snap.messages.flatMap((message) =>
           message.role === "user" && message.seq !== undefined ? [message.seq] : [],
         ),
+        shownNonces,
       );
     }
-  }, [snap, threadKey]);
+  }, [snap, threadKey, shownNonces]);
 
   async function stop() {
     if (readOnly) return;
@@ -1932,6 +1996,15 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
   );
   // Group calls in reading order, then reverse for the inverted list.
   const liveItems = useMemo(() => groupVoiceChats(visibleMessages).reverse(), [visibleMessages]);
+  const arrivals = useRef({ key: threadKey, messages: visibleMessages, state: appearState() });
+  if (arrivals.current.key !== threadKey) {
+    arrivals.current = { key: threadKey, messages: visibleMessages, state: appearState() };
+    noteArrivals(arrivals.current.state, visibleMessages, { first: true, now: Date.now() });
+  } else if (arrivals.current.messages !== visibleMessages) {
+    const first = arrivals.current.state.seen.size === 0;
+    arrivals.current.messages = visibleMessages;
+    noteArrivals(arrivals.current.state, visibleMessages, { first, now: Date.now() });
+  }
   const messagesById = useMemo(
     () => new Map((snap?.messages ?? []).map((message) => [message.id, message])),
     [snap?.messages],
@@ -2123,7 +2196,7 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
         ? (snap?.activeRuns?.find((run) => run.botId === activityBotId)?.status ??
           (snap?.run?.botId === activityBotId ? snap.run.status : currentBotStatus))
         : undefined;
-      return (
+      const row = (
         <MessageRow
           key={message.id}
           message={message}
@@ -2151,9 +2224,36 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
           index={options?.index ?? 0}
         />
       );
+      const computerBotId = message.role === "bot" ? (message.botId ?? botId) : undefined;
+      const withBadge =
+        computerBotId && computerUseCount(message.blocks) > 0 ? (
+          <View key={message.id}>
+            {row}
+            <ComputerUseBadge
+              message={message}
+              onOpen={() =>
+                openComputer(
+                  computerBotId,
+                  memberName(snap?.members, computerBotId) ?? displayName ?? t("Bot"),
+                )
+              }
+            />
+          </View>
+        ) : (
+          row
+        );
+      // The list is inverted, so its cells' "down" is up: a new message rises from the composer.
+      return isArriving(arrivals.current.state, message.id, Date.now()) ? (
+        <Animated.View key={message.id} entering={FadeInDown.duration(ARRIVE_MS)}>
+          {withBadge}
+        </Animated.View>
+      ) : (
+        withBadge
+      );
     },
     [
       messagesById,
+      openComputer,
       snap?.members,
       snap?.activeRuns,
       snap?.run,
@@ -2183,12 +2283,15 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
           {item.messages[0] && separatorIds.has(item.messages[0].id) ? (
             <TimeSeparator createdAt={item.messages[0].createdAt} />
           ) : null}
-          <VoiceChatCard group={item} />
+          <VoiceChatCard
+            group={item}
+            onCallBack={canCall ? () => void startVoiceCall() : undefined}
+          />
         </View>
       ) : (
         renderMessageRow(item.message)
       ),
-    [renderMessageRow, separatorIds],
+    [renderMessageRow, separatorIds, canCall],
   );
   const listContentStyle = useMemo(
     () => ({
@@ -2273,14 +2376,18 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
       </Pressable>
     ) : null;
 
-  const failedSendBubbles = feedback.unsentSends.map((attempt) => (
-    <FailedSendBubble
-      key={attempt.clientNonce}
-      attempt={attempt}
-      onRetry={() => void deliver(attempt, true)}
-      onDelete={() => feedback.discard(attempt)}
-    />
-  ));
+  // A send whose message is already on screen gives way in the same frame, never shown twice.
+  const failedSendBubbles = feedback.unsentSends
+    .filter((attempt) => !shownNonces.has(attempt.clientNonce))
+    .map((attempt) => (
+      <FailedSendBubble
+        key={attempt.clientNonce}
+        attempt={attempt}
+        onRetry={() => void deliver(attempt, true)}
+        onDelete={() => feedback.discard(attempt)}
+        inverted={!showPinnedPage}
+      />
+    ));
 
   return (
     <KeyboardAvoidingView
@@ -2603,7 +2710,8 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
           attachFrom={attachFrom}
           send={send}
           stop={stop}
-          holdToTalk={!inGroup && botId && !readOnly ? callFeatures : null}
+          voiceMessages={Boolean(callFeatures) && !readOnly}
+          sendVoice={(clip) => void sendVoice(clip)}
           onSlashAction={runSlashAction}
         />
       </View>
@@ -3612,6 +3720,19 @@ const MessageBubble = memo(function MessageBubble({
           />
         ))}
       </View>
+    );
+  }
+  const voiceBlock = message.blocks.find((block) => block.kind === "voice");
+  if (voiceBlock) {
+    return (
+      <VoiceMessageBubble
+        target={artifactTarget}
+        block={voiceBlock}
+        transcript={message.blocks
+          .flatMap((block) => (block.kind === "text" ? [block.text] : []))
+          .join("\n")}
+        fromUser={message.role === "user"}
+      />
     );
   }
   const attachments = message.blocks.filter(
