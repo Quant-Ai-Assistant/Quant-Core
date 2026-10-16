@@ -153,7 +153,7 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "computer_act",
     description:
-      'Perform up to 24 ordered desktop actions on this bot\'s computer and return the resulting screen. Batch only predictable actions; stop before an outcome you need to inspect. Action kinds: click, move, down, up, type, key, scroll, wait, focus (raises the application\'s window, launching it if absent). When computer_observe listed elements: click takes element instead of x/y; press (accessibility press), fill (replace a field\'s text), and hover take element; menu presses a menu bar item by its titles, e.g. path ["File", "Export"].',
+      'Perform up to 24 ordered desktop actions on this bot\'s computer and return the resulting screen. Batch only predictable actions; stop before an outcome you need to inspect. Action kinds: click, move, hover, down, up, type, key, scroll, wait, focus (raises the application\'s window, launching it if absent). move and hover only point the mouse at x/y (or hover at an element) and press nothing: use them to reveal a tooltip or a hover menu, or to keep an open dropdown open while you look. Click only to press something; a click to "look at" a spot can close menus and change the page. When computer_observe listed elements: click takes element instead of x/y; press (accessibility press) and fill (replace a field\'s text) take element; menu presses a menu bar item by its titles, e.g. path ["File", "Export"].',
     inputSchema: {
       type: "object",
       properties: {

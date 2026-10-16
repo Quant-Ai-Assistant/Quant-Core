@@ -300,6 +300,16 @@ describe("computer element actions", () => {
     ]);
   });
 
+  it("hovers a point by moving the mouse there, pressing nothing", () => {
+    // Works on every computer, including ones that cannot list elements.
+    expect(parseComputerActions([{ kind: "hover", x: 40, y: 60 }])).toEqual([
+      { kind: "pointer", x: 40, y: 60, type: "move", button: "left" },
+    ]);
+    expect(parseComputerActions([{ kind: "move", x: 40, y: 60 }])).toEqual([
+      { kind: "pointer", x: 40, y: 60, type: "move", button: "left" },
+    ]);
+  });
+
   it("refuses element and menu actions where the computer cannot read elements", () => {
     expect(() => parseComputerActions([{ kind: "click", element: 1 }])).toThrow(/x\/y/);
     expect(() => parseComputerActions([{ kind: "menu", path: ["File"] }])).toThrow(/x\/y/);
