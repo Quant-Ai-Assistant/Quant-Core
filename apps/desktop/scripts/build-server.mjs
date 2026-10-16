@@ -1,5 +1,6 @@
 // Builds the Quant server that the desktop app runs itself for "This computer":
-//   server-dist/app/*.mjs        API, worker and migrator, bundled with esbuild
+//   server-dist/app/*.mjs        API, worker, migrator and the Docker computer supervisor,
+//                                bundled with esbuild
 //   server-dist/migrations/      the Prisma migrations the migrator applies
 //   server-dist/app/node_modules/ native modules the bundles leave external, and Postgres
 //                                (nested: electron-builder drops a node_modules at the root)
@@ -31,6 +32,7 @@ await build({
   entryPoints: {
     api: path.join(root, "apps/api/src/index.ts"),
     worker: path.join(root, "apps/worker/src/index.ts"),
+    supervisor: path.join(root, "infra/sandboxes/supervisor/src/index.ts"),
     migrate: path.join(desktop, "server/migrate-entry.ts"),
   },
   outdir: path.join(out, "app"),
@@ -39,7 +41,8 @@ await build({
   format: "esm",
   target: "node22",
   outExtension: { ".js": ".mjs" },
-  external: EXTERNAL,
+  // dockerode reaches ssh2, whose native speedups are optional and loaded inside try/catch.
+  external: [...EXTERNAL, "cpu-features", "*.node"],
   // Workspace packages point their `development` export at TypeScript sources.
   conditions: ["development"],
   // CommonJS dependencies inside an ES module bundle still expect these globals.

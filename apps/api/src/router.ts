@@ -287,11 +287,13 @@ import {
 } from "./thread-message-pages.js";
 import {
   reactToThreadMessage,
+  replayExistingSend,
   resolveThreadTarget,
   sendThreadMessage,
   setThreadUnreadState,
   stopBotRuns,
   stopThreadRuns,
+  threadActivity,
   threadHead,
   threadSnapshot,
 } from "./thread-target.js";
@@ -307,6 +309,7 @@ import {
   updateVoiceSpeechModel,
   voiceContext,
 } from "./voice.js";
+import { transcribeVoiceMessage } from "./voice-message.js";
 
 const MAX_COMPUTER_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 /** Each command writes a running and a done event, so this keeps about 100 commands. */
@@ -2161,6 +2164,10 @@ export function createRouter(deps: RouterDeps) {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         return threadHead(deps.prisma, target);
       }),
+      activity: authed.threads.activity.handler(async ({ context, input }) => {
+        const target = await resolveThreadTarget(deps.prisma, context.actor, input);
+        return threadActivity(deps.prisma, target.threadId);
+      }),
       get: authed.threads.get.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input, {
           includeArchived: true,
@@ -2248,7 +2255,17 @@ export function createRouter(deps: RouterDeps) {
         if (target.kind === "bot") {
           await assertTeachingSendAllowed(deps.prisma, context.actor.spaceId, target.botId);
         }
-        return sendThreadMessage(deps, context.actor, target, input);
+        const { voice, ...message } = input;
+        if (!voice) return sendThreadMessage(deps, context.actor, target, message);
+        // A replayed send must not transcribe the recording a second time.
+        const replayed = await replayExistingSend(deps, target.threadId, input.clientNonce);
+        if (replayed) return replayed;
+        const transcript = await transcribeVoiceMessage(deps, context.actor, voice);
+        return sendThreadMessage(deps, context.actor, target, {
+          ...message,
+          text: transcript || undefined,
+          voice: { ...voice, transcribed: Boolean(transcript) },
+        });
       }),
       react: authed.threads.react.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
@@ -3244,6 +3261,17 @@ export function createRouter(deps: RouterDeps) {
             },
           ),
         };
+      }),
+      screenFrame: authed.computer.screenFrame.handler(async ({ context, input }) => {
+        const bot = await repos.getBot(context.actor, input.botId);
+        if (bot.computer?.kind !== "desktop" || !deps.sandbox.screenFrame) {
+          throw new ORPCError("NOT_FOUND", { message: "This computer has no host screen." });
+        }
+        const frame = await deps.sandbox.screenFrame(
+          toComputerRef(bot.computer),
+          computerContext(context.actor, bot.id, "screen.frame"),
+        );
+        return { imageBase64: Buffer.from(frame.image).toString("base64") };
       }),
       screenUrl: authed.computer.screenUrl.handler(async ({ context, input }) => {
         let bot = await repos.getBot(context.actor, input.botId);
@@ -6585,7 +6613,17 @@ async function computerStatus(
     botId,
     botName: bot.name,
   });
-  return toComputerStatus(botId, bot.computer, busyBotName);
+  const status = toComputerStatus(botId, bot.computer, busyBotName);
+  if (!deps.sandbox.virtualDesktops) return status;
+  const settings =
+    deps.env.sandboxProvider === "desktop"
+      ? null
+      : await deps.prisma.deploymentSettings.findUnique({
+          where: { id: "default" },
+          select: { computerHost: true },
+        });
+  const hostOn = deps.env.sandboxProvider === "desktop" || settings?.computerHost === "this-mac";
+  return hostOn ? { ...status, virtualDesktops: true } : status;
 }
 
 /** Hand the user's screen control for this bot back, continuing any run waiting on it. */

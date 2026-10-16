@@ -113,6 +113,10 @@ msgstr "{botName} 的电脑"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable} 是保留名称，不能用作命令变量。请选择其他名称。"
 
+#: src/pages/Shell.tsx
+msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
+msgstr ""
+
 #: src/lib/billing.ts
 msgid "{count} days"
 msgstr ""
@@ -476,6 +480,10 @@ msgstr "允许一次"
 msgid "Allow purchase actions without asking"
 msgstr "允许购买操作，无需询问"
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Allow the microphone to record"
+msgstr ""
+
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
 msgstr ""
@@ -777,6 +785,7 @@ msgstr "Bot"
 msgid "Bot screen"
 msgstr "Bot 屏幕"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Shell.tsx
 msgid "Bot screen preview"
 msgstr "Bot 屏幕预览"
@@ -784,6 +793,10 @@ msgstr "Bot 屏幕预览"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Bot to link"
 msgstr "要关联的 Bot"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Bot:"
+msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/RoutineEditor.tsx
@@ -823,7 +836,12 @@ msgid "Call"
 msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
-msgid "Call back"
+msgid "Call again"
+msgstr ""
+
+#. placeholder {0}: callClock(elapsed)
+#: src/components/call/CallCard.tsx
+msgid "Call ended · {0}"
 msgstr ""
 
 #. placeholder {0}: call.botName
@@ -837,10 +855,6 @@ msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Calling you…"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
-msgid "Calling…"
 msgstr ""
 
 #: src/pages/SettingsOverlay.tsx
@@ -890,6 +904,10 @@ msgstr "已取消"
 #: src/pages/ActivityList.tsx
 msgid "Cancelled"
 msgstr "已取消"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Cancelled call"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
@@ -1278,6 +1296,11 @@ msgstr "已连接，下一条消息起即可使用其工具。"
 msgid "Connecting…"
 msgstr "正在连接…"
 
+#: src/components/call/CallCard.tsx
+msgctxt "call status"
+msgid "Connecting…"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Connection test failed."
 msgstr "连接测试失败。"
@@ -1625,6 +1648,10 @@ msgstr "无法连接服务器"
 msgid "Could not reach the update server."
 msgstr "无法连接更新服务器。"
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Could not record"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "无法移除"
@@ -1739,6 +1766,14 @@ msgstr "无法发送重置邮件"
 msgid "Could not send that"
 msgstr "无法发送"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Could not set up the virtual desktop"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not show this screen"
+msgstr ""
+
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not start OAuth"
 msgstr "无法开始 OAuth"
@@ -1750,6 +1785,10 @@ msgstr ""
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
 msgstr "无法提交此回答"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not switch the computer"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Could not take control"
@@ -1914,6 +1953,10 @@ msgstr "天"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Decline"
 msgstr "拒绝"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Declined call"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -2117,6 +2160,10 @@ msgstr "完成"
 msgid "Download"
 msgstr ""
 
+#: src/components/computer/HostScreen.tsx
+msgid "Download · {size}"
+msgstr ""
+
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
 #. placeholder {0}: state.availableVersion
@@ -2136,6 +2183,10 @@ msgstr "下载为 Markdown"
 
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Download Executor"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Downloading the virtual desktop"
 msgstr ""
 
 #: src/components/DesktopUpdates.tsx
@@ -2476,6 +2527,7 @@ msgid "Hide password"
 msgstr "隐藏密码"
 
 #: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Hide transcript"
 msgstr "隐藏文字记录"
 
@@ -2491,11 +2543,7 @@ msgid "High"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk"
-msgstr ""
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk, release to send"
+msgid "Hold to record, release to send"
 msgstr ""
 
 #: src/pages/RoutineSchedule.tsx
@@ -2689,15 +2737,6 @@ msgstr ""
 
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Listening"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Listening"
-msgstr ""
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Listening…"
 msgstr ""
 
 #: src/pages/Shell.tsx
@@ -3063,11 +3102,6 @@ msgstr "移动到"
 msgid "Mute"
 msgstr "静音"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Muted"
-msgstr ""
-
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
@@ -3148,10 +3182,6 @@ msgstr ""
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr "还没有 Agent 连接。"
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "No answer"
-msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "No apps match your search."
@@ -3421,6 +3451,10 @@ msgstr ""
 msgid "Opened its thread."
 msgstr "已打开其对话。"
 
+#: src/components/call/CallCard.tsx
+msgid "Opening a page"
+msgstr ""
+
 #: src/pages/Onboarding.tsx
 msgid "Opening chat…"
 msgstr "正在打开聊天…"
@@ -3463,6 +3497,10 @@ msgstr "原消息不可用"
 #: src/pages/Onboarding.tsx
 msgid "Other model…"
 msgstr "其他模型…"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Outgoing call"
+msgstr ""
 
 #: src/pages/Board.tsx
 msgid "Owner"
@@ -3520,13 +3558,13 @@ msgstr "粘贴你的 API 密钥"
 msgid "Paste your API key, then test again."
 msgstr "请粘贴你的 API 密钥，然后重新测试。"
 
+#: src/pages/shell/voice-message.tsx
+msgid "Pause voice message"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "Paused"
 msgstr "已暂停"
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "Phone call"
-msgstr ""
 
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
@@ -3544,6 +3582,10 @@ msgstr "请从列表中选择模型，或输入此端点提供的模型 ID。"
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "置顶"
+
+#: src/pages/shell/voice-message.tsx
+msgid "Play voice message"
+msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -3643,6 +3685,10 @@ msgstr "重新连接 OAuth"
 msgid "Reconnecting"
 msgstr "正在重新连接"
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Record voice message"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Recording may have started, but the view could not refresh"
 msgstr ""
@@ -3727,6 +3773,10 @@ msgstr "交还控制权"
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Release interrupted computer?"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Remembering"
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
@@ -3891,6 +3941,7 @@ msgid "Restoring your workspace"
 msgstr ""
 
 #: src/components/AccountAccess.tsx
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Auth.tsx
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Retry"
@@ -3981,6 +4032,10 @@ msgstr ""
 #: src/pages/RoutineEditor.tsx
 msgid "Running · Stop"
 msgstr "运行中 · 停止"
+
+#: src/components/call/CallCard.tsx
+msgid "Running a command"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running…"
@@ -4110,6 +4165,10 @@ msgstr ""
 msgid "Search: {0}"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
+msgid "Searching the web"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
 msgid "Searching…"
@@ -4152,6 +4211,8 @@ msgid "Send reset link"
 msgstr "发送重置链接"
 
 #: src/components/AskCard.tsx
+#: src/pages/Shell.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Sending…"
 msgstr "正在发送…"
 
@@ -4184,7 +4245,6 @@ msgstr "服务器名称"
 msgid "Server URL"
 msgstr "服务器 URL"
 
-#: src/components/call/CallCard.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/Shell.tsx
@@ -4257,7 +4317,7 @@ msgstr "显示设置"
 msgid "Show tool activity"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Show transcript"
 msgstr "显示文字记录"
 
@@ -4328,7 +4388,7 @@ msgid "Slack not enabled"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Slide up to lock"
+msgid "Slide to cancel"
 msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx
@@ -4371,11 +4431,6 @@ msgstr "仅朗读"
 #: src/pages/Shell.tsx
 msgid "Speak this reply"
 msgstr "朗读这条回复"
-
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Speaking"
-msgstr ""
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Speech model"
@@ -4589,11 +4644,6 @@ msgstr ""
 msgid "Thinking"
 msgstr "思考"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Thinking"
-msgstr ""
-
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Thinking: {activeThinkingLabel}"
 msgstr ""
@@ -4622,6 +4672,7 @@ msgstr "此对话为只读"
 msgid "this computer"
 msgstr "这台电脑"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/SettingsOverlay.tsx
 msgid "This computer"
 msgstr ""
@@ -4639,6 +4690,7 @@ msgstr ""
 msgid "this Mac"
 msgstr "这台 Mac"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/SettingsOverlay.tsx
 msgid "This Mac"
 msgstr ""
@@ -4730,11 +4782,7 @@ msgstr "工具源"
 msgid "Tools"
 msgstr ""
 
-#: src/components/composer/HoldToTalk.tsx
-msgid "Transcribing…"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
+#: src/components/call/VoiceChatCard.tsx
 msgid "Transcript"
 msgstr "文字记录"
 
@@ -4923,6 +4971,10 @@ msgstr ""
 msgid "Uses this server's own {hostCredentialSource} credentials to access {selectedProviderName}."
 msgstr "使用此服务器自己的 {hostCredentialSource} 凭据访问 {selectedProviderName}。"
 
+#: src/components/call/CallCard.tsx
+msgid "Using a tool"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Value"
 msgstr ""
@@ -4947,11 +4999,19 @@ msgstr ""
 msgid "View chat"
 msgstr "查看聊天"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Virtual"
+msgstr ""
+
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Voice"
 msgstr "语音"
+
+#: src/pages/Shell.tsx
+msgid "Voice message"
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Wait a moment and test again."
@@ -5034,8 +5094,21 @@ msgstr "何时使用"
 msgid "Where should bots run?"
 msgstr "Bot 应在哪里运行？"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Where this bot works"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 msgid "Won't do"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+#: src/pages/Shell.tsx
+msgid "Working on the computer"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Working with files"
 msgstr ""
 
 #: src/lib/roster-status.ts
@@ -5073,13 +5146,13 @@ msgstr "如果没有自动跳转，可以关闭此标签页。"
 msgid "You can close this window."
 msgstr "可以关闭此窗口。"
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "You declined"
-msgstr ""
-
 #: src/pages/Shell.tsx
 msgid "You have control"
 msgstr "你已接管"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "You:"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Your email address"

@@ -157,7 +157,7 @@ async function findSendReceipt(prisma: PrismaClient, threadId: string, clientNon
   });
 }
 
-async function replayExistingSend(
+export async function replayExistingSend(
   deps: { prisma: PrismaClient; events: ThreadEvents; jobs: JobPublisher },
   threadId: string,
   clientNonce: string | undefined,
@@ -326,6 +326,28 @@ export async function threadHead(prisma: PrismaClient, target: ThreadTarget) {
     select: { seq: true },
   });
   return { threadId: target.threadId, cursor: latest?.seq ?? -1 };
+}
+
+/** The tool the thread's running work is using now: the last line it posted, if a tool's. */
+export async function threadActivity(
+  prisma: PrismaClient,
+  threadId: string,
+): Promise<{ tool: string | null }> {
+  const run = await prisma.run.findFirst({
+    where: { threadId, status: "running" },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+  if (!run) return { tool: null };
+  const event = await prisma.event.findFirst({
+    where: { threadId, runId: run.id, type: "thread.progress" },
+    orderBy: { seq: "desc" },
+    select: { payload: true },
+  });
+  const payload = (event?.payload ?? {}) as Record<string, unknown>;
+  return {
+    tool: payload.activity === true && typeof payload.tool === "string" ? payload.tool : null,
+  };
 }
 
 export async function threadSnapshot(
@@ -601,6 +623,40 @@ function mapRun(run: {
   };
 }
 
+/**
+ * Validates a voice message's recording like any attachment and draws it as a voice block.
+ * Exported for tests.
+ */
+export async function resolveVoiceBlock(
+  voice:
+    | { artifactId: string; durationMs: number; waveform: number[]; transcribed: boolean }
+    | undefined,
+  resolve: (ids: string[]) => Promise<{ artifacts: Array<{ id: string; mimeType: string }> }>,
+): Promise<Extract<MessageBlock, { kind: "voice" }> | undefined> {
+  if (!voice) return undefined;
+  const { artifacts } = await resolve([voice.artifactId]);
+  const artifact = artifacts[0];
+  if (!artifact?.mimeType.startsWith("audio/")) {
+    throw new ORPCError("BAD_REQUEST", { message: "That voice message is not a recording." });
+  }
+  return {
+    kind: "voice",
+    artifactId: artifact.id,
+    mimeType: artifact.mimeType,
+    durationMs: voice.durationMs,
+    waveform: voice.waveform,
+    transcribed: voice.transcribed,
+  };
+}
+
+/** What the bot reads for a send: the text, or a note when a voice message had no words. */
+function voicePromptText(input: { text?: string; voice?: { transcribed: boolean } }) {
+  if (input.voice && !input.voice.transcribed && !input.text?.trim()) {
+    return "The user sent a voice message that could not be transcribed. Ask them to type it.";
+  }
+  return input.text;
+}
+
 export async function sendThreadMessage(
   deps: {
     prisma: PrismaClient;
@@ -616,6 +672,8 @@ export async function sendThreadMessage(
     replyToMessageId?: string;
     replyQuote?: string;
     clientNonce?: string;
+    /** A voice message; `text` then holds its transcript. */
+    voice?: { artifactId: string; durationMs: number; waveform: number[]; transcribed: boolean };
     /** The model a new run keeps, e.g. the one chosen for tasks from a call. */
     modelPin?: { modelProvider: string; modelId: string; thinkingLevel: string | null };
   },
@@ -686,12 +744,15 @@ export async function sendThreadMessage(
           target.botId,
           input.artifactIds,
         );
+        const voiceBlock = await resolveVoiceBlock(input.voice, (ids) =>
+          resolveSendAttachments({ prisma: tx }, actor, target.botId, ids),
+        );
         const connectorNames = await resolveOwnedConnectorDisplayNames(
           tx,
           actor,
           mentionTargets.connectorMentionIds,
         );
-        const blocks = buildUserMessageBlocks(input.text, attachmentBlocks);
+        const blocks = buildUserMessageBlocks(input.text, attachmentBlocks, voiceBlock);
         const message = await createThreadMessageInTransaction(tx, {
           threadId: target.threadId,
           role: "user",
@@ -745,6 +806,7 @@ export async function sendThreadMessage(
               role: "user",
               blocks,
               callId,
+              clientNonce: input.clientNonce,
               runIds: answered.map((run) => run.id),
               replyToMessageId,
               replyQuote,
@@ -785,6 +847,7 @@ export async function sendThreadMessage(
               role: "user",
               blocks,
               callId,
+              clientNonce: input.clientNonce,
               replyToMessageId,
               replyQuote,
               replyPreview,
@@ -798,7 +861,7 @@ export async function sendThreadMessage(
             botId: target.botId,
             threadId: target.threadId,
             userId: actor.userId,
-            prompt: buildSendPrompt(input.text, artifacts, connectorNames),
+            prompt: buildSendPrompt(voicePromptText(input), artifacts, connectorNames),
             status: "queued",
           },
         });
@@ -833,6 +896,7 @@ export async function sendThreadMessage(
             role: "user",
             blocks,
             callId,
+            clientNonce: input.clientNonce,
             runIds: [run.id],
             replyToMessageId,
             replyQuote,
@@ -857,12 +921,15 @@ export async function sendThreadMessage(
         memberBotIds,
         input.artifactIds,
       );
+      const voiceBlock = await resolveVoiceBlock(input.voice, (ids) =>
+        resolveGroupSendAttachments({ prisma: tx }, actor, target.groupId, memberBotIds, ids),
+      );
       const connectorNames = await resolveOwnedConnectorDisplayNames(
         tx,
         actor,
         mentionTargets.connectorMentionIds,
       );
-      const blocks = buildUserMessageBlocks(input.text, attachmentBlocks);
+      const blocks = buildUserMessageBlocks(input.text, attachmentBlocks, voiceBlock);
       const message = await createThreadMessageInTransaction(tx, {
         threadId: target.threadId,
         role: "user",
@@ -947,7 +1014,7 @@ export async function sendThreadMessage(
             botId,
             threadId: target.threadId,
             userId: actor.userId,
-            prompt: buildSendPrompt(input.text, artifacts, connectorNames),
+            prompt: buildSendPrompt(voicePromptText(input), artifacts, connectorNames),
             status: "queued",
           },
         });
@@ -994,6 +1061,7 @@ export async function sendThreadMessage(
           role: "user",
           blocks,
           callId,
+          clientNonce: input.clientNonce,
           runIds: runs.map((run) => run.id),
           replyToMessageId,
           replyQuote,

@@ -25,7 +25,18 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        // A fake microphone, so voice messages record without a device or a prompt.
+        launchOptions: {
+          args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
+        },
+      },
+    },
+  ],
   webServer: {
     command: "pnpm dev",
     url: baseURL,

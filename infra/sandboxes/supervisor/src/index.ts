@@ -1046,6 +1046,15 @@ async function ensureComputerImage() {
         // build below
       }
       const dockerfile = path.join(computerContext, "Dockerfile");
+      // A bundled supervisor (the desktop app) has no build context: pull the release image.
+      if (!existsSync(dockerfile) && COMPUTER_IMAGE.includes("/")) {
+        const pulled = await docker.pull(COMPUTER_IMAGE);
+        await new Promise<void>((resolve, reject) => {
+          docker.modem.followProgress(pulled, (err) => (err ? reject(err) : resolve()));
+        });
+        await docker.getImage(COMPUTER_IMAGE).inspect();
+        return;
+      }
       if (!existsSync(dockerfile)) {
         throw new Error(
           `Missing ${COMPUTER_IMAGE}. Build it with: docker build -t ${COMPUTER_IMAGE} infra/sandboxes/computer`,
@@ -1078,6 +1087,10 @@ async function ensureComputerImage() {
       });
       await docker.getImage(COMPUTER_IMAGE).inspect();
     })();
+    // A failed pull or build is retried on the next boot instead of failing forever.
+    imageReady.catch(() => {
+      imageReady = undefined;
+    });
   }
   await imageReady;
 }

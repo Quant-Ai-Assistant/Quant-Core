@@ -13,6 +13,7 @@ function liveDeps() {
   const deps: CallDeps = {
     cue: vi.fn(async () => {}),
     endCall: vi.fn(async () => {}),
+    activity: vi.fn(async (): Promise<string | null> => null),
     connectLive: vi.fn(async (_call, next) => {
       handlers = next;
       return connection;
@@ -52,6 +53,19 @@ describe("mobile call session", () => {
     expect(connection.close).toHaveBeenCalled();
     expect(deps.endCall).toHaveBeenCalledWith("bot", id, 0);
     expect(deps.cue).toHaveBeenLastCalledWith("end");
+    // It stays a moment as "Call ended", then closes.
+    expect(getSnapshot()?.endedAt).toEqual(expect.any(Number));
+    await vi.waitFor(() => expect(getSnapshot()).toBeNull(), { timeout: 3_000 });
+  });
+
+  it("connects before the clock starts, then shows the tool the bot is using", async () => {
+    const { deps } = liveDeps();
+    vi.mocked(deps.activity).mockResolvedValue("computer_act");
+    startCall({ botId: "bot", botName: "Ada" }, deps);
+    expect(getSnapshot()?.connectedAt).toBeNull();
+    await vi.waitFor(() => expect(getSnapshot()?.connectedAt).toEqual(expect.any(Number)));
+    await vi.waitFor(() => expect(getSnapshot()?.tool).toBe("computer_act"));
+    expect(deps.activity).toHaveBeenCalledWith("bot");
   });
 
   it("ends the call when the provider closes it", async () => {
@@ -59,6 +73,6 @@ describe("mobile call session", () => {
     startCall({ botId: "bot", botName: "Ada" }, deps);
     await vi.waitFor(() => expect(deps.connectLive).toHaveBeenCalled());
     handlers().onEnded("remote_hangup");
-    expect(getSnapshot()).toBeNull();
+    expect(getSnapshot()?.endedAt ?? null).not.toBeNull();
   });
 });

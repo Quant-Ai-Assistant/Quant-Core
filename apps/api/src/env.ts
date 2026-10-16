@@ -177,8 +177,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     ticketBoardEnabled: source.TICKET_BOARD_ENABLED === "true",
     phoneCallsEnabled: source.PHONE_CALLS_ENABLED === "true",
     sandboxSupervisorUrl: source.SANDBOX_SUPERVISOR_URL ?? "http://127.0.0.1:7091",
-    sandboxSupervisorToken:
-      sandboxProvider === "docker" ? resolveSupervisorToken(source) : undefined,
+    sandboxSupervisorToken: usesSupervisor(sandboxProvider, source)
+      ? resolveSupervisorToken(source)
+      : undefined,
     screenProxySecret: resolveScreenProxySecret(source),
     sandboxProvider,
     cloudAgentProvider,
@@ -255,4 +256,12 @@ function required(source: NodeJS.ProcessEnv, key: string): string {
 function optional(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed || undefined;
+}
+
+/** Docker computers always need the supervisor; the desktop app has one only with Docker. */
+function usesSupervisor(sandboxProvider: string, source: NodeJS.ProcessEnv): boolean {
+  return (
+    sandboxProvider === "docker" ||
+    (sandboxProvider === "desktop" && Boolean(source.SANDBOX_SUPERVISOR_URL))
+  );
 }

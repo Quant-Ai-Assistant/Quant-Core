@@ -33,6 +33,8 @@ export type SendPayload = {
   attachments: PickedAttachment[];
   replyTargetId?: string;
   replyQuote: string | null;
+  /** A voice message: its recording is the attachment with this id. */
+  voice?: { attachmentId: string; durationMs: number; waveform: number[]; language?: string };
 };
 
 export type SendAttempt = {
@@ -70,6 +72,7 @@ export async function deliverSend(
   }
   if (!plan.shouldSend) return undefined;
   const artifactIds: string[] = [];
+  let voiceArtifactId: string | undefined;
   for (const [index, pending] of attachments.entries()) {
     let id = attempt.artifactIds.get(pending.id);
     if (!id) {
@@ -87,7 +90,8 @@ export async function deliverSend(
       id = artifact.id;
       attempt.artifactIds.set(pending.id, id);
     }
-    artifactIds.push(id);
+    if (pending.id === payload.voice?.attachmentId) voiceArtifactId = id;
+    else artifactIds.push(id);
   }
   const sent = await request<{ seq: number }>("threads/send", {
     ...(groupTarget ? { groupId: groupTarget } : { botId: botTarget! }),
@@ -97,6 +101,15 @@ export async function deliverSend(
     artifactIds: artifactIds.length ? artifactIds : undefined,
     replyToMessageId: reroutedToGroup ? undefined : payload.replyTargetId,
     replyQuote: reroutedToGroup ? undefined : (payload.replyQuote ?? undefined),
+    voice:
+      payload.voice && voiceArtifactId
+        ? {
+            artifactId: voiceArtifactId,
+            durationMs: payload.voice.durationMs,
+            waveform: payload.voice.waveform,
+            language: payload.voice.language,
+          }
+        : undefined,
   });
   return sent.seq;
 }
@@ -133,6 +146,8 @@ let pendingForce: boolean | null = null;
 const watchers = new Set<() => void>();
 const deliveredListeners = new Set<(attempt: SendAttempt) => void>();
 const echoes = new Map<string, Set<number>>();
+/** Sends the thread already shows, by key: their message can arrive before the send returns. */
+const echoedNonces = new Map<string, Set<string>>();
 const screens = new Map<string, number>();
 export const OUTBOX_MAX_ENTRIES = 20;
 
@@ -181,20 +196,27 @@ export function clearUnsentSends() {
   restored = false;
   unsentSends = [];
   echoes.clear();
+  echoedNonces.clear();
   pendingForce = null;
   config?.disk.clear();
   changed();
 }
 // Keep main's sign-out contract for existing callers and tests.
 export const clearFailedSends = clearUnsentSends;
-export function confirmEchoes(threadKey: string, seqs: Iterable<number>) {
+export function confirmEchoes(
+  threadKey: string,
+  seqs: Iterable<number>,
+  nonces: Iterable<string> = [],
+) {
   const seen = new Set(seqs);
+  const seenNonces = new Set(nonces);
   echoes.set(threadKey, seen);
+  echoedNonces.set(threadKey, seenNonces);
   for (const attempt of unsentSends) {
     if (
       attempt.payload.originThreadKey === threadKey &&
-      attempt.acceptedSeq !== undefined &&
-      seen.has(attempt.acceptedSeq)
+      ((attempt.acceptedSeq !== undefined && seen.has(attempt.acceptedSeq)) ||
+        (attempt.state === "pending" && seenNonces.has(attempt.clientNonce)))
     )
       remove(attempt);
   }
@@ -234,7 +256,8 @@ export function sendWaitingMessages(force = false): Promise<void> {
             !screens.has(attempt.payload.originThreadKey) ||
             seq === undefined ||
             attempt.payload.reroutedToGroup ||
-            echoes.get(attempt.payload.originThreadKey)?.has(seq)
+            echoes.get(attempt.payload.originThreadKey)?.has(seq) ||
+            echoedNonces.get(attempt.payload.originThreadKey)?.has(attempt.clientNonce)
           )
             remove(attempt);
           else changed();
@@ -288,6 +311,7 @@ export function useThreadFeedback(threadKey: string | undefined, newNonce: () =>
       }
       screens.delete(threadKey);
       echoes.delete(threadKey);
+      echoedNonces.delete(threadKey);
       for (const attempt of unsentSends) {
         if (attempt.payload.originThreadKey === threadKey && attempt.acceptedSeq !== undefined)
           remove(attempt);

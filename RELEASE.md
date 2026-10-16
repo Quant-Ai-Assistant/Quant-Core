@@ -13,6 +13,7 @@ on a release branch first and reaches `main` only when the maintainer says so.
 | Feature | Branch | Notes |
 | --- | --- | --- |
 | "This Mac" settings: emergency stop, per-assistant interrupt and off switch, server on/off, don't lock the Mac | `feat/agent-controls` | Adds `Bot.pausedAt` (migration `20261016020000_bot_paused_at`). |
+| Mac screen in the bot panel with a built-in virtual desktop (Lima, no Docker); Telegram-style voice messages; smooth sending; Android update card; hover without clicking; "Computer" badge on replies; phone-like calls in the chat and on the call screen | `fix/voice-screen-chat-polish` | The virtual desktop downloads a pinned Lima release on first use. User messages and `thread.message.created` carry `clientNonce`; new RPC `threads.activity`. Mobile drops `expo-speech-recognition`. |
 
 ## How to land a feature or fix
 

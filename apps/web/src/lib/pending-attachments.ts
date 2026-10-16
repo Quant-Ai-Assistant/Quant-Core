@@ -27,7 +27,7 @@ export function revokePendingAttachmentPreviews(
   }
 }
 
-export function readFileAsBase64(file: File): Promise<string> {
+export function readFileAsBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {

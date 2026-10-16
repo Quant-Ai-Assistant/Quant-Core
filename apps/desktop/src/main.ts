@@ -2,7 +2,12 @@ import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { DesktopHostState, DesktopReachability, DesktopSetup } from "@rakazo/contracts";
+import type {
+  DesktopHostState,
+  DesktopReachability,
+  DesktopSetup,
+  DesktopVirtualDesktopState,
+} from "@rakazo/contracts";
 import { LOCAL_SETTINGS_PAGE } from "@rakazo/contracts/local-settings";
 import {
   app,
@@ -34,6 +39,7 @@ import { activeBuild, EdgeUpdater, forgetStaleBuild, systemExtract } from "./edg
 import { startFrontServer } from "./front-server.js";
 import { KeepAwake, readKeepAwake, writeKeepAwake } from "./keep-awake.js";
 import {
+  COMPUTER_IMAGE,
   envTemplatePath,
   GATE_DEFAULT_PORT,
   gatePortFree,
@@ -83,6 +89,7 @@ import {
   sessionPartitionForServerUrl,
 } from "./setup-config.js";
 import { clearSetup, readSetup, writeSetup } from "./setup-store.js";
+import { VirtualDesktopEngine } from "./virtual-desktop.js";
 import { oauthPopupSessionPreferences, shouldOpenInAppPopup } from "./window-open.js";
 import {
   browserWindowOptions,
@@ -140,6 +147,7 @@ let edgeUpdater: EdgeUpdater | null = null;
 let activeWebRoot: string | null = null;
 let launchUpdateCheckScheduled = false;
 let localStack: LocalServerController;
+let virtualDesktop: VirtualDesktopEngine | undefined;
 let tray: Tray | null = null;
 /** Set once the local server has stopped, so the next quit goes through. */
 let serverStopped = false;
@@ -177,6 +185,13 @@ function fromMainWindow(event: Electron.IpcMainInvokeEvent) {
 
 function fromServerOffWindow(event: Electron.IpcMainInvokeEvent) {
   return serverOffWindow !== null && windowFrom(event) === serverOffWindow;
+}
+
+/** The built-in engine, only while this app's own server runs its desktops on it. */
+function virtualDesktopState(): DesktopVirtualDesktopState | null {
+  if (virtualDesktop === undefined) return null;
+  const state = virtualDesktop.state();
+  return localStack.supervisorEngine() === "vm" ? state : { ...state, phase: "unsupported" };
 }
 
 async function hostState(userDataDir: string): Promise<DesktopHostState> {
@@ -1061,6 +1076,19 @@ app.whenReady().then(async () => {
     },
     now: () => new Date().toISOString(),
   });
+  virtualDesktop = new VirtualDesktopEngine({
+    platform: process.platform,
+    arch: process.arch,
+    root: path.join(userDataDir, "vm"),
+    dataDir: path.join(serverDir(userDataDir), "data"),
+    computerImage: process.env.RAKAZO_COMPUTER_IMAGE?.trim() || COMPUTER_IMAGE,
+    env: process.env,
+    fetch: (url) => net.fetch(url),
+    run: runDocker,
+    extract: systemExtract,
+  });
+  // Installed once by the user, so it comes up with the app like the server does.
+  void virtualDesktop.start();
   localStack = new LocalServerController({
     platform: process.platform,
     env: process.env,
@@ -1092,6 +1120,7 @@ app.whenReady().then(async () => {
       return response.ok;
     },
     randomHex: (bytes) => randomBytes(bytes).toString("hex"),
+    virtualDesktopSocket: () => virtualDesktop?.socketPath() ?? null,
     onState: (state) => {
       if (setupWindow !== null && !setupWindow.isDestroyed()) {
         setupWindow.webContents.send("desktop.setup.stack.changed", state);
@@ -1210,6 +1239,13 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("desktop.host.stopServer", async (event) => {
     if (fromMainWindow(event)) await stopOwnServer();
+  });
+  ipcMain.handle("desktop.virtualDesktop.state", () => virtualDesktopState());
+  ipcMain.handle("desktop.virtualDesktop.install", async (event) => {
+    if (fromMainWindow(event) && localStack.supervisorEngine() === "vm") {
+      await virtualDesktop?.install();
+    }
+    return virtualDesktopState();
   });
   ipcMain.handle("desktop.serverOff.start", async (event) => {
     if (!fromServerOffWindow(event)) return;
@@ -1541,6 +1577,8 @@ app.on("window-all-closed", () => undefined);
 app.on("before-quit", (event) => {
   quitting = true;
   clearTimeout(warmWindowTimer);
+  // Lima's VM runs apart from the app; without a stop it would outlive the quit.
+  void virtualDesktop?.stop();
   // The server runs inside the app, so it stops with it: Postgres gets a clean shutdown.
   if (localStack === undefined || serverStopped || localStack.state().phase === "idle") return;
   event.preventDefault();

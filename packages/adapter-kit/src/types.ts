@@ -574,6 +574,8 @@ export type AgentRuntimeEvent =
       text: string;
       /** Provider-generated tool status rather than assistant-authored narration. */
       activity?: true;
+      /** The tool an activity line is about, so clients can say what the bot is using. */
+      tool?: string;
     }
   | { type: "tool"; name: string; args: Record<string, unknown>; executionId: string }
   | {

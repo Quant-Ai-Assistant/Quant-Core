@@ -7,6 +7,7 @@ import {
   listVoiceCatalog,
   MAX_SPEAK_CHARS,
   MAX_TRANSCRIBE_BYTES,
+  MacSpeech,
   NoVoiceConfigured,
   voiceCatalogEntry,
 } from "@rakazo/adapters";
@@ -52,12 +53,17 @@ export function catalogEntry(provider: string) {
   return voiceCatalogEntry(provider);
 }
 
-export function toVoiceStatus(cred: { provider: string; voiceId: string } | null): VoiceStatus {
+export function toVoiceStatus(
+  cred: { provider: string; voiceId: string } | null,
+  platform: string = process.platform,
+): VoiceStatus {
   const entry = cred ? catalogEntry(cred.provider) : undefined;
+  const transcribe = Boolean(entry?.transcribe && cred);
   return {
     configured: Boolean(cred),
     ready: Boolean(cred?.voiceId),
-    transcribe: Boolean(entry?.transcribe && cred),
+    transcribe,
+    voiceMessages: transcribe || MacSpeech.supports("audio/mp4", platform),
     provider: cred?.provider ?? null,
     voiceId: cred?.voiceId ?? "",
   };

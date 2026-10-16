@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { createLiveCallFeed, LIVE_SPEAKING_TAIL_MS, LiveTranscript } from "./live-call-turns.js";
+import {
+  createLiveCallFeed,
+  LIVE_SPEAKING_TAIL_MS,
+  LiveTranscript,
+  liveToolKind,
+} from "./live-call-turns.js";
 
 describe("live call transcript", () => {
   it("ends the caller's turn when the bot starts a real reply", () => {
@@ -63,5 +68,16 @@ describe("live call feed", () => {
     expect(handlers.onEnded).toHaveBeenCalledWith("close_requested");
     feed.stop();
     vi.useRealTimers();
+  });
+});
+
+describe("liveToolKind", () => {
+  it("names the tools a call shows and keeps new ones generic", () => {
+    expect(liveToolKind("computer_act")).toBe("computer");
+    expect(liveToolKind("web_search")).toBe("web");
+    expect(liveToolKind("browser_navigate")).toBe("page");
+    expect(liveToolKind("read_file")).toBe("files");
+    expect(liveToolKind("shell")).toBe("terminal");
+    expect(liveToolKind("mcp__calendar__list")).toBe("other");
   });
 });

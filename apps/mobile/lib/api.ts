@@ -1033,6 +1033,8 @@ export type MobileMessage = {
   role: "user" | "bot" | "system";
   /** Set when the message was sent from a live voice call; groups one call's transcript. */
   callId?: string;
+  /** The sender's key for a user message; matches the send that is still on screen. */
+  clientNonce?: string;
   botId?: string;
   replyToMessageId?: string;
   replyQuote?: string;
@@ -1455,6 +1457,10 @@ export function applyMobileThreadEvent(
       // An update can leave the call id out — the `end_call` marker does — so keep the one
       // the message already carries instead of dropping it out of its call.
       callId: typeof event.payload?.callId === "string" ? event.payload.callId : known?.callId,
+      clientNonce:
+        typeof event.payload?.clientNonce === "string"
+          ? event.payload.clientNonce
+          : known?.clientNonce,
       blocks: (event.payload?.blocks as MobileMessage["blocks"]) ?? [],
       botId: event.botId ?? (event.payload?.botId ? String(event.payload.botId) : undefined),
       ...replyMetadata(event.payload ?? {}, known),

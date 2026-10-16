@@ -50,6 +50,9 @@ const MIGRATE_TIMEOUT_MS = 10 * 60_000;
 const LEGACY_DUMP_TIMEOUT_MS = 30 * 60_000;
 const LEGACY_STEP_TIMEOUT_MS = 5 * 60_000;
 const RESTART_DELAY_MS = 2_000;
+const DOCKER_PROBE_TIMEOUT_MS = 5_000;
+/** The desktop image a bot's virtual desktop runs, unless `.env` names another. */
+export const COMPUTER_IMAGE = "ghcr.io/quant-ai-assistant/quant-core/computer:latest";
 const MAX_STACK_TOKEN_BYTES = 1024;
 const MAX_STACK_ENV_BYTES = 256 * 1024;
 
@@ -452,6 +455,8 @@ export interface LocalServerDeps {
   onState?: (state: DesktopLocalStackState) => void;
   sleep?: (ms: number, signal: AbortSignal) => Promise<void>;
   healthTimeoutMs?: number;
+  /** The built-in virtual desktop engine's Docker socket, used when Docker is not running. */
+  virtualDesktopSocket?: () => string | null;
 }
 
 /** Resolves early on abort so a stop never waits out a poll. */
@@ -486,6 +491,8 @@ export class LocalServerController {
   private gateChange: GateChange = { kind: "keep" };
   /** The gate port the next attempt applies; null keeps the saved one. */
   private gatePort: number | null = null;
+  /** What the running supervisor's computers run on; null with no supervisor. */
+  private engine: "docker" | "vm" | null = null;
 
   constructor(private readonly deps: LocalServerDeps) {
     this.currentWebUrl = deps.localWebUrl;
@@ -493,6 +500,11 @@ export class LocalServerController {
 
   webUrl(): string {
     return this.currentWebUrl;
+  }
+
+  /** Whether bots' virtual desktops run on Docker, on the app's own VM, or nowhere. */
+  supervisorEngine(): "docker" | "vm" | null {
+    return this.engine;
   }
 
   state(): DesktopLocalStackState {
@@ -642,6 +654,8 @@ export class LocalServerController {
       stackToken,
       version: deps.version,
     });
+    const supervisorUrl = await this.startSupervisor(app, processEnv, allocate, signal);
+    if (supervisorUrl !== null) processEnv.SANDBOX_SUPERVISOR_URL = supervisorUrl;
     for (const name of ["api", "worker"]) this.keepRunning(name, app, processEnv);
     this.parts.front = await deps.startFront({
       webRoot: deps.webRoot,
@@ -780,6 +794,60 @@ export class LocalServerController {
     if (started.code !== 0) throw new StartFailed(DATABASE_FAILED);
     const credentials = `${encodeURIComponent(user)}:${encodeURIComponent(password)}`;
     return `postgres://${credentials}@127.0.0.1:${port}/${encodeURIComponent(database)}`;
+  }
+
+  /**
+   * Starts the supervisor that gives each bot that asks for one its own virtual desktop: on
+   * Docker when it is running, else on the app's own VM engine where this computer has one.
+   * Without either every bot works on this computer, as before.
+   */
+  private async startSupervisor(
+    app: string,
+    processEnv: Record<string, string>,
+    allocate: () => Promise<number>,
+    signal: AbortSignal,
+  ): Promise<string | null> {
+    const { deps } = this;
+    if (!this.exists(path.join(app, "supervisor.mjs"))) return null;
+    this.engine = null;
+    const engine = await this.dockerEngineEnv(signal);
+    if (engine === null) return null;
+    const port = await allocate();
+    this.keepRunning("supervisor", app, {
+      ...processEnv,
+      ...engine,
+      SUPERVISOR_HOST: "127.0.0.1",
+      SUPERVISOR_PORT: String(port),
+      // Docker Desktop cannot route to container addresses from the host.
+      SANDBOX_CONTROL_VIA_LOOPBACK: "true",
+      RAKAZO_COMPUTER_IMAGE: processEnv.RAKAZO_COMPUTER_IMAGE || COMPUTER_IMAGE,
+    });
+    return `http://127.0.0.1:${port}`;
+  }
+
+  /** How the supervisor reaches Docker: the running Docker, else the built-in VM's socket. */
+  private async dockerEngineEnv(signal: AbortSignal): Promise<Record<string, string> | null> {
+    const { deps } = this;
+    const binary = resolveDockerBinary(deps.platform, deps.env, (file) => this.exists(file));
+    if (binary !== null) {
+      const probe = await deps
+        .run(binary, ["info", "--format", "{{.ServerVersion}}"], {
+          cwd: deps.serverDir,
+          env: dockerSpawnEnv(deps.platform, deps.env, binary),
+          timeoutMs: DOCKER_PROBE_TIMEOUT_MS,
+          signal,
+        })
+        .catch(() => null);
+      if (probe?.code === 0) {
+        this.engine = "docker";
+        return dockerSpawnEnv(deps.platform, deps.env, binary);
+      }
+    }
+    // The VM may still be downloading or booting; the supervisor connects on each request.
+    const socket = deps.virtualDesktopSocket?.() ?? null;
+    if (socket === null) return null;
+    this.engine = "vm";
+    return { DOCKER_HOST: "", DOCKER_SOCKET: socket };
   }
 
   /** Runs one bundled process and starts it again if it exits while the server is up. */

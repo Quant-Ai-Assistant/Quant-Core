@@ -8,6 +8,8 @@ import { MAC_SCREEN_DRIVER } from "./mac-screen-driver.js";
 
 /** Long edge of observation images. Larger displays are scaled down to it. */
 export const MAC_SCREEN_MAX_EDGE = 1568;
+/** Long edge of the frames people watch in the screen panel. */
+export const MAC_FRAME_MAX_EDGE = 1280;
 const DRIVER_TIMEOUT_MS = 30_000;
 const MAX_SETTLE_MS = 5_000;
 
@@ -106,6 +108,27 @@ export class MacScreen {
     });
   }
 
+  /**
+   * A plain picture of the display with the pointer, for people watching. It skips the
+   * Accessibility walk and the screen turn, so watching never slows a bot down.
+   */
+  async frame(signal?: AbortSignal): Promise<Uint8Array> {
+    const directory = await mkdtemp(path.join(tmpdir(), "quant-frame-"));
+    try {
+      const capture = path.join(directory, "capture.jpg");
+      const output = path.join(directory, "frame.jpg");
+      await runTool("/usr/sbin/screencapture", ["-x", "-C", "-m", "-t", "jpg", capture], signal);
+      await runTool(
+        "/usr/bin/sips",
+        ["-Z", String(MAC_FRAME_MAX_EDGE), "-s", "formatOptions", "70", capture, "--out", output],
+        signal,
+      );
+      return new Uint8Array(await readFile(output));
+    } finally {
+      await rm(directory, { recursive: true, force: true }).catch(() => undefined);
+    }
+  }
+
   private async capture(computerId: string, signal?: AbortSignal): Promise<ComputerObservation> {
     const directory = await mkdtemp(path.join(tmpdir(), "quant-screen-"));
     try {
@@ -180,6 +203,22 @@ export function readableRole(role: string): string {
 
 function permissionMessage(error: string): string {
   return PERMISSION_ERRORS[error] ?? error;
+}
+
+function runTool(file: string, args: string[], signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(file, args, { stdio: "ignore", signal });
+    const timer = setTimeout(() => child.kill("SIGKILL"), DRIVER_TIMEOUT_MS);
+    child.once("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.once("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve();
+      else reject(new Error(PERMISSION_ERRORS["permission:screen"]));
+    });
+  });
 }
 
 /** Runs the driver with `osascript`, reading the script from stdin. */

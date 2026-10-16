@@ -1,6 +1,11 @@
 import type { ThreadMessage } from "@rakazo/contracts";
 import { describe, expect, it } from "vitest";
-import { groupVoiceChats, voiceChatDuration, voiceChatSummary } from "./voice-chat-groups.js";
+import {
+  describeVoiceChat,
+  groupVoiceChats,
+  voiceChatDuration,
+  voiceChatSummary,
+} from "./voice-chat-groups.js";
 
 let seq = 0;
 function message(fields: Partial<ThreadMessage> & { role: ThreadMessage["role"] }): ThreadMessage {
@@ -187,5 +192,44 @@ describe("voiceChatDuration", () => {
     const [group] = groupVoiceChats([start, end]);
 
     expect(group?.kind === "voiceChat" && voiceChatDuration(group)).toBe(83);
+  });
+});
+
+describe("describeVoiceChat", () => {
+  it("reads your own unanswered call as cancelled and a long one as outgoing", () => {
+    const quiet = {
+      kind: "voiceChat" as const,
+      key: "call:a",
+      callId: "a",
+      messages: [{ id: "m1", role: "user", blocks: [] }],
+    };
+    expect(describeVoiceChat(quiet)).toMatchObject({ direction: "outgoing", outcome: "cancelled" });
+  });
+
+  it("reads the bot's call that rang out as a missed incoming call with its reason", () => {
+    const missed = {
+      kind: "voiceChat" as const,
+      key: "call:b",
+      callId: "b",
+      messages: [
+        {
+          id: "r1",
+          role: "bot",
+          blocks: [
+            {
+              kind: "call_request" as const,
+              callId: "b",
+              reason: "Report is late",
+              opening: "Hi!",
+              status: "ringing" as const,
+              expiresAt: "2026-01-01T00:00:00Z",
+            },
+          ],
+        },
+      ],
+    };
+    const entry = describeVoiceChat(missed, Date.parse("2026-01-02T00:00:00Z"));
+    expect(entry).toMatchObject({ direction: "incoming", outcome: "missed" });
+    expect(entry.transcript[0]).toMatchObject({ role: "bot", text: "Report is late" });
   });
 });

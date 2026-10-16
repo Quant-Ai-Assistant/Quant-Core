@@ -27,28 +27,27 @@ export function createRunSandbox(
   opts: SandboxProviderOptions & { prisma?: PrismaClient },
 ): SandboxProvider {
   if (kind === "desktop") {
-    return new DesktopSandboxProvider({
-      root: opts.dataDir,
-      hostRoots: [homedir()],
-      screen: hostScreen(),
-    });
+    const host = hostDesktop(opts);
+    // With a Docker supervisor beside it, a bot can trade this computer for its own desktop.
+    if (!opts.supervisorToken) return host;
+    return new HostAwareSandbox(createSandboxProvider("docker", opts), host, async () => true);
   }
   const primary = createSandboxProvider(kind, opts);
   if (kind !== "docker" || !opts.prisma) return primary;
-  return new HostAwareSandbox(
-    primary,
-    new DesktopSandboxProvider({
-      root: opts.dataDir,
-      hostRoots: [homedir()],
-      screen: hostScreen(),
-    }),
-    async () => {
-      const settings = await opts.prisma!.deploymentSettings.findUnique({
-        where: { id: "default" },
-      });
-      return settings?.computerHost === "this-mac";
-    },
-  );
+  return new HostAwareSandbox(primary, hostDesktop(opts), async () => {
+    const settings = await opts.prisma!.deploymentSettings.findUnique({
+      where: { id: "default" },
+    });
+    return settings?.computerHost === "this-mac";
+  });
+}
+
+function hostDesktop(opts: SandboxProviderOptions) {
+  return new DesktopSandboxProvider({
+    root: opts.dataDir,
+    hostRoots: [homedir()],
+    screen: hostScreen(),
+  });
 }
 
 /** This Mac's own display. Other host platforms have no screen driver yet. */
@@ -56,8 +55,13 @@ function hostScreen(): MacScreen | undefined {
   return process.platform === "darwin" ? new MacScreen() : undefined;
 }
 
+/**
+ * Serves team computers from this host's own screen when the host is enabled, and every
+ * dedicated computer from the isolated provider: a bot's own computer is a virtual desktop.
+ */
 export class HostAwareSandbox implements SandboxProvider {
   readonly pageBrowser?: SandboxProvider["pageBrowser"];
+  readonly virtualDesktops = true;
 
   constructor(
     private readonly isolated: SandboxProvider,
@@ -93,10 +97,12 @@ export class HostAwareSandbox implements SandboxProvider {
       homePath: string;
       providerRef?: string;
       providerKind?: ComputerRef["kind"];
+      scope?: "team" | "dedicated";
     },
     context: AdapterContext,
   ) {
-    const provider = (await this.hostEnabled()) ? this.host : this.isolated;
+    const onHost = request.scope !== "dedicated" && (await this.hostEnabled());
+    const provider = onHost ? this.host : this.isolated;
     const providerKind = provider.describe().id;
     return provider.provision(
       {
@@ -108,9 +114,17 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async isRunning(computer: ComputerRef, context: AdapterContext): Promise<boolean> {
-    const provider = (await this.hostEnabled()) ? this.host : this.isolated;
+    const provider = this.route(computer);
     if (provider.describe().id !== computer.kind) return false;
+    // A host computer left over from before the host was turned off is not reused.
+    if (provider === this.host && !(await this.hostEnabled())) return false;
     return provider.isRunning?.(computer, context) ?? false;
+  }
+
+  screenFrame(computer: ComputerRef, context: AdapterContext) {
+    const provider = this.route(computer);
+    if (!provider.screenFrame) return Promise.reject(new Error("no host screen"));
+    return provider.screenFrame(computer, context);
   }
 
   prepare(computer: ComputerRef, context: AdapterContext) {

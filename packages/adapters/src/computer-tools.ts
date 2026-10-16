@@ -42,7 +42,9 @@ export function parseComputerActions(
   const actions = value.flatMap((raw): ComputerAction[] => {
     if (!raw || typeof raw !== "object") throw new Error("computer action must be an object");
     const action = raw as Record<string, unknown>;
-    const kind = String(action.kind ?? "");
+    // Hovering a point is moving the mouse there: nothing is pressed.
+    const pointHover = action.kind === "hover" && action.element === undefined;
+    const kind = pointHover ? "move" : String(action.kind ?? "");
     const usesElements =
       kind === "menu" ||
       ELEMENT_ONLY_KINDS.has(kind) ||

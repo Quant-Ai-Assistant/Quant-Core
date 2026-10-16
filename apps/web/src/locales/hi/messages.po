@@ -113,6 +113,10 @@ msgstr "{botName} का कंप्यूटर"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable} आरक्षित है और कमांड वेरिएबल के रूप में इस्तेमाल नहीं हो सकता। दूसरा नाम चुनें।"
 
+#: src/pages/Shell.tsx
+msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
+msgstr ""
+
 #: src/lib/billing.ts
 msgid "{count} days"
 msgstr ""
@@ -476,6 +480,10 @@ msgstr "एक बार अनुमति दें"
 msgid "Allow purchase actions without asking"
 msgstr "खरीद कार्रवाइयों को बिना पूछे अनुमति दें"
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Allow the microphone to record"
+msgstr ""
+
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
 msgstr ""
@@ -777,12 +785,17 @@ msgstr "बॉट"
 msgid "Bot screen"
 msgstr "बॉट स्क्रीन"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Shell.tsx
 msgid "Bot screen preview"
 msgstr "बॉट स्क्रीन प्रीव्यू"
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Bot to link"
+msgstr ""
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Bot:"
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
@@ -823,8 +836,13 @@ msgid "Call"
 msgstr "कॉल करें"
 
 #: src/components/call/VoiceChatCard.tsx
-msgid "Call back"
-msgstr "वापस कॉल करें"
+msgid "Call again"
+msgstr ""
+
+#. placeholder {0}: callClock(elapsed)
+#: src/components/call/CallCard.tsx
+msgid "Call ended · {0}"
+msgstr ""
 
 #. placeholder {0}: call.botName
 #: src/components/call/CallCard.tsx
@@ -838,10 +856,6 @@ msgstr "आपको कॉल कर रहा है"
 #: src/components/call/VoiceChatCard.tsx
 msgid "Calling you…"
 msgstr "आपको कॉल कर रहा है…"
-
-#: src/components/call/CallCard.tsx
-msgid "Calling…"
-msgstr "कॉल हो रही है…"
 
 #: src/pages/SettingsOverlay.tsx
 msgid "Calls"
@@ -890,6 +904,10 @@ msgstr "रद्द"
 #: src/pages/ActivityList.tsx
 msgid "Cancelled"
 msgstr "रद्द किया गया"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Cancelled call"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
@@ -1278,6 +1296,11 @@ msgstr "कनेक्टेड। इसके टूल आपके अग�
 msgid "Connecting…"
 msgstr "कनेक्ट हो रहा है…"
 
+#: src/components/call/CallCard.tsx
+msgctxt "call status"
+msgid "Connecting…"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Connection test failed."
 msgstr "कनेक्शन परीक्षण विफल रहा।"
@@ -1625,6 +1648,10 @@ msgstr "सर्वर से संपर्क नहीं हो सका"
 msgid "Could not reach the update server."
 msgstr ""
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Could not record"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "हटाया नहीं जा सका"
@@ -1739,6 +1766,14 @@ msgstr "रीसेट ईमेल नहीं भेजा जा सका"
 msgid "Could not send that"
 msgstr "वह भेजा नहीं जा सका"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Could not set up the virtual desktop"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not show this screen"
+msgstr ""
+
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not start OAuth"
 msgstr "OAuth शुरू नहीं हो सका"
@@ -1750,6 +1785,10 @@ msgstr ""
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
 msgstr "यह उत्तर सबमिट नहीं किया जा सका"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not switch the computer"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Could not take control"
@@ -1914,6 +1953,10 @@ msgstr "दिन"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Decline"
 msgstr "अस्वीकार करें"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Declined call"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -2117,6 +2160,10 @@ msgstr "पूर्ण"
 msgid "Download"
 msgstr ""
 
+#: src/components/computer/HostScreen.tsx
+msgid "Download · {size}"
+msgstr ""
+
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
 #. placeholder {0}: state.availableVersion
@@ -2136,6 +2183,10 @@ msgstr "मार्कडाउन के रूप में डाउनल�
 
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "Download Executor"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Downloading the virtual desktop"
 msgstr ""
 
 #: src/components/DesktopUpdates.tsx
@@ -2476,6 +2527,7 @@ msgid "Hide password"
 msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Hide transcript"
 msgstr "ट्रांसक्रिप्ट छिपाएँ"
 
@@ -2491,12 +2543,8 @@ msgid "High"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk"
-msgstr "बोलने के लिए दबाए रखें"
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk, release to send"
-msgstr "बोलने के लिए दबाए रखें, भेजने के लिए छोड़ें"
+msgid "Hold to record, release to send"
+msgstr ""
 
 #: src/pages/RoutineSchedule.tsx
 msgid "hour"
@@ -2690,15 +2738,6 @@ msgstr ""
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Listening"
 msgstr "सुन रहा है"
-
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Listening"
-msgstr "सुन रहा है"
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Listening…"
-msgstr "सुन रहा है…"
 
 #: src/pages/Shell.tsx
 msgid "Load earlier messages"
@@ -3063,11 +3102,6 @@ msgstr "यहां ले जाएं"
 msgid "Mute"
 msgstr "म्यूट करें"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Muted"
-msgstr "माइक बंद है"
-
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
@@ -3148,10 +3182,6 @@ msgstr ""
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr ""
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "No answer"
-msgstr "कोई उत्तर नहीं"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "No apps match your search."
@@ -3421,6 +3451,10 @@ msgstr ""
 msgid "Opened its thread."
 msgstr "इसका थ्रेड खोला।"
 
+#: src/components/call/CallCard.tsx
+msgid "Opening a page"
+msgstr ""
+
 #: src/pages/Onboarding.tsx
 msgid "Opening chat…"
 msgstr "चैट खुल रही है…"
@@ -3463,6 +3497,10 @@ msgstr "मूल संदेश उपलब्ध नहीं है"
 #: src/pages/Onboarding.tsx
 msgid "Other model…"
 msgstr "अन्य मॉडल…"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Outgoing call"
+msgstr ""
 
 #: src/pages/Board.tsx
 msgid "Owner"
@@ -3520,13 +3558,13 @@ msgstr "अपनी API कुंजी पेस्ट करें"
 msgid "Paste your API key, then test again."
 msgstr "अपनी API कुंजी पेस्ट करें, फिर फिर से परीक्षण करें।"
 
+#: src/pages/shell/voice-message.tsx
+msgid "Pause voice message"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "Paused"
 msgstr ""
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "Phone call"
-msgstr "फ़ोन कॉल"
 
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
@@ -3544,6 +3582,10 @@ msgstr "सूची से एक मॉडल चुनें या इस �
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "पिन करें"
+
+#: src/pages/shell/voice-message.tsx
+msgid "Play voice message"
+msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -3643,6 +3685,10 @@ msgstr "OAuth पुनः कनेक्ट करें"
 msgid "Reconnecting"
 msgstr "पुनः कनेक्ट हो रहा है"
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Record voice message"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Recording may have started, but the view could not refresh"
 msgstr ""
@@ -3727,6 +3773,10 @@ msgstr "नियंत्रण छोड़ें"
 
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Release interrupted computer?"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Remembering"
 msgstr ""
 
 #: src/components/ApprovalRulesSettings.tsx
@@ -3891,6 +3941,7 @@ msgid "Restoring your workspace"
 msgstr ""
 
 #: src/components/AccountAccess.tsx
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Auth.tsx
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Retry"
@@ -3981,6 +4032,10 @@ msgstr ""
 #: src/pages/RoutineEditor.tsx
 msgid "Running · Stop"
 msgstr "चल रहा है · रोकें"
+
+#: src/components/call/CallCard.tsx
+msgid "Running a command"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running…"
@@ -4110,6 +4165,10 @@ msgstr ""
 msgid "Search: {0}"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
+msgid "Searching the web"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
 msgid "Searching…"
@@ -4152,6 +4211,8 @@ msgid "Send reset link"
 msgstr "रीसेट लिंक भेजें"
 
 #: src/components/AskCard.tsx
+#: src/pages/Shell.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Sending…"
 msgstr "भेजा जा रहा है…"
 
@@ -4184,7 +4245,6 @@ msgstr "सर्वर का नाम"
 msgid "Server URL"
 msgstr "सर्वर URL"
 
-#: src/components/call/CallCard.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/Shell.tsx
@@ -4257,7 +4317,7 @@ msgstr "सेटिंग्स दिखाएं"
 msgid "Show tool activity"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Show transcript"
 msgstr "ट्रांसक्रिप्ट दिखाएँ"
 
@@ -4328,8 +4388,8 @@ msgid "Slack not enabled"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Slide up to lock"
-msgstr "लॉक करने के लिए ऊपर खिसकाएँ"
+msgid "Slide to cancel"
+msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Software update"
@@ -4371,11 +4431,6 @@ msgstr "केवल बोलें"
 #: src/pages/Shell.tsx
 msgid "Speak this reply"
 msgstr "यह उत्तर बोलकर सुनाएं"
-
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Speaking"
-msgstr "बोल रहा है"
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Speech model"
@@ -4589,11 +4644,6 @@ msgstr ""
 msgid "Thinking"
 msgstr "सोच रहा है"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Thinking"
-msgstr "सोच रहा है"
-
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Thinking: {activeThinkingLabel}"
 msgstr ""
@@ -4622,6 +4672,7 @@ msgstr "यह चैट केवल देखने के लिए है"
 msgid "this computer"
 msgstr "यह कंप्यूटर"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/SettingsOverlay.tsx
 msgid "This computer"
 msgstr ""
@@ -4639,6 +4690,7 @@ msgstr ""
 msgid "this Mac"
 msgstr "यह Mac"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/SettingsOverlay.tsx
 msgid "This Mac"
 msgstr ""
@@ -4730,11 +4782,7 @@ msgstr "टूल स्रोत"
 msgid "Tools"
 msgstr ""
 
-#: src/components/composer/HoldToTalk.tsx
-msgid "Transcribing…"
-msgstr "लिप्यंतरण हो रहा है…"
-
-#: src/components/call/CallCard.tsx
+#: src/components/call/VoiceChatCard.tsx
 msgid "Transcript"
 msgstr "ट्रांसक्रिप्ट"
 
@@ -4923,6 +4971,10 @@ msgstr ""
 msgid "Uses this server's own {hostCredentialSource} credentials to access {selectedProviderName}."
 msgstr "{selectedProviderName} तक पहुँचने के लिए इस सर्वर के अपने {hostCredentialSource} क्रेडेंशियल का उपयोग करता है।"
 
+#: src/components/call/CallCard.tsx
+msgid "Using a tool"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Value"
 msgstr ""
@@ -4947,11 +4999,19 @@ msgstr ""
 msgid "View chat"
 msgstr "चैट देखें"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Virtual"
+msgstr ""
+
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Voice"
 msgstr "आवाज़"
+
+#: src/pages/Shell.tsx
+msgid "Voice message"
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Wait a moment and test again."
@@ -5034,8 +5094,21 @@ msgstr "कब उपयोग करें"
 msgid "Where should bots run?"
 msgstr "बॉट कहां चलने चाहिए?"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Where this bot works"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 msgid "Won't do"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+#: src/pages/Shell.tsx
+msgid "Working on the computer"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Working with files"
 msgstr ""
 
 #: src/lib/roster-status.ts
@@ -5073,13 +5146,13 @@ msgstr "अगर यह अपने आप रीडायरेक्ट न 
 msgid "You can close this window."
 msgstr "आप यह विंडो बंद कर सकते हैं।"
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "You declined"
-msgstr "आपने कॉल अस्वीकार की"
-
 #: src/pages/Shell.tsx
 msgid "You have control"
 msgstr "नियंत्रण आपके पास है"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "You:"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Your email address"

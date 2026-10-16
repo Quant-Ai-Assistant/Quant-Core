@@ -8,9 +8,11 @@ import type { ThreadTarget } from "./thread-target.js";
 import {
   cancelSupersededQueuedRuns,
   reactToThreadMessage,
+  resolveVoiceBlock,
   sendThreadMessage,
   stopBotRuns,
   stopThreadRuns,
+  threadActivity,
   threadHead,
   threadSnapshot,
 } from "./thread-target.js";
@@ -3530,5 +3532,57 @@ describe("stopBotRuns", () => {
       [],
     );
     expect(prisma.run.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveVoiceBlock", () => {
+  const voice = { artifactId: "a1", durationMs: 3_200, waveform: [0.1, 1], transcribed: true };
+
+  it("draws a recording as a voice block", async () => {
+    const resolve = vi.fn(async () => ({ artifacts: [{ id: "a1", mimeType: "audio/mp4" }] }));
+    await expect(resolveVoiceBlock(voice, resolve)).resolves.toEqual({
+      kind: "voice",
+      artifactId: "a1",
+      mimeType: "audio/mp4",
+      durationMs: 3_200,
+      waveform: [0.1, 1],
+      transcribed: true,
+    });
+    expect(resolve).toHaveBeenCalledWith(["a1"]);
+  });
+
+  it("refuses an attachment that is not a recording", async () => {
+    const resolve = async () => ({ artifacts: [{ id: "a1", mimeType: "image/png" }] });
+    await expect(resolveVoiceBlock(voice, resolve)).rejects.toThrow("not a recording");
+  });
+
+  it("has nothing to draw without a voice message", async () => {
+    await expect(resolveVoiceBlock(undefined, vi.fn())).resolves.toBeUndefined();
+  });
+});
+
+describe("threadActivity", () => {
+  function prismaWith(run: { id: string } | null, payload: unknown) {
+    return {
+      run: { findFirst: vi.fn(async () => run) },
+      event: { findFirst: vi.fn(async () => (payload === undefined ? null : { payload })) },
+    } as unknown as PrismaClient;
+  }
+
+  it("names the tool the running work last reported", async () => {
+    const prisma = prismaWith(
+      { id: "run-1" },
+      { text: "Operating the computer", activity: true, tool: "computer_act" },
+    );
+    await expect(threadActivity(prisma, "thread-1")).resolves.toEqual({ tool: "computer_act" });
+  });
+
+  it("is idle once the bot talks again or nothing runs", async () => {
+    await expect(
+      threadActivity(prismaWith({ id: "run-1" }, { delta: "Done" }), "t"),
+    ).resolves.toEqual({
+      tool: null,
+    });
+    await expect(threadActivity(prismaWith(null, undefined), "t")).resolves.toEqual({ tool: null });
   });
 });
