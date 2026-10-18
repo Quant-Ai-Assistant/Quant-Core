@@ -11,6 +11,7 @@ import { scheduleComputerControlExpiry } from "./computer-control.js";
 import { reconcileStuckWork } from "./stuck-work.js";
 import { isLoopGuardStopText } from "./tool-loop.js";
 import { isUserProgressClientNonce } from "./user-progress.js";
+import { reconcileCommandWatches } from "./watches.js";
 
 const DEFAULT_INTERVAL_MS = 30_000;
 const DEFAULT_BATCH_SIZE = 100;
@@ -128,6 +129,7 @@ export function createJobReconciler(
       const auxiliary = await Promise.allSettled(
         [
           () => reconcileCallRequests(deps),
+          () => reconcileCommandWatches(deps),
           deps.reconcileCloudAgents,
           deps.reconcileComputerUpdates,
         ].map(async (reconcile) => reconcile?.()),

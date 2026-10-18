@@ -20,6 +20,7 @@ import {
   stripNoResponseReply,
   subagentMarksUnread,
   TICKET_SILENT_REPLY_GUIDANCE,
+  WATCH_SILENT_REPLY_GUIDANCE,
 } from "./executor.js";
 import { finalBlocksAfterMidTurnProgress } from "./user-progress.js";
 
@@ -180,6 +181,20 @@ describe("completionMarksUnread", () => {
     expect(segments).toEqual([]);
     expect(completionMarksUnread("reaction", "")).toBe(false);
     expect(completionMarksUnread("reaction", "Moved it to tomorrow.")).toBe(true);
+  });
+
+  it("lets a watch wake stay silent until it has something to report", () => {
+    expect(runAllowsSilentEmpty("watch")).toBe(true);
+    expect(runPromotesMidTurnNarration("watch")).toBe(false);
+    expect(runReplyGuidance("watch")).toBe(WATCH_SILENT_REPLY_GUIDANCE);
+    expect(stripNoResponseReply(NO_RESPONSE, [{ kind: "text", text: NO_RESPONSE }])).toEqual({
+      assembled: "",
+      blocks: [],
+    });
+    expect(completionMarksUnread("watch", "")).toBe(false);
+    expect(completionMarksUnread("watch", "Builder opened the PR.")).toBe(true);
+    expect(subagentMarksUnread("watch", "completed")).toBe(false);
+    expect(subagentMarksUnread("watch", "failed")).toBe(true);
   });
 
   it("still invents done. for a user-triggered empty run", () => {

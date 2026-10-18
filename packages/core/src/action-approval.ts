@@ -22,6 +22,9 @@ const APPROVAL_EXEMPT_TOOLS = new Set([
   "schedule_create",
   "schedule_list",
   "schedule_cancel",
+  "watch_create",
+  "watch_list",
+  "watch_cancel",
 ]);
 
 const APPROVAL_REQUIRED_BUILTIN_TOOLS = new Set([
@@ -49,6 +52,7 @@ const UNATTENDED_SAFE_BUILTIN_TOOLS = new Set([
   "run_subagent",
   "task_catalog",
   "schedule_list",
+  "watch_list",
   "scratchpad_list",
   "skill_read",
   "web_fetch",
