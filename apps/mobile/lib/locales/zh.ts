@@ -16,6 +16,7 @@ export const ZH_MESSAGES: Record<string, string> = {
   "{granted} of {total} allowed": "已允许 {granted}/{total}",
   "Allow all": "全部允许",
   "Needed to work": "运行所需",
+  Latest: "最新",
   "Couldn't refresh — showing the last loaded messages.": "无法刷新——显示最近加载的消息。",
   "Try Again": "重试",
   "Too many unsent messages": "未发送消息过多",

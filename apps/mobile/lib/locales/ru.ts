@@ -99,6 +99,7 @@ export const RU_MESSAGES: Record<string, string> = {
   " (unread)": " (непрочитано)",
   Appearance: "Внешний вид",
   Dark: "Тёмная",
+  Latest: "Последняя",
   Light: "Светлая",
   System: "Системная",
   "{count} agents working": "Работает агентов: {count}",

@@ -16,6 +16,7 @@ export const DE_MESSAGES: Record<string, string> = {
   "{granted} of {total} allowed": "{granted} von {total} erlaubt",
   "Allow all": "Alle erlauben",
   "Needed to work": "Für den Betrieb nötig",
+  Latest: "Neuestes",
   "Couldn't refresh — showing the last loaded messages.":
     "Aktualisierung fehlgeschlagen – die zuletzt geladenen Nachrichten werden angezeigt.",
   "Try Again": "Erneut versuchen",
