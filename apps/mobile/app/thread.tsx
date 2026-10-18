@@ -9,7 +9,7 @@ import type {
   Routine,
 } from "@rakazo/contracts";
 import { canReactToThreadMessage, MESSAGE_REACTIONS } from "@rakazo/contracts";
-import type { SlashActionId, ThreadItem } from "@rakazo/core";
+import type { MessageReactionSummary, SlashActionId, ThreadItem } from "@rakazo/core";
 import {
   abortableDelay,
   appearState,
@@ -2082,7 +2082,7 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
     );
   }
 
-  async function reactToMessage(message: MobileMessage, reaction: MessageReaction) {
+  async function reactToMessage(message: MobileMessage, reaction: MessageReaction | null) {
     if (readOnly) return;
     const targetBotId = botId;
     const targetGroupId = groupId;
@@ -2302,7 +2302,12 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
   );
 
   const workingFooter =
-    !inGroup && currentBot && isWorkingStatus(currentBotStatus) && !hasLiveProgress ? (
+    // A turn started by a reaction usually ends in a reaction or nothing, so it never looks like typing.
+    !inGroup &&
+    currentBot &&
+    isWorkingStatus(currentBotStatus) &&
+    snap?.run?.trigger !== "reaction" &&
+    !hasLiveProgress ? (
       <View
         accessibilityLabel={t("{name} is working", { name: currentBot.name })}
         accessibilityRole="text"
@@ -2931,7 +2936,7 @@ type MessageRowActions = {
   quote: (message: MobileMessage) => void;
   select: (text: string) => void;
   speak: (message: MobileMessage) => void;
-  react: (message: MobileMessage, reaction: MessageReaction) => void;
+  react: (message: MobileMessage, reaction: MessageReaction | null) => void;
   answer: (message: MobileMessage, answer: string, username?: string) => Promise<void>;
   openBot: (id: string, name: string) => void;
   openComputer: (id: string, name: string) => void;
@@ -2958,7 +2963,7 @@ type MessageRowProps = {
   separator: boolean;
   replyAuthor: string;
   replyFallbackText?: string;
-  messageReactions?: ReadonlyMap<MessageReaction, number>;
+  messageReactions?: MessageReactionSummary[];
   activityBotId?: string;
   activityColor?: string;
   activityStatus?: MobileBot["status"];
@@ -3037,7 +3042,10 @@ const MessageRow = memo(function MessageRow({
       const text = copyableMobileMessageText(message);
       if (text) void Clipboard.setStringAsync(text).catch(() => undefined);
     };
-    const react = (reaction: MessageReaction) => actions.react(message, reaction);
+    const myReaction = messageReactions?.find((reaction) => reaction.mine)?.emoji;
+    // Choosing the reaction you already gave takes it back.
+    const react = (reaction: MessageReaction) =>
+      actions.react(message, reaction === myReaction ? null : reaction);
     const menuActions = [
       ...(!readOnly ? [{ name: "reply", text: t("Reply"), onPress: reply }] : []),
       ...(includeQuote ? [{ name: "quote", text: t("Quote"), onPress: quote }] : []),
@@ -3116,7 +3124,7 @@ const MessageRow = memo(function MessageRow({
         },
       },
     };
-  }, [message, actions, readOnly, onCall, colorScheme, t, locale]);
+  }, [message, messageReactions, actions, readOnly, onCall, colorScheme, t, locale]);
   return (
     <View
       key={message.id}
@@ -3212,24 +3220,54 @@ const MessageRow = memo(function MessageRow({
                 justifyContent: message.role === "user" ? "flex-end" : "flex-start",
               }}
             >
-              {[...messageReactions].map(([emoji, count]) => (
-                <Text
-                  key={emoji}
-                  style={{
-                    color: tokens.foreground,
-                    backgroundColor: tokens.muted,
-                    borderColor: tokens.border,
-                    borderWidth: 1,
-                    borderRadius: 16,
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    fontSize: 13,
-                  }}
-                >
-                  {emoji}
-                  {count > 1 ? ` ${count}` : ""}
-                </Text>
-              ))}
+              {messageReactions.map(({ emoji, count, mine, botIds }) => {
+                const reactingBotId = botIds[0];
+                const reactingBotColor = reactingBotId
+                  ? (members?.find((member) => member.botId === reactingBotId)?.color ??
+                    bots.find((bot) => bot.id === reactingBotId)?.color)
+                  : undefined;
+                // A bot's reaction is read-only; the user's own toggles off, another emoji joins in.
+                const pressable = !readOnly && (mine || botIds.length < count || !reactingBotId);
+                return (
+                  <Pressable
+                    key={emoji}
+                    disabled={!pressable}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: mine }}
+                    accessibilityLabel={
+                      mine ? t("Remove reaction {emoji}", { emoji }) : t("React {emoji}", { emoji })
+                    }
+                    onPress={() => actions.react(message, mine ? null : emoji)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                      backgroundColor: mine ? tokens.accent : tokens.muted,
+                      borderColor: mine ? tokens.foreground : tokens.border,
+                      borderWidth: 1,
+                      borderRadius: 16,
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                    }}
+                  >
+                    <Text style={{ color: tokens.foreground, fontSize: 13 }}>{emoji}</Text>
+                    {reactingBotId && reactingBotColor ? (
+                      <BotAvatar color={reactingBotColor} identity={reactingBotId} size={14} />
+                    ) : null}
+                    {count > 1 ? (
+                      <Text
+                        style={{
+                          color: tokens.foreground,
+                          fontSize: 13,
+                          fontVariant: ["tabular-nums"],
+                        }}
+                      >
+                        {count}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
             </View>
           ) : null}
         </View>

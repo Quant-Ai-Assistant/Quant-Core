@@ -3651,6 +3651,10 @@ msgid "React"
 msgstr "प्रतिक्रिया दें"
 
 #: src/pages/Shell.tsx
+msgid "React {emoji}"
+msgstr ""
+
+#: src/pages/Shell.tsx
 msgid "Reactions"
 msgstr "प्रतिक्रियाएँ"
 
@@ -3811,6 +3815,10 @@ msgstr "उल्लेख {0} हटाएं"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Remove message trigger"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Remove reaction {emoji}"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx

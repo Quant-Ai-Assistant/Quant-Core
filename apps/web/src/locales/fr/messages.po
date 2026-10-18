@@ -3651,6 +3651,10 @@ msgid "React"
 msgstr "Réagir"
 
 #: src/pages/Shell.tsx
+msgid "React {emoji}"
+msgstr ""
+
+#: src/pages/Shell.tsx
 msgid "Reactions"
 msgstr "Réactions"
 
@@ -3812,6 +3816,10 @@ msgstr "Retirer la mention {0}"
 #: src/pages/RoutineEditor.tsx
 msgid "Remove message trigger"
 msgstr "Retirer le déclencheur de message"
+
+#: src/pages/Shell.tsx
+msgid "Remove reaction {emoji}"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Remove schedule"

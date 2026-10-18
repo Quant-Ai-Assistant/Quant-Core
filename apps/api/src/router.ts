@@ -286,6 +286,7 @@ import {
   shouldForwardPeerThreadEvent,
 } from "./thread-message-pages.js";
 import {
+  enqueueRunsNeedingContinue,
   reactToThreadMessage,
   replayExistingSend,
   resolveThreadTarget,
@@ -2269,12 +2270,17 @@ export function createRouter(deps: RouterDeps) {
       }),
       react: authed.threads.react.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
-        const result = await reactToThreadMessage(deps, context.actor, target, input);
+        const canStartTurn = !(await modelSetup(deps, context.actor)).needsModel;
+        const result = await reactToThreadMessage(deps, context.actor, target, {
+          ...input,
+          canStartTurn,
+        });
         if (result.eventSeq != null) {
           await deps.events.notify(target.threadId, result.eventSeq).catch((error) => {
             getLogger().error("thread reaction realtime notification", error);
           });
         }
+        await enqueueRunsNeedingContinue(deps.jobs, result.runs);
         return { ok: true as const };
       }),
       stop: authed.threads.stop.handler(async ({ context, input }) => {
