@@ -6,18 +6,12 @@ on a release branch first and reaches `main` only when the maintainer says so.
 
 ## Current release branch
 
-`release/0.1.22`
+`release/0.1.23`
 
 ### In this release
 
 | Feature | Branch | Notes |
 | --- | --- | --- |
-| Reminders ring on time: a scheduled reminder rings the phone and desktop itself when it comes due, instead of a model turn that could skip ringing and ask "when should I remind you?" | `fix/reminders-voice-model-versions` | Adds `Routine.reminder` (migration `20261018030000_routine_reminder`). `schedule_create` takes `reminder`. |
-| Phone voice messages record as AAC 48 kHz instead of 8 kHz AMR, so they sound right, play back and the server transcribes them for the bot | `fix/reminders-voice-model-versions` | Old recordings stay AMR. |
-| Claude Code per bot can pin a model version (e.g. Opus 4.8), grouped by family, besides the latest-of-family alias | `fix/reminders-voice-model-versions` | No migration: the stored model is a string. |
-| **Settings → Permissions** on the phone: what Quant may use (notifications, over the lock screen, background work, microphone, camera, photos, installing updates), with **Allow** on each missing one and **Allow all** to grant them in one go | `feat/permissions-screen` | No migration. The Android native module adds `canRequestPackageInstalls` and `openInstallSettings`. |
-| Phone keeps a detailed log of the current day (start-up and update state, every request and its result, console output, errors) in one file that is replaced each new day; **Settings → Advanced → Share today's logs** sends it with Expo Updates' own native log | `feat/mobile-daily-logs` | No migration and no new native module (uses `expo-file-system` and `expo-sharing`). Each over-the-air update step is logged, to find why the restart into an update fails. |
-| Quant as the Android digital assistant: pick it in Android's **Default digital assistant** settings (or from **Settings → Permissions**), then hold the power button anywhere to get a sheet over the current app: ask by voice or text, attach the screen, a camera shot or a photo, read the bot's answer, switch bots, or open the chat | `feat/android-assistant` | No migration. New local module `quant-assistant` (voice interaction service, session, a stub recognizer Android requires, translucent `QuantAssistantActivity`); the app entry is now `index.ts`, which also registers the `quantAssistant` root. |
 
 ## How to land a feature or fix
 
