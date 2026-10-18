@@ -1763,6 +1763,7 @@ msgid "Could not send reset email"
 msgstr "E-Mail zum Zurücksetzen konnte nicht gesendet werden"
 
 #: src/components/call/IncomingCall.tsx
+#: src/components/reminder/RingingReminder.tsx
 msgid "Could not send that"
 msgstr "Senden fehlgeschlagen"
 
@@ -2154,6 +2155,12 @@ msgstr ""
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Done"
 msgstr "Fertig"
+
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgctxt "reminder"
+msgid "Done"
+msgstr ""
 
 #: src/components/computer/FilesApp.tsx
 #: src/pages/Artifacts.tsx
@@ -2583,6 +2590,10 @@ msgstr "Bild-Upload-Bereich"
 msgid "Import OpenAPI JSON"
 msgstr "OpenAPI-JSON importieren"
 
+#: src/components/reminder/RingingReminder.tsx
+msgid "In 5 minutes"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 msgid "In progress"
 msgstr ""
@@ -3010,6 +3021,10 @@ msgstr "Minute"
 #: src/pages/RoutineSchedule.tsx
 msgid "minutes"
 msgstr "Minuten"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Missed"
+msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Missed call"
@@ -3783,6 +3798,16 @@ msgstr ""
 msgid "Remembering"
 msgstr ""
 
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder"
+msgstr ""
+
+#. placeholder {0}: reminder.botName
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder from {0}"
+msgstr ""
+
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3985,6 +4010,10 @@ msgstr "Prüfe die Anbietereinstellungen und teste erneut."
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "Widerrufen"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Ringing now"
+msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Robot"
@@ -4397,6 +4426,10 @@ msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
 msgid "Slide to cancel"
+msgstr ""
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Snoozed until {time}"
 msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx

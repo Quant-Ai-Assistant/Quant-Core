@@ -30,13 +30,15 @@ type NativeNotifications = {
   ): Promise<void>;
   resume(endpoint: string, token: string, spaceId: string, gateAuth: string): Promise<void>;
   setCalls(
-    enabled: boolean,
+    calls: boolean,
+    reminders: boolean,
     endpoint: string,
     token: string,
     spaceId: string,
     gateAuth: string,
   ): Promise<void>;
   dismissCall(callId: string): Promise<void>;
+  dismissReminder(reminderId: string): Promise<void>;
   canUseFullScreenIntent(): Promise<boolean>;
   openFullScreenIntentSettings(): Promise<void>;
   isIgnoringBatteryOptimizations(): Promise<boolean>;
@@ -202,11 +204,11 @@ export async function openPromotedNotificationSettings(): Promise<void> {
 }
 
 /**
- * Android only: keeps the call service running so a bot's call rings with the app closed.
- * Off when calls are off or the server is not usable from the background.
+ * Android only: keeps the call service running so a bot's call or reminder rings with the app
+ * closed. Off when neither may ring or the server is not usable from the background.
  */
 export async function setIncomingCalls(
-  enabled: boolean,
+  ringing: { calls: boolean; reminders: boolean },
   endpoint: string,
   token: string,
   spaceId: string,
@@ -215,7 +217,8 @@ export async function setIncomingCalls(
   const parsed = normalizeApiBase(endpoint);
   const usable = parsed.ok && !apiBaseWarning(parsed.url) && Boolean(token);
   await nativeNotifications.setCalls(
-    enabled && usable,
+    ringing.calls && usable,
+    ringing.reminders && usable,
     parsed.ok ? parsed.url : "",
     token,
     spaceId,
@@ -226,6 +229,11 @@ export async function setIncomingCalls(
 /** Stops the ringing for a call this device answered or declined. */
 export async function dismissIncomingCall(callId: string): Promise<void> {
   await nativeNotifications?.dismissCall(callId);
+}
+
+/** Stops the ringing for a reminder this device marked done or snoozed. */
+export async function dismissReminder(reminderId: string): Promise<void> {
+  await nativeNotifications?.dismissReminder(reminderId);
 }
 
 /** What still keeps calls from ringing on a locked or idle phone. */

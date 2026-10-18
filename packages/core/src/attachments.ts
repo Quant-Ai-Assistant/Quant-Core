@@ -136,6 +136,16 @@ export function blocksToAgentHistoryText(blocks: MessageBlock[]): string {
         }[block.status];
         return `[you called the user about: ${block.reason}; ${outcome}]${block.status === "answered" ? `\n${block.opening}` : ""}`;
       }
+      // A missed reminder is the bot's cue to follow up, as with a missed call.
+      if (block.kind === "reminder") {
+        const outcome = {
+          ringing: "still ringing",
+          snoozed: `the user snoozed it until ${block.ringsAt}`,
+          done: "the user marked it done",
+          missed: "the user did not answer it",
+        }[block.status];
+        return `[you reminded the user: ${block.text}; ${outcome}]`;
+      }
       if ("text" in block && typeof block.text === "string") return block.text;
       return "";
     })

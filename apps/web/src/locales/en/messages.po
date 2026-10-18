@@ -1763,6 +1763,7 @@ msgid "Could not send reset email"
 msgstr "Could not send reset email"
 
 #: src/components/call/IncomingCall.tsx
+#: src/components/reminder/RingingReminder.tsx
 msgid "Could not send that"
 msgstr "Could not send that"
 
@@ -2152,6 +2153,12 @@ msgstr "Don't lock this Mac"
 #: src/lib/ticket-status.ts
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
+msgid "Done"
+msgstr "Done"
+
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgctxt "reminder"
 msgid "Done"
 msgstr "Done"
 
@@ -2583,6 +2590,10 @@ msgstr "Image upload area"
 msgid "Import OpenAPI JSON"
 msgstr "Import OpenAPI JSON"
 
+#: src/components/reminder/RingingReminder.tsx
+msgid "In 5 minutes"
+msgstr "In 5 minutes"
+
 #: src/lib/ticket-status.ts
 msgid "In progress"
 msgstr "In progress"
@@ -3010,6 +3021,10 @@ msgstr "minute"
 #: src/pages/RoutineSchedule.tsx
 msgid "minutes"
 msgstr "minutes"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Missed"
+msgstr "Missed"
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Missed call"
@@ -3783,6 +3798,16 @@ msgstr "Release interrupted computer?"
 msgid "Remembering"
 msgstr "Remembering"
 
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder"
+msgstr "Reminder"
+
+#. placeholder {0}: reminder.botName
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder from {0}"
+msgstr "Reminder from {0}"
+
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3985,6 +4010,10 @@ msgstr "Review provider settings and test again."
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "Revoke"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Ringing now"
+msgstr "Ringing now"
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Robot"
@@ -4398,6 +4427,10 @@ msgstr "Slack not enabled"
 #: src/components/composer/HoldToTalk.tsx
 msgid "Slide to cancel"
 msgstr "Slide to cancel"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Snoozed until {time}"
+msgstr "Snoozed until {time}"
 
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Software update"

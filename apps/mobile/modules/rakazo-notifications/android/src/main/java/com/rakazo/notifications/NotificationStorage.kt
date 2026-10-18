@@ -72,6 +72,11 @@ internal class NotificationStorage(context: Context) {
     get() = preferences.getBoolean(CALLS, false)
     set(value) = commit { putBoolean(CALLS, value) }
 
+  /** Keep the same service running so a bot's reminder wakes the phone with the app closed. */
+  var remindersEnabled: Boolean
+    get() = preferences.getBoolean(REMINDERS, false)
+    set(value) = commit { putBoolean(REMINDERS, value) }
+
   private fun readSecret(name: String): String {
     val encoded = preferences.getString(name, null) ?: return ""
     return runCatching {
@@ -128,6 +133,7 @@ internal class NotificationStorage(context: Context) {
     const val TOKEN = "token"
     const val GATE_AUTH = "gate_auth"
     const val CALLS = "calls_enabled"
+    const val REMINDERS = "reminders_enabled"
     const val KEY_ALIAS = "rakazo.notifications.session"
     const val TRANSFORMATION = "AES/GCM/NoPadding"
     const val IV_SIZE = 12

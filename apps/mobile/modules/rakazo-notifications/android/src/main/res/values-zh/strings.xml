@@ -6,4 +6,9 @@
   <string name="quant_calls_decline">拒绝</string>
   <string name="quant_calls_channel_incoming">来电</string>
   <string name="quant_calls_channel_service">通话连接</string>
+  <string name="quant_reminders_ready">提醒已就绪</string>
+  <string name="quant_calls_and_reminders_ready">来电和提醒已就绪</string>
+  <string name="quant_reminders_done">完成</string>
+  <string name="quant_reminders_snooze">5 分钟后</string>
+  <string name="quant_reminders_channel">提醒</string>
 </resources>

@@ -45,3 +45,18 @@ Limits:
 - an app or tab that is closed cannot ring: the missed call waits in the chat.
 
 To stop a bot from calling, open its settings and add `call_user` to the disabled tools.
+
+## Reminders
+
+When a reminder you asked for comes due ("remind me at 14:30 to call the bank"), the bot rings your devices with its `remind_user` tool, like an alarm:
+
+- on Android the reminder wakes the phone, even locked, and shows its text full screen; with the phone in use it appears as a notification at the top;
+- on a computer or in a browser tab it appears in the corner of Quant.
+
+Press **Done** or **In 5 minutes**. Answering on one device stops the reminder on the others. A snoozed reminder rings again five minutes later. A reminder nobody answers rings for a minute, comes back five minutes later, and after three unanswered rings counts as missed; the bot sees that in its history and may call you.
+
+The chat keeps a card for every reminder with where it stands: ringing, snoozed until a time, done or missed.
+
+On Android, Quant keeps a quiet background connection with a permanent notification while you are signed in, so reminders can wake the phone. Allow **full-screen notifications** and an **unrestricted battery** when the app asks.
+
+To stop a bot from ringing reminders, add `remind_user` to its disabled tools; its reminders then arrive as ordinary messages.

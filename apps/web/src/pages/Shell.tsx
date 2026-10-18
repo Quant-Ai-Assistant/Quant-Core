@@ -172,6 +172,8 @@ import {
 } from "../components/computer/HostScreen";
 import { lazyOverlay } from "../components/ErrorBoundary";
 import { MessageHoverMetadata } from "../components/MessageHoverMetadata";
+import { ReminderCard } from "../components/reminder/ReminderCard";
+import { RingingReminder } from "../components/reminder/RingingReminder";
 import {
   LIVE_TOOL_STEP_WINDOW,
   StandaloneToolActivity,
@@ -3896,6 +3898,7 @@ export function ShellPage() {
         bots={callsAvailable ? bots : []}
         onAnswered={(botId) => navigate(`/app/${botId}`)}
       />
+      <RingingReminder bots={bots} />
 
       <ResizableSidePanel
         botsSidebarCollapsed={botsSidebarCollapsed}
@@ -7343,6 +7346,7 @@ const MessageView = memo(function MessageView({
           );
         }
         if (block.kind === "cloud_agent") return <CloudAgentCard key={i} block={block} />;
+        if (block.kind === "reminder") return <ReminderCard key={i} block={block} />;
         if (block.kind === "skill_draft") {
           return (
             <div key={i} className="flex justify-start">

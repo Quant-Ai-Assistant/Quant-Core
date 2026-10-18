@@ -307,6 +307,7 @@ import {
   searchChartCatalog,
 } from "./plot-tool.js";
 import { actorMayUsePrivateEndpoint } from "./private-endpoint.js";
+import { remindUser } from "./reminders.js";
 import type { RemoteTransportDependencies } from "./remote-mcp.js";
 import { assertSafeRemoteUrl } from "./remote-mcp.js";
 import { loadReplyContext, messageToAgentHistoryText } from "./reply-context.js";
@@ -5429,6 +5430,23 @@ export function createRunExecutor(deps: ExecutorDeps) {
             );
           }
 
+          if (name === "remind_user") {
+            if (
+              messagingChannelRun ||
+              thread.groupId ||
+              voiceCall ||
+              isBackgroundRunTrigger(run.trigger)
+            ) {
+              return finish({ error: "Reminders ring from a one-to-one chat only." });
+            }
+            return finish(
+              await remindUser(deps, run, {
+                text: String(args.text ?? ""),
+                details: args.details ? String(args.details) : undefined,
+              }),
+            );
+          }
+
           if (name === "schedule_list") {
             return listSchedulesFromTool(deps, {
               spaceId: run.spaceId,
@@ -7614,6 +7632,12 @@ export function selectBuiltinToolsForRun(options: {
         !options.messagingChannelRun &&
         !isBackgroundRunTrigger(options.trigger)) ||
         tool.name !== "call_user") &&
+      // Reminders ring this app's devices from the bot's own chat, never during a call.
+      ((!options.groupId &&
+        !options.voiceCall &&
+        !options.messagingChannelRun &&
+        !isBackgroundRunTrigger(options.trigger)) ||
+        tool.name !== "remind_user") &&
       (options.historyRetrievalEnabled ||
         !["search_history", "read_history"].includes(tool.name)) &&
       (!options.messagingChannelRun ||

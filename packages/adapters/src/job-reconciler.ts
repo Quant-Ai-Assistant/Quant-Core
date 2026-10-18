@@ -8,6 +8,7 @@ import type { PoolClient } from "pg";
 import { returnBotMessageOutcome } from "./bot-messages.js";
 import { reconcileCallRequests } from "./call-request.js";
 import { scheduleComputerControlExpiry } from "./computer-control.js";
+import { reconcileReminders } from "./reminders.js";
 import { reconcileStuckWork } from "./stuck-work.js";
 import { isLoopGuardStopText } from "./tool-loop.js";
 import { isUserProgressClientNonce } from "./user-progress.js";
@@ -129,6 +130,7 @@ export function createJobReconciler(
       const auxiliary = await Promise.allSettled(
         [
           () => reconcileCallRequests(deps),
+          () => reconcileReminders(deps),
           () => reconcileCommandWatches(deps),
           deps.reconcileCloudAgents,
           deps.reconcileComputerUpdates,

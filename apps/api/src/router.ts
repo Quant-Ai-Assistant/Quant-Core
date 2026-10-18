@@ -36,6 +36,7 @@ import type {
 } from "@rakazo/adapters";
 import {
   acquireComputerExecutionLease,
+  advanceReminderMessage,
   applyCodexLiveCatalog,
   applyTeachingDesktopInput,
   archiveBot,
@@ -264,6 +265,7 @@ import {
   startOnboarding,
 } from "./onboarding.js";
 import { listRingingCalls } from "./ringing-calls.js";
+import { listRingingReminders } from "./ringing-reminders.js";
 import { listRoutineRuns } from "./routine-runs.js";
 import { listSpaceRuns } from "./runs.js";
 import { addScreenProxyCapability } from "./screen-proxy.js";
@@ -2451,6 +2453,20 @@ export function createRouter(deps: RouterDeps) {
             });
           }
         }
+        return { ok: true as const };
+      }),
+      ringingReminders: authed.threads.ringingReminders.handler(async ({ context }) =>
+        listRingingReminders(deps.prisma, context.actor),
+      ),
+      settleReminder: authed.threads.settleReminder.handler(async ({ context, input }) => {
+        const target = await resolveThreadTarget(deps.prisma, context.actor, input);
+        if (target.kind !== "bot") throw new IsolationError();
+        // Already settled elsewhere is fine: the other device got there first.
+        await advanceReminderMessage(deps, {
+          threadId: target.threadId,
+          reminderId: input.reminderId,
+          event: input.action,
+        });
         return { ok: true as const };
       }),
       ringingCalls: callsEnabled.threads.ringingCalls.handler(async ({ context }) =>

@@ -6,4 +6,9 @@
   <string name="quant_calls_decline">Отклонить</string>
   <string name="quant_calls_channel_incoming">Входящие звонки</string>
   <string name="quant_calls_channel_service">Соединение для звонков</string>
+  <string name="quant_reminders_ready">Готов к напоминаниям</string>
+  <string name="quant_calls_and_reminders_ready">Готов к звонкам и напоминаниям</string>
+  <string name="quant_reminders_done">Готово</string>
+  <string name="quant_reminders_snooze">Через 5 минут</string>
+  <string name="quant_reminders_channel">Напоминания</string>
 </resources>

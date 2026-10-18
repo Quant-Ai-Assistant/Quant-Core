@@ -1029,6 +1029,26 @@ export const builtinAgentTools: ConnectorTool[] = [
     },
   },
   {
+    name: "remind_user",
+    description:
+      "Ring the user's phone and desktop with a reminder, like an alarm: it wakes a locked phone and shows your text full screen until they tap Done or ask again in 5 minutes. Use it when a reminder the user asked for comes due, usually from the schedule that fires it, so when you schedule a reminder, say in the schedule's prompt to call remind_user. The chat shows whether they finished it, snoozed it or missed it. Never use it for updates a message can carry.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: {
+          type: "string",
+          description:
+            'What to do, short and in the user\'s language, e.g. "Call the bank about the card". Max 120 chars.',
+        },
+        details: {
+          type: "string",
+          description: "Optional one or two sentences that help do it. Max 400 chars.",
+        },
+      },
+      required: ["text"],
+    },
+  },
+  {
     name: "skill_read",
     description:
       "Load a Claude Agent Skill (SKILL.md recipe) by exact name. Call this when a catalog skill matches the user's request, then follow it immediately.",
