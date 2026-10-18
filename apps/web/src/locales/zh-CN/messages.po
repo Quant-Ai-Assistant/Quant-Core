@@ -2819,6 +2819,10 @@ msgstr "语言"
 msgid "Later"
 msgstr ""
 
+#: src/pages/shell/bot-panel.tsx
+msgid "Latest"
+msgstr ""
+
 #: src/components/DesktopUpdates.tsx
 msgid "Latest from main"
 msgstr "来自 main 的最新修复"

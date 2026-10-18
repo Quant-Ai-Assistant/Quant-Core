@@ -5,7 +5,8 @@ import {
   BOT_NAME_MAX_LENGTH,
   BOT_TITLE_MAX_LENGTH,
   CLAUDE_CODE_EFFORTS,
-  CLAUDE_CODE_MODELS,
+  claudeCodeModelGroups,
+  claudeCodeModelName,
   DEFAULT_BOT_CLAUDE_CODE,
   normalizeCreateBotProfile,
 } from "@rakazo/contracts";
@@ -181,10 +182,10 @@ export default function BotSettingsScreen() {
 
   const claudeCodeModelChoices: MenuPickerChoice[] = [
     { key: "", label: t("Default") },
-    ...CLAUDE_CODE_MODELS.map((model) => ({
-      key: model,
-      label: `${model.slice(0, 1).toUpperCase()}${model.slice(1)}`,
-    })),
+    ...claudeCodeModelGroups().flatMap(({ family, models: [, ...versions] }) => [
+      { key: family, label: `${claudeCodeModelName(family)} · ${t("Latest")}` },
+      ...versions.map((model) => ({ key: model, label: claudeCodeModelName(model) })),
+    ]),
   ];
   const claudeCodeEffortChoices: MenuPickerChoice[] = [
     { key: "", label: t("Default") },

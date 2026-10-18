@@ -15,7 +15,8 @@ import {
   BOT_NAME_MAX_LENGTH,
   BOT_TITLE_MAX_LENGTH,
   CLAUDE_CODE_EFFORTS,
-  CLAUDE_CODE_MODELS,
+  claudeCodeModelGroups,
+  claudeCodeModelName,
   DEFAULT_BOT_CLAUDE_CODE,
   isBuiltinToolName,
 } from "@rakazo/contracts";
@@ -29,6 +30,7 @@ import {
   Button,
   Input,
   NativeSelect,
+  NativeSelectOptGroup,
   NativeSelectOption,
   Switch,
   Textarea,
@@ -585,10 +587,17 @@ export function BotSettings({
               }
             >
               <NativeSelectOption value="">{t`Default`}</NativeSelectOption>
-              {CLAUDE_CODE_MODELS.map((model) => (
-                <NativeSelectOption key={model} value={model}>
-                  {claudeCodeModelLabel(model)}
-                </NativeSelectOption>
+              {claudeCodeModelGroups().map(({ family, models: [latest, ...versions] }) => (
+                <NativeSelectOptGroup key={family} label={claudeCodeModelName(family)}>
+                  <NativeSelectOption value={latest}>
+                    {`${claudeCodeModelName(family)} · ${t`Latest`}`}
+                  </NativeSelectOption>
+                  {versions.map((model) => (
+                    <NativeSelectOption key={model} value={model}>
+                      {claudeCodeModelName(model)}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelectOptGroup>
               ))}
             </NativeSelect>
           </label>
@@ -839,8 +848,4 @@ function catalogLabel(
 ) {
   if (!provider) return undefined;
   return catalog.find((entry) => entry.provider === provider && entry.id === modelId)?.label;
-}
-
-function claudeCodeModelLabel(model: BotClaudeCode["model"] & string): string {
-  return `${model.slice(0, 1).toUpperCase()}${model.slice(1)}`;
 }

@@ -2819,6 +2819,10 @@ msgstr "Langue"
 msgid "Later"
 msgstr "Plus tard"
 
+#: src/pages/shell/bot-panel.tsx
+msgid "Latest"
+msgstr ""
+
 #: src/components/DesktopUpdates.tsx
 msgid "Latest from main"
 msgstr ""
