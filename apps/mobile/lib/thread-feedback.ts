@@ -56,7 +56,7 @@ const UPLOAD_TIMEOUT_MS = 60_000;
 
 export async function deliverSend(
   payload: SendPayload,
-  attempt: SendAttempt,
+  attempt: Pick<SendAttempt, "clientNonce" | "artifactIds">,
   request: typeof rpc,
 ): Promise<number | undefined> {
   const { plan, groupTarget, botTarget, reroutedToGroup, attachments } = payload;

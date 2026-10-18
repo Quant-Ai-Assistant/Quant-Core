@@ -6,7 +6,8 @@ export type PermissionKey =
   | "microphone"
   | "camera"
   | "photos"
-  | "updates";
+  | "updates"
+  | "assistant";
 
 export type PermissionProbe = {
   key: PermissionKey;
@@ -109,8 +110,15 @@ export function permissionProbes(os: string): PermissionProbe[] {
       check: async () => (await import("./live-notifications")).canInstallUpdates(),
       request: async () => (await import("./live-notifications")).openInstallUpdateSettings(),
     },
+    {
+      key: "assistant",
+      required: false,
+      opensSettings: true,
+      check: async () => (await import("./assistant")).isDefaultAssistant(),
+      request: async () => (await import("./assistant")).openAssistantSettings(),
+    },
   ];
-  const androidOnly: PermissionKey[] = ["lockScreen", "background", "updates"];
+  const androidOnly: PermissionKey[] = ["lockScreen", "background", "updates", "assistant"];
   return android ? probes : probes.filter((probe) => !androidOnly.includes(probe.key));
 }
 

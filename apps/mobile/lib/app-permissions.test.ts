@@ -22,6 +22,7 @@ describe("permissions", () => {
       "camera",
       "photos",
       "updates",
+      "assistant",
     ]);
     expect(ios).toEqual(["notifications", "microphone", "camera", "photos"]);
   });
