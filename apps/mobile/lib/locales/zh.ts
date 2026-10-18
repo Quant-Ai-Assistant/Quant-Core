@@ -874,4 +874,6 @@ export const ZH_MESSAGES: Record<string, string> = {
   Stopped: "已停止",
   "Using an Anthropic API key": "正在使用 Anthropic API 密钥",
   "{count} steps": "{count} 步",
+  "Share today's logs": "分享今天的日志",
+  "Could not share logs": "无法分享日志",
 };

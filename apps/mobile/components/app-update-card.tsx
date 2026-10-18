@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import type { AppUpdate } from "../lib/app-update";
 import { checkForAppUpdate, installAppUpdate, installedVersionName } from "../lib/app-update";
+import { deviceLog } from "../lib/device-log";
 import { dateLocaleForUi, useI18n } from "../lib/i18n";
 import { useMobileTokens } from "../lib/native";
 import { checkForOtaUpdate, installOtaUpdate } from "../lib/ota-update";
@@ -62,6 +63,7 @@ export function AppUpdateCard() {
     setState({ phase: "checking" });
     try {
       const release = await checkForAppUpdate();
+      deviceLog("info", "app-update", "Checked for a new version", release);
       if (release.available) {
         setState({ phase: "available", update: release });
         return;
@@ -72,6 +74,7 @@ export function AppUpdateCard() {
           : { phase: "current", checkedAt: Date.now() },
       );
     } catch (error) {
+      deviceLog("error", "app-update", "Update check failed", error);
       setState({ phase: "error", message: errorText(error, t("Check your connection")) });
     }
   }, [t]);
@@ -93,6 +96,12 @@ export function AppUpdateCard() {
       });
       setState({ phase: "available", update });
     } catch (error) {
+      deviceLog(
+        controller.signal.aborted ? "info" : "error",
+        "app-update",
+        "Download stopped",
+        error,
+      );
       if (controller.signal.aborted) setState({ phase: "available", update });
       else
         setState({ phase: "error", message: errorText(error, t("Could not download the update")) });

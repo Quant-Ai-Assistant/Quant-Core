@@ -16,6 +16,7 @@ on a release branch first and reaches `main` only when the maintainer says so.
 | Phone voice messages record as AAC 48 kHz instead of 8 kHz AMR, so they sound right, play back and the server transcribes them for the bot | `fix/reminders-voice-model-versions` | Old recordings stay AMR. |
 | Claude Code per bot can pin a model version (e.g. Opus 4.8), grouped by family, besides the latest-of-family alias | `fix/reminders-voice-model-versions` | No migration: the stored model is a string. |
 | **Settings → Permissions** on the phone: what Quant may use (notifications, over the lock screen, background work, microphone, camera, photos, installing updates), with **Allow** on each missing one and **Allow all** to grant them in one go | `feat/permissions-screen` | No migration. The Android native module adds `canRequestPackageInstalls` and `openInstallSettings`. |
+| Phone keeps a detailed log of the current day (start-up and update state, every request and its result, console output, errors) in one file that is replaced each new day; **Settings → Advanced → Share today's logs** sends it with Expo Updates' own native log | `feat/mobile-daily-logs` | No migration and no new native module (uses `expo-file-system` and `expo-sharing`). Each over-the-air update step is logged, to find why the restart into an update fails. |
 
 ## How to land a feature or fix
 
