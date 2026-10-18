@@ -8,9 +8,7 @@ import {
   signup,
 } from "./helpers";
 
-test("Claude Code has its own sign-in and per-bot model and effort", async ({
-  page,
-}, testInfo) => {
+test("Claude Code has its own sign-in and per-bot model and effort", async ({ page }, testInfo) => {
   const stamp = Date.now();
   await signup(page, `claude-code-${stamp}@rakazo.test`, "password12", "Claude Code");
   await completeOnboarding(page);
