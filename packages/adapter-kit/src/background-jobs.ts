@@ -23,6 +23,7 @@ const payloadSchemas = {
   "history.compact": z.object({ threadId: z.string().min(1) }),
   "messaging.deliver": z.object({ runId: z.string().min(1).optional() }),
   "cloud_agent.poll": z.object({ agentId: z.string().min(1) }),
+  "watch.check": z.object({ watchId: z.string().min(1) }),
 } satisfies { [Name in BackgroundJobName]: z.ZodType<BackgroundJobPayloads[Name]> };
 
 export function parseBackgroundJob(name: string, payload: unknown): BackgroundJob {
@@ -164,5 +165,18 @@ export function cloudAgentPollJob(
     payload,
     replaceKey: cloudAgentPollJobKey(payload.agentId),
     ...(availableAt ? { availableAt } : {}),
+  };
+}
+
+export function watchCheckJobKey(watchId: string): string {
+  return `watch.check:${watchId}`;
+}
+
+export function watchCheckJob(watchId: string, availableAt: Date): BackgroundJob {
+  return {
+    name: "watch.check",
+    payload: { watchId },
+    availableAt,
+    replaceKey: watchCheckJobKey(watchId),
   };
 }

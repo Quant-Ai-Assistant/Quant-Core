@@ -37,6 +37,7 @@ import {
   replyAttachment,
   resolveComposerSendPlan,
   resolvePersonaColorDef,
+  runShowsTyping,
   selectedAskActionLabel,
   threadWindowMessages,
   timeSeparatorIds,
@@ -2302,11 +2303,10 @@ function Thread({ sessionEpoch }: { sessionEpoch: number }) {
   );
 
   const workingFooter =
-    // A turn started by a reaction usually ends in a reaction or nothing, so it never looks like typing.
     !inGroup &&
     currentBot &&
     isWorkingStatus(currentBotStatus) &&
-    snap?.run?.trigger !== "reaction" &&
+    runShowsTyping(snap?.run?.trigger) &&
     !hasLiveProgress ? (
       <View
         accessibilityLabel={t("{name} is working", { name: currentBot.name })}

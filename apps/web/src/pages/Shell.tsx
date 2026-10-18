@@ -61,6 +61,7 @@ import {
   replyAttachment,
   resolveComposerSendPlan,
   resolveMentionPickerKey,
+  runShowsTyping,
   runThreadSubscription,
   SLASH_ACTIONS,
   searchHitThreadTarget,
@@ -1830,9 +1831,8 @@ export function ShellPage() {
   }, []);
   const currentRuns = activeThreadRuns(activeSnapshot);
   const answerableAskMessageId = latestAnswerableAskMessageId(activeSnapshot);
-  // A turn started by a reaction usually ends in a reaction or nothing, so it never looks like typing.
   const workingRuns = currentRuns.filter(
-    (run) => ["running", "queued", "leased"].includes(run.status) && run.trigger !== "reaction",
+    (run) => ["running", "queued", "leased"].includes(run.status) && runShowsTyping(run.trigger),
   );
   const transcriptRunning = workingRuns.length > 0;
   const composerRunning = currentRuns.some((run) => isActive(run.status));

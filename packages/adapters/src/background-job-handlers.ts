@@ -21,6 +21,7 @@ import { compactHistory } from "./history-compaction.js";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
 import { deliverMessagingOutbound, mirrorMessagingOutbound } from "./messaging-delivery.js";
 import { expireTaughtSkillTeaching } from "./teaching-session.js";
+import { checkCommandWatch } from "./watches.js";
 
 export function createBackgroundJobHandlers(deps: {
   executor: ReturnType<typeof createRunExecutor>;
@@ -91,6 +92,9 @@ export function createBackgroundJobHandlers(deps: {
     },
     "call.expire": async (payload) => {
       await settleCallRequest(deps, { ...payload, from: ["ringing"], status: "missed" });
+    },
+    "watch.check": async (payload) => {
+      await checkCommandWatch(deps, payload.watchId);
     },
     "cloud_agent.poll": async (payload) => {
       await pollCloudAgent(

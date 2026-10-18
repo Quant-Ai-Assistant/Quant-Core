@@ -216,6 +216,7 @@ model Space {
   tasks                       Task[]
   runs                        Run[]
   routines                    Routine[]
+  watches                     Watch[]
   scratchpadItems             ScratchpadItem[]
   taughtSkills                TaughtSkill[]
   agentSkills                 AgentSkill[]
@@ -446,6 +447,8 @@ model Bot {
   teamChatAmbientEnabled Boolean @default(false)
   teamChatRules          String  @default("")
   routines          Routine[]
+  watches           Watch[]           @relation("BotWatches")
+  watchedBy         Watch[]           @relation("BotWatchedBy")
   scratchpadItems   ScratchpadItem[]
   taughtSkills      TaughtSkill[]
   memoryDocuments   MemoryDocument[]
@@ -560,6 +563,7 @@ model Thread {
   tasks                       Task[]
   runs                        Run[]
   routines                    Routine[]
+  watches                     Watch[]
 
   @@index([spaceId])
   @@map("threads")
@@ -659,6 +663,8 @@ model Run {
   sourceMessage        Message?         @relation("RunSourceMessage", fields: [sourceMessageId], references: [id], onDelete: SetNull)
   routineId            String?
   routine              Routine?         @relation(fields: [routineId], references: [id], onDelete: SetNull)
+  watchId              String?
+  watch                Watch?           @relation(fields: [watchId], references: [id], onDelete: SetNull)
   startedAt            DateTime?
   completedAt          DateTime?
   botOutcomeReturnedAt DateTime?
@@ -682,6 +688,7 @@ model Run {
   @@index([sourceMessageId])
   @@index([threadId, status, createdAt])
   @@index([routineId])
+  @@index([watchId, status])
   @@map("runs")
 }
 
@@ -812,6 +819,41 @@ model Routine {
   @@index([active, nextRunAt])
   @@index([spaceId, botId])
   @@map("routines")
+}
+
+/// A bot waiting for something to happen instead of polling on a schedule. It
+/// watches either another bot's chat or a check command on its own computer,
+/// and is woken only when the watched bot posts or the command passes.
+model Watch {
+  id              String    @id @default(cuid())
+  spaceId         String
+  space           Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  botId           String
+  bot             Bot       @relation("BotWatches", fields: [botId], references: [id], onDelete: Cascade)
+  userId          String
+  threadId        String
+  thread          Thread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  name            String
+  goal            String    @db.Text
+  /// Every visible update this bot posts in its own chat wakes the watcher.
+  watchedBotId    String?
+  watchedBot      Bot?      @relation("BotWatchedBy", fields: [watchedBotId], references: [id], onDelete: Cascade)
+  /// Or the server runs this on the watcher's computer until it exits 0.
+  command         String?   @db.Text
+  intervalSeconds Int?
+  nextCheckAt     DateTime?
+  active          Boolean   @default(true)
+  expiresAt       DateTime
+  fireCount       Int       @default(0)
+  lastFiredAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  runs            Run[]
+
+  @@index([watchedBotId, active])
+  @@index([active, nextCheckAt])
+  @@index([spaceId, botId])
+  @@map("watches")
 }
 
 model ScratchpadItem {

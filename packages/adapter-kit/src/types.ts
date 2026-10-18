@@ -671,6 +671,8 @@ export interface BackgroundJobPayloads {
   "messaging.deliver": { runId?: string };
   /** Reconcile durable remote-agent intent; scope is loaded from the database. */
   "cloud_agent.poll": { agentId: string };
+  /** Run a command watch's check once; it re-enqueues itself until it passes or expires. */
+  "watch.check": { watchId: string };
 }
 
 export type BackgroundJobName = keyof BackgroundJobPayloads;
