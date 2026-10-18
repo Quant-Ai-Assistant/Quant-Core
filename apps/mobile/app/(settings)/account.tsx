@@ -529,6 +529,13 @@ export default function Account() {
             accessibilityRole="button"
             chevron="right"
             disabled={pending}
+            onPress={() => router.push("/claude-code")}
+            title="Claude Code"
+          />
+          <SettingsRow
+            accessibilityRole="button"
+            chevron="right"
+            disabled={pending}
             onPress={() => router.push("/integrations")}
             title={t("Integrations")}
           />

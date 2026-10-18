@@ -1,4 +1,5 @@
-import { LIVE_TOOL_POLL_MS } from "@rakazo/core";
+import type { ActivityStatus } from "@rakazo/contracts";
+import { LIVE_TOOL_POLL_MS, sameActivityStatus } from "@rakazo/core";
 import { useSyncExternalStore } from "react";
 import { rpc } from "./api";
 import type { CallCue } from "./call-sounds";
@@ -23,6 +24,8 @@ export type CallState = {
   endedAt: number | null;
   /** The tool the bot is using right now, such as `computer_act`. */
   tool: string | null;
+  /** What that tool is doing, in the shared status vocabulary. */
+  activity: ActivityStatus | null;
   /** Why the call could not connect. */
   error: string | null;
   /** What the bot is saying now. */
@@ -41,7 +44,7 @@ export type CallDeps = {
   /** The cue as the call connects and as it ends. */
   cue: (cue: CallCue) => Promise<void>;
   /** The tool the bot is using right now. */
-  activity: (botId: string) => Promise<string | null>;
+  activity: (botId: string) => Promise<{ tool: string | null; status: ActivityStatus | null }>;
 };
 
 /** How long an ended call stays on screen. */
@@ -112,6 +115,7 @@ export function startCall(
     connectedAt: null,
     endedAt: null,
     tool: null,
+    activity: null,
     error: null,
     caption: "",
     heard: "",
@@ -167,8 +171,15 @@ function watchTool(botId: string, thisCallId: string) {
   if (toolPoll) clearInterval(toolPoll);
   const poll = () => {
     void deps.activity(botId).then(
-      (tool) => {
-        if (callId === thisCallId && state && !state.endedAt && state.tool !== tool) set({ tool });
+      ({ tool, status }) => {
+        if (callId !== thisCallId || !state || state.endedAt) return;
+        const same =
+          state.activity === status ||
+          (state.activity !== null &&
+            status !== null &&
+            sameActivityStatus(state.activity, status));
+        if (state.tool === tool && same) return;
+        set({ tool, activity: status });
       },
       () => undefined,
     );
@@ -199,7 +210,7 @@ export function endCall(): void {
     emit();
     return;
   }
-  set({ endedAt: Date.now(), tool: null });
+  set({ endedAt: Date.now(), tool: null, activity: null });
   closing = setTimeout(() => {
     closing = null;
     if (state?.endedAt) {
@@ -227,8 +238,14 @@ function productionDeps(): CallDeps {
       });
     },
     cue: playCallCue,
-    activity: async (botId) =>
-      (await rpc<{ tool: string | null }>("threads/activity", { botId })).tool,
+    activity: async (botId) => {
+      const result = await rpc<{ tool: string | null; status?: ActivityStatus | null }>(
+        "threads/activity",
+        { botId },
+      );
+      // An older server answers without a status; the badge then names the tool only.
+      return { tool: result.tool, status: result.status ?? null };
+    },
   };
 }
 

@@ -14,7 +14,7 @@ vi.mock("./rpc.js", () => ({
   rpc: {
     threads: {
       endCall: vi.fn(async () => ({ ok: true })),
-      activity: vi.fn(async () => ({ tool: null as string | null })),
+      activity: vi.fn(async () => ({ tool: null as string | null, status: null })),
     },
   },
 }));
@@ -90,13 +90,13 @@ describe("web call session", () => {
   });
 
   it("connects before the clock starts, then shows the tool the bot is using", async () => {
-    vi.mocked(rpc.threads.activity).mockResolvedValue({ tool: "computer_act" });
+    vi.mocked(rpc.threads.activity).mockResolvedValue({ tool: "computer_act", status: null });
     startCall({ botId: "bot", botName: "Ada" });
     expect(getSnapshot()?.connectedAt).toBeNull();
     await vi.waitFor(() => expect(getSnapshot()?.connectedAt).toEqual(expect.any(Number)));
     await vi.waitFor(() => expect(getSnapshot()?.tool).toBe("computer_act"));
     expect(rpc.threads.activity).toHaveBeenCalledWith({ botId: "bot" });
-    vi.mocked(rpc.threads.activity).mockResolvedValue({ tool: null });
+    vi.mocked(rpc.threads.activity).mockResolvedValue({ tool: null, status: null });
   });
 
   it("ends when the provider closes the call, and shows a failed connection", async () => {

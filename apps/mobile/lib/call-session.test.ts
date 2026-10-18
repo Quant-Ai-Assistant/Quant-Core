@@ -1,3 +1,4 @@
+import type { ActivityStatus } from "@rakazo/contracts";
 import type { LiveCallFeedHandlers } from "@rakazo/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CallDeps } from "./call-session";
@@ -13,7 +14,10 @@ function liveDeps() {
   const deps: CallDeps = {
     cue: vi.fn(async () => {}),
     endCall: vi.fn(async () => {}),
-    activity: vi.fn(async (): Promise<string | null> => null),
+    activity: vi.fn(async () => ({
+      tool: null as string | null,
+      status: null as ActivityStatus | null,
+    })),
     connectLive: vi.fn(async (_call, next) => {
       handlers = next;
       return connection;
@@ -60,7 +64,7 @@ describe("mobile call session", () => {
 
   it("connects before the clock starts, then shows the tool the bot is using", async () => {
     const { deps } = liveDeps();
-    vi.mocked(deps.activity).mockResolvedValue("computer_act");
+    vi.mocked(deps.activity).mockResolvedValue({ tool: "computer_act", status: null });
     startCall({ botId: "bot", botName: "Ada" }, deps);
     expect(getSnapshot()?.connectedAt).toBeNull();
     await vi.waitFor(() => expect(getSnapshot()?.connectedAt).toEqual(expect.any(Number)));

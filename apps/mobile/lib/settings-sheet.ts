@@ -9,6 +9,7 @@ const settingsScreens = new Set([
   "archived-bots",
   "calls",
   "change-password",
+  "claude-code",
   "integration-setup",
   "integrations",
   "models",

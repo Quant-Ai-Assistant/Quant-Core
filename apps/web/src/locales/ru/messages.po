@@ -29,10 +29,11 @@ msgid "{0, plural, one {Waiting for sign-in — the code expires in about # minu
 msgstr ""
 
 #. placeholder {0}: Math.ceil(oauth.expiresInSeconds / 60)
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}"
-msgstr ""
+msgstr "{0, plural, one {Ждём входа — ссылка истечёт примерно через # минуту.} few {Ждём входа — ссылка истечёт примерно через # минуты.} many {Ждём входа — ссылка истечёт примерно через # минут.} other {Ждём входа — ссылка истечёт примерно через # минуты.}}"
 
 #. placeholder {0}: file.name
 #: src/pages/Shell.tsx
@@ -113,6 +114,10 @@ msgstr "Компьютер {botName}"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable} зарезервирована и не может использоваться как переменная команды. Выберите другое имя."
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "{count, plural, one {# step} other {# steps}}"
+msgstr "{count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}"
+
 #: src/pages/Shell.tsx
 msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
 msgstr "{count, plural, one {Компьютер · # действие} few {Компьютер · # действия} many {Компьютер · # действий} other {Компьютер · # действия}}"
@@ -138,9 +143,10 @@ msgstr ""
 msgid "{days}d ago"
 msgstr "{days} дн. назад"
 
+#: src/components/ClaudeCodeCard.tsx
 #: src/components/ToolActivityDisclosure.tsx
 msgid "{hidden, plural, one {+# earlier step} other {+# earlier steps}}"
-msgstr ""
+msgstr "{hidden, plural, one {+# ранний шаг} few {+# ранних шага} many {+# ранних шагов} other {+# ранних шага}}"
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "{hours} h {minutes} min"
@@ -632,6 +638,10 @@ msgstr "Спросите перед отправкой внешнего элек
 msgid "Ask the server owner to configure this provider."
 msgstr "Попросите владельца сервера настроить этого провайдера."
 
+#: src/lib/activity-label.ts
+msgid "Asking you to take over"
+msgstr "Просит вас взять управление"
+
 #: src/pages/HostSettingsPanel.tsx
 msgid "Assistants"
 msgstr "Ассистенты"
@@ -653,6 +663,10 @@ msgstr "Прикрепить файл"
 msgid "Attached {path}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Attaching a file"
+msgstr "Прикрепляет файл"
+
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
 msgid "Attachment"
@@ -662,6 +676,7 @@ msgstr "Вложение"
 msgid "Authentication failed."
 msgstr "Аутентификация не удалась."
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Authorization code or callback URL"
@@ -850,6 +865,7 @@ msgid "Call with {0}"
 msgstr "Звонок с {0}"
 
 #: src/components/call/IncomingCall.tsx
+#: src/lib/activity-label.ts
 msgid "Calling you"
 msgstr "Звонит вам"
 
@@ -871,6 +887,7 @@ msgstr "Не удаётся связаться с сервером."
 #: src/components/markdown-link-prompt.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/pages/Artifacts.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -974,6 +991,10 @@ msgstr "Проверьте свою электронную почту"
 #: src/components/ComputersUnavailableHint.tsx
 msgid "Checking computer setup…"
 msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Checking tasks"
+msgstr "Смотрит задачи"
 
 #: src/components/ComputersUnavailableHint.tsx
 #: src/components/DesktopUpdates.tsx
@@ -1136,6 +1157,7 @@ msgstr ""
 msgid "Coming soon"
 msgstr "Скоро"
 
+#: src/lib/activity-label.ts
 #: src/pages/McpServersOverlay.tsx
 msgid "Command"
 msgstr "Команда"
@@ -1148,6 +1170,14 @@ msgstr "Переменная команды"
 #: src/pages/Board.tsx
 msgid "Comment"
 msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Commit"
+msgstr "Коммит"
+
+#: src/lib/activity-label.ts
+msgid "Committing"
+msgstr "Делает коммит"
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Compact"
@@ -1219,6 +1249,7 @@ msgstr "Убедитесь, что URL доступен из этого сеан
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -1286,8 +1317,13 @@ msgstr "Подключено и используется {0}."
 msgid "Connected. Its tools are available from your next message."
 msgstr "Подключено. Его инструменты доступны из вашего следующего сообщения."
 
+#: src/lib/activity-label.ts
+msgid "Connecting"
+msgstr "Подключает"
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
@@ -1558,6 +1594,10 @@ msgstr "Не удалось загрузить ботов. Обновите ст
 msgid "Could not load call settings"
 msgstr "Не удалось загрузить настройки звонков"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Could not load Claude Code"
+msgstr "Не удалось загрузить Claude Code"
+
 #: src/components/computer/TerminalApp.tsx
 msgid "Could not load commands"
 msgstr ""
@@ -1696,6 +1736,7 @@ msgstr "Не удалось отменить соединение"
 msgid "Could not run routine"
 msgstr "Не удалось запустить задачу"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ExternalConversationSettings.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1823,6 +1864,10 @@ msgstr ""
 msgid "Could not verify computer setup ({failureMessage}). Fix the connection, then check again."
 msgstr ""
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "Couldn’t finish"
+msgstr "Не удалось завершить"
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Couldn't load messaging settings"
 msgstr "Не удалось загрузить настройки обмена сообщениями."
@@ -1884,6 +1929,14 @@ msgstr "Создайте свой Quant"
 #: src/components/AskCard.tsx
 msgid "Created"
 msgstr "Создано"
+
+#: src/lib/activity-label.ts
+msgid "Creating a file"
+msgstr "Создаёт файл"
+
+#: src/lib/activity-label.ts
+msgid "Creating a space"
+msgstr "Создаёт пространство"
 
 #: src/pages/GroupPanel.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1962,6 +2015,7 @@ msgstr "Отклонённый звонок"
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
+#: src/pages/shell/bot-panel.tsx
 msgid "Default"
 msgstr "По умолчанию"
 
@@ -2034,6 +2088,14 @@ msgstr "Удалить пространство"
 msgid "deleted"
 msgstr "удалено"
 
+#: src/lib/activity-label.ts
+msgid "Deleted"
+msgstr "Удаление"
+
+#: src/lib/activity-label.ts
+msgid "Deleting a file"
+msgstr "Удаляет файл"
+
 #: src/pages/Artifacts.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Deleting…"
@@ -2085,6 +2147,7 @@ msgid "Discard recording"
 msgstr "Удалить запись"
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2102,6 +2165,7 @@ msgid "Disconnected {0}."
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -2208,6 +2272,10 @@ msgstr "Черновик навыка"
 msgid "Drag, drop, or paste an image"
 msgstr "Перетащите или вставьте изображение"
 
+#: src/lib/activity-label.ts
+msgid "Drawing a chart"
+msgstr "Рисует график"
+
 #: src/pages/BotContextMenu.tsx
 msgid "Duplicate"
 msgstr "Дублировать"
@@ -2216,6 +2284,10 @@ msgstr "Дублировать"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "напр. Hivenet Agent, Presales, бот табелей"
 
+#: src/lib/activity-label.ts
+msgid "Edit"
+msgstr "Правка"
+
 #: src/components/AskCard.tsx
 msgid "Edit first"
 msgstr "Сначала отредактируйте"
@@ -2223,6 +2295,14 @@ msgstr "Сначала отредактируйте"
 #: src/pages/BotContextMenu.tsx
 msgid "Edit Profile"
 msgstr "Редактировать профиль"
+
+#: src/lib/activity-label.ts
+msgid "Editing a file"
+msgstr "Правит файл"
+
+#: src/pages/shell/bot-panel.tsx
+msgid "Effort"
+msgstr "Усилие"
 
 #: src/pages/Auth.tsx
 msgid "Email"
@@ -2383,6 +2463,10 @@ msgstr "Обработка сбоев"
 msgid "File is too large to upload."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "File search"
+msgstr "Поиск по файлам"
+
 #: src/components/computer/ComputerWorkspace.tsx
 msgid "Files"
 msgstr ""
@@ -2406,6 +2490,7 @@ msgid "Finding…"
 msgstr "Поиск…"
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Finish signing in at <0>{0}</0>. The final page may not load; paste its URL or code here."
@@ -2431,6 +2516,14 @@ msgstr "Завершение подключения MCP…"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Flag unexpected actions"
 msgstr "Пометить неожиданные действия"
+
+#: src/lib/activity-label.ts
+msgid "Folder"
+msgstr "Папка"
+
+#: src/lib/activity-label.ts
+msgid "Forgetting"
+msgstr "Забывает"
 
 #: src/pages/Auth.tsx
 msgid "Forgot password?"
@@ -2495,6 +2588,10 @@ msgstr "Обновления группы"
 msgid "Groups"
 msgstr "Группы"
 
+#: src/lib/activity-label.ts
+msgid "Handing off"
+msgstr "Передаёт разговор"
+
 #: src/components/call/CallCard.tsx
 msgid "Hang up"
 msgstr "Завершить звонок"
@@ -2520,6 +2617,10 @@ msgstr "Значение заголовка"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Hear a sample"
 msgstr "Прослушать образец"
+
+#: src/lib/activity-label.ts
+msgid "Helper"
+msgstr "Помощник"
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Hi, this is how I'll sound when I read replies out loud."
@@ -2621,6 +2722,14 @@ msgstr "Наследовать значение по умолчанию"
 #: src/components/teach/SkillDraftCard.tsx
 msgid "Inputs"
 msgstr "Входы"
+
+#: src/lib/activity-label.ts
+msgid "Install"
+msgstr "Установка"
+
+#: src/lib/activity-label.ts
+msgid "Installing packages"
+msgstr "Ставит пакеты"
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Instance API key"
@@ -2827,6 +2936,18 @@ msgstr "Настройки локального сервера"
 msgid "Log out"
 msgstr "Выйти"
 
+#: src/lib/activity-label.ts
+msgid "Looking at the page"
+msgstr "Смотрит страницу"
+
+#: src/lib/activity-label.ts
+msgid "Looking at the screen"
+msgstr "Смотрит на экран"
+
+#: src/lib/activity-label.ts
+msgid "Looking in a folder"
+msgstr "Смотрит папку"
+
 #: src/lib/ticket-priority.ts
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -2991,6 +3112,10 @@ msgstr "Отправлено сообщение {peer}"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Messaging"
 msgstr "Обмен сообщениями"
+
+#: src/lib/activity-label.ts
+msgid "Messaging a bot"
+msgstr "Пишет боту"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -3159,6 +3284,10 @@ msgstr "Требуется ваше участие"
 #: src/pages/shell/bot-panel.tsx
 msgid "New bot"
 msgstr "Новый бот"
+
+#: src/lib/activity-label.ts
+msgid "New file"
+msgstr "Новый файл"
 
 #: src/pages/GroupPanel.tsx
 msgid "New group"
@@ -3411,10 +3540,11 @@ msgid "Open <0>{0}</0> and enter this code:"
 msgstr ""
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Open <0>{0}</0> to finish signing in."
-msgstr ""
+msgstr "Откройте <0>{0}</0>, чтобы завершить вход."
 
 #: src/pages/Shell.tsx
 msgid "Open call"
@@ -3466,9 +3596,21 @@ msgstr ""
 msgid "Opened its thread."
 msgstr "Диалог открыт."
 
+#: src/lib/activity-label.ts
+msgid "Opening a file"
+msgstr "Открывает файл"
+
 #: src/components/call/CallCard.tsx
 msgid "Opening a page"
 msgstr "Открывает страницу"
+
+#: src/lib/activity-label.ts
+msgid "Opening a site"
+msgstr "Открывает сайт"
+
+#: src/lib/activity-label.ts
+msgid "Opening an app"
+msgstr "Запускает приложение"
 
 #: src/pages/Onboarding.tsx
 msgid "Opening chat…"
@@ -3496,6 +3638,10 @@ msgstr "Или подключить API-ключ"
 msgid "Or paste an API key"
 msgstr "Или вставьте ключ API"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Or use an Anthropic API key"
+msgstr "Или используйте API-ключ Anthropic"
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Organic"
 msgstr "Органичный"
@@ -3520,6 +3666,10 @@ msgstr "Исходящий звонок"
 #: src/pages/Board.tsx
 msgid "Owner"
 msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Page"
+msgstr "Страница"
 
 #: src/pages/RoutineEditor.tsx
 msgid "PagerDuty incident"
@@ -3565,6 +3715,7 @@ msgid "Paste the OpenAI-compatible address from your server. Quant adds /v1 if n
 msgstr "Вставьте OpenAI-совместимый адрес со своего сервера. При необходимости Quant добавляет /v1."
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste your API key"
 msgstr "Вставьте свой ключ API"
@@ -3597,6 +3748,10 @@ msgstr "Выберите модель из списка или введите id
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "Закрепить"
+
+#: src/lib/activity-label.ts
+msgid "Plan"
+msgstr "План"
 
 #: src/pages/shell/voice-message.tsx
 msgid "Play voice message"
@@ -3653,6 +3808,14 @@ msgstr "Провайдеры"
 msgid "Pull request"
 msgstr "Запрос на слияние"
 
+#: src/lib/activity-label.ts
+msgid "Push"
+msgstr "Отправка"
+
+#: src/lib/activity-label.ts
+msgid "Pushing changes"
+msgstr "Отправляет изменения"
+
 #: src/pages/ActivityList.tsx
 msgid "Queued"
 msgstr "В очереди"
@@ -3673,9 +3836,29 @@ msgstr "Поставить реакцию {emoji}"
 msgid "Reactions"
 msgstr "Реакции"
 
+#: src/lib/activity-label.ts
+msgid "Read"
+msgstr "Чтение"
+
 #: src/pages/shell/bot-panel.tsx
 msgid "Read replies aloud"
 msgstr "Читать ответы вслух"
+
+#: src/lib/activity-label.ts
+msgid "Reading a file"
+msgstr "Читает файл"
+
+#: src/lib/activity-label.ts
+msgid "Reading a page"
+msgstr "Читает страницу"
+
+#: src/lib/activity-label.ts
+msgid "Reading a skill"
+msgstr "Читает навык"
+
+#: src/lib/activity-label.ts
+msgid "Reading the chat"
+msgstr "Читает переписку"
 
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -3797,6 +3980,11 @@ msgstr "Освободить прерванный компьютер?"
 #: src/components/call/CallCard.tsx
 msgid "Remembering"
 msgstr "Запоминает"
+
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Remembering"
+msgstr "Вспоминает"
 
 #: src/components/reminder/ReminderCard.tsx
 #: src/components/reminder/RingingReminder.tsx
@@ -4071,8 +4259,13 @@ msgid "Running · Stop"
 msgstr "Выполняется · Остановить"
 
 #: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
 msgid "Running a command"
 msgstr "Выполняет команду"
+
+#: src/lib/activity-label.ts
+msgid "Running tests"
+msgstr "Запускает тесты"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running…"
@@ -4133,6 +4326,14 @@ msgstr "Сохранено."
 msgid "Saved. Rotate to reveal."
 msgstr "Сохранено. Поверните, чтобы раскрыть."
 
+#: src/lib/activity-label.ts
+msgid "Saving a skill"
+msgstr "Сохраняет навык"
+
+#: src/lib/activity-label.ts
+msgid "Saving to memory"
+msgstr "Запоминает"
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Saving your workspace"
 msgstr "Сохранение вашего рабочего пространства"
@@ -4151,6 +4352,10 @@ msgstr "Сохранение..."
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "Сохранение…"
+
+#: src/lib/activity-label.ts
+msgid "Scheduling"
+msgstr "Создаёт расписание"
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -4202,7 +4407,16 @@ msgstr ""
 msgid "Search: {0}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Searching files"
+msgstr "Ищет в файлах"
+
+#: src/lib/activity-label.ts
+msgid "Searching the chat"
+msgstr "Ищет в переписке"
+
 #: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
 msgid "Searching the web"
 msgstr "Ищет в интернете"
 
@@ -4281,6 +4495,18 @@ msgstr "Имя сервера"
 #: src/pages/Onboarding.tsx
 msgid "Server URL"
 msgstr "URL-адрес сервера"
+
+#: src/lib/activity-label.ts
+msgid "Setting a reminder"
+msgstr "Ставит напоминание"
+
+#: src/lib/activity-label.ts
+msgid "Setting up a bot"
+msgstr "Настраивает бота"
+
+#: src/lib/activity-label.ts
+msgid "Setting up a watch"
+msgstr "Ставит слежение"
 
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
@@ -4372,9 +4598,10 @@ msgstr "Войти"
 
 #: src/components/AccountAccess.tsx
 #: src/lib/user-error.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Sign in again"
-msgstr ""
+msgstr "Войти снова"
 
 #: src/pages/Auth.tsx
 msgid "Sign in to Quant"
@@ -4383,6 +4610,10 @@ msgstr "Войти в Quant"
 #: src/lib/user-error.ts
 msgid "Sign in to your existing account to link SSO"
 msgstr "Войдите в существующий аккаунт, чтобы привязать SSO"
+
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Sign in with Claude"
+msgstr "Войти через Claude"
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -4393,9 +4624,17 @@ msgstr "Войдите по подписке или протестируйте A
 msgid "Sign up"
 msgstr "Зарегистрироваться"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Signed in with Claude"
+msgstr "Вход через Claude выполнен"
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Site"
 msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Skill"
+msgstr "Навык"
 
 #. placeholder {0}: skill.name
 #: src/pages/Shell.tsx
@@ -4497,8 +4736,14 @@ msgstr "Начать запись"
 msgid "Starting"
 msgstr "Запуск"
 
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Starting"
+msgstr "Запускается"
+
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/lib/roster-status.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Starting…"
@@ -4534,6 +4779,10 @@ msgstr "Остановить озвучивание"
 msgid "Stop teaching"
 msgstr "Остановить обучение"
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "Stopped"
+msgstr "Остановлено"
+
 #. js-lingui-explicit-id
 #: src/lib/browser-notifications.ts
 msgid "Stopped."
@@ -4555,6 +4804,7 @@ msgstr "Потоковые ответы"
 msgid "subagent"
 msgstr "субагент"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Submit"
@@ -4646,6 +4896,10 @@ msgstr "Проверить вход"
 msgid "Testing…"
 msgstr "Проверка…"
 
+#: src/lib/activity-label.ts
+msgid "Tests"
+msgstr "Тесты"
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
 msgstr "API не вернулся. Обновите эту страницу."
@@ -4684,6 +4938,11 @@ msgstr ""
 #: src/pages/shell/bot-panel.tsx
 msgid "Thinking"
 msgstr "рассуждение"
+
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Thinking"
+msgstr "Думает"
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Thinking: {activeThinkingLabel}"
@@ -4814,6 +5073,10 @@ msgstr "К:"
 #: src/pages/shell/chat-context.tsx
 msgid "Today"
 msgstr "Сегодня"
+
+#: src/lib/activity-label.ts
+msgid "Tool"
+msgstr "Инструмент"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Tool sources"
@@ -4949,9 +5212,17 @@ msgstr "Обновления"
 msgid "Updating {0}’s Computer"
 msgstr "Обновление компьютера {0}"
 
+#: src/lib/activity-label.ts
+msgid "Updating a task"
+msgstr "Обновляет задачу"
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Updating Team Computer"
 msgstr "Обновление компьютера команды"
+
+#: src/lib/activity-label.ts
+msgid "Updating the plan"
+msgstr "Обновляет план"
 
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/DesktopUpdates.tsx
@@ -5013,8 +5284,17 @@ msgid "Uses this server's own {hostCredentialSource} credentials to access {sele
 msgstr "Использует собственные учётные данные {hostCredentialSource} этого сервера для доступа к {selectedProviderName}."
 
 #: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
 msgid "Using a tool"
 msgstr "Использует инструмент"
+
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Using an Anthropic API key"
+msgstr "Используется API-ключ Anthropic"
+
+#: src/lib/activity-label.ts
+msgid "Using the page"
+msgstr "Работает со страницей"
 
 #: src/pages/shell/bot-credentials.tsx
 msgid "Value"
@@ -5058,6 +5338,10 @@ msgstr "Голосовое сообщение"
 msgid "Wait a moment and test again."
 msgstr "Подождите немного и повторите тест."
 
+#: src/lib/activity-label.ts
+msgid "Waiting for a code"
+msgstr "Ждёт код"
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Waiting for the API to come back…"
 msgstr "Ждём возвращения API…"
@@ -5066,6 +5350,14 @@ msgstr "Ждём возвращения API…"
 msgid "Waiting for you"
 msgstr "Ждёт вас"
 
+#: src/lib/activity-label.ts
+msgid "Waiting for your answer"
+msgstr "Ждёт вашего ответа"
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your approval"
+msgstr "Ждёт вашего разрешения"
+
 #: src/lib/roster-status.ts
 msgid "Waiting in line…"
 msgstr "Ожидание в очереди…"
@@ -5073,6 +5365,10 @@ msgstr "Ожидание в очереди…"
 #: src/pages/shell/message-cards.tsx
 msgid "Waiting…"
 msgstr "Ожидание…"
+
+#: src/lib/activity-label.ts
+msgid "Web search"
+msgstr "Поиск в интернете"
 
 #: src/pages/Paywall.tsx
 msgid "Web, desktop and mobile apps"
@@ -5144,9 +5440,18 @@ msgid "Won't do"
 msgstr ""
 
 #: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
 #: src/pages/Shell.tsx
 msgid "Working on the computer"
 msgstr "Работает на компьютере"
+
+#: src/lib/activity-label.ts
+msgid "Working with a cloud agent"
+msgstr "Работает с облачным агентом"
+
+#: src/lib/activity-label.ts
+msgid "Working with a helper"
+msgstr "Работает с помощником"
 
 #: src/components/call/CallCard.tsx
 msgid "Working with files"
@@ -5157,6 +5462,10 @@ msgstr "Работает с файлами"
 #: src/pages/HostSettingsPanel.tsx
 msgid "Working…"
 msgstr "Выполняется…"
+
+#: src/lib/activity-label.ts
+msgid "Writing a reply"
+msgstr "Пишет ответ"
 
 #: src/components/computer/TerminalApp.tsx
 msgid "Wrote {path}"

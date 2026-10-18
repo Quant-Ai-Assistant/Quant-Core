@@ -29,6 +29,7 @@ msgid "{0, plural, one {Waiting for sign-in — the code expires in about # minu
 msgstr ""
 
 #. placeholder {0}: Math.ceil(oauth.expiresInSeconds / 60)
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}"
@@ -113,6 +114,10 @@ msgstr "Computer von {botName}"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable} ist reserviert und kann nicht als Befehlsvariable verwendet werden. Wähle einen anderen Namen."
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "{count, plural, one {# step} other {# steps}}"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
 msgstr ""
@@ -138,6 +143,7 @@ msgstr ""
 msgid "{days}d ago"
 msgstr "vor {days} T."
 
+#: src/components/ClaudeCodeCard.tsx
 #: src/components/ToolActivityDisclosure.tsx
 msgid "{hidden, plural, one {+# earlier step} other {+# earlier steps}}"
 msgstr ""
@@ -632,6 +638,10 @@ msgstr "Vor dem Senden externer E-Mails nachfragen"
 msgid "Ask the server owner to configure this provider."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Asking you to take over"
+msgstr ""
+
 #: src/pages/HostSettingsPanel.tsx
 msgid "Assistants"
 msgstr ""
@@ -653,6 +663,10 @@ msgstr "Datei anhängen"
 msgid "Attached {path}"
 msgstr "{path} angehängt"
 
+#: src/lib/activity-label.ts
+msgid "Attaching a file"
+msgstr ""
+
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
 msgid "Attachment"
@@ -662,6 +676,7 @@ msgstr "Anhang"
 msgid "Authentication failed."
 msgstr "Authentifizierung fehlgeschlagen."
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Authorization code or callback URL"
@@ -850,6 +865,7 @@ msgid "Call with {0}"
 msgstr "Anruf mit {0}"
 
 #: src/components/call/IncomingCall.tsx
+#: src/lib/activity-label.ts
 msgid "Calling you"
 msgstr "Ruft dich an"
 
@@ -871,6 +887,7 @@ msgstr "Server nicht erreichbar."
 #: src/components/markdown-link-prompt.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/pages/Artifacts.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -973,6 +990,10 @@ msgstr "Prüfe deine E-Mails"
 
 #: src/components/ComputersUnavailableHint.tsx
 msgid "Checking computer setup…"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Checking tasks"
 msgstr ""
 
 #: src/components/ComputersUnavailableHint.tsx
@@ -1136,6 +1157,7 @@ msgstr ""
 msgid "Coming soon"
 msgstr ""
 
+#: src/lib/activity-label.ts
 #: src/pages/McpServersOverlay.tsx
 msgid "Command"
 msgstr "Befehl"
@@ -1147,6 +1169,14 @@ msgstr "Befehlsvariable"
 
 #: src/pages/Board.tsx
 msgid "Comment"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Commit"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Committing"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -1219,6 +1249,7 @@ msgstr "Prüfe, ob die URL aus dieser Browsersitzung erreichbar ist, und teste e
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -1286,8 +1317,13 @@ msgstr "Verbunden, {0} wird verwendet."
 msgid "Connected. Its tools are available from your next message."
 msgstr "Verbunden. Die Tools sind ab deiner nächsten Nachricht verfügbar."
 
+#: src/lib/activity-label.ts
+msgid "Connecting"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
@@ -1558,6 +1594,10 @@ msgstr ""
 msgid "Could not load call settings"
 msgstr "Anrufeinstellungen konnten nicht geladen werden"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Could not load Claude Code"
+msgstr ""
+
 #: src/components/computer/TerminalApp.tsx
 msgid "Could not load commands"
 msgstr "Befehle konnten nicht geladen werden"
@@ -1696,6 +1736,7 @@ msgstr "Verbindung konnte nicht widerrufen werden"
 msgid "Could not run routine"
 msgstr ""
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ExternalConversationSettings.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1823,6 +1864,10 @@ msgstr "Datei konnte nicht hochgeladen werden"
 msgid "Could not verify computer setup ({failureMessage}). Fix the connection, then check again."
 msgstr ""
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "Couldn’t finish"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Couldn't load messaging settings"
 msgstr ""
@@ -1883,6 +1928,14 @@ msgstr "Dein Quant erstellen"
 
 #: src/components/AskCard.tsx
 msgid "Created"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Creating a file"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Creating a space"
 msgstr ""
 
 #: src/pages/GroupPanel.tsx
@@ -1962,6 +2015,7 @@ msgstr ""
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
+#: src/pages/shell/bot-panel.tsx
 msgid "Default"
 msgstr "Standard"
 
@@ -2034,6 +2088,14 @@ msgstr ""
 msgid "deleted"
 msgstr "gelöscht"
 
+#: src/lib/activity-label.ts
+msgid "Deleted"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Deleting a file"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Deleting…"
@@ -2085,6 +2147,7 @@ msgid "Discard recording"
 msgstr "Aufnahme verwerfen"
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2102,6 +2165,7 @@ msgid "Disconnected {0}."
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -2208,6 +2272,10 @@ msgstr "Skill-Entwurf"
 msgid "Drag, drop, or paste an image"
 msgstr "Bild ziehen, ablegen oder einfügen"
 
+#: src/lib/activity-label.ts
+msgid "Drawing a chart"
+msgstr ""
+
 #: src/pages/BotContextMenu.tsx
 msgid "Duplicate"
 msgstr "Duplizieren"
@@ -2216,6 +2284,10 @@ msgstr "Duplizieren"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "z. B. Hivenet Agent, Presales, Zeiterfassungs-Bot"
 
+#: src/lib/activity-label.ts
+msgid "Edit"
+msgstr ""
+
 #: src/components/AskCard.tsx
 msgid "Edit first"
 msgstr "Zuerst bearbeiten"
@@ -2223,6 +2295,14 @@ msgstr "Zuerst bearbeiten"
 #: src/pages/BotContextMenu.tsx
 msgid "Edit Profile"
 msgstr "Profil bearbeiten"
+
+#: src/lib/activity-label.ts
+msgid "Editing a file"
+msgstr ""
+
+#: src/pages/shell/bot-panel.tsx
+msgid "Effort"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Email"
@@ -2383,6 +2463,10 @@ msgstr "Fehlerbehandlung"
 msgid "File is too large to upload."
 msgstr "Datei ist zu groß zum Hochladen."
 
+#: src/lib/activity-label.ts
+msgid "File search"
+msgstr ""
+
 #: src/components/computer/ComputerWorkspace.tsx
 msgid "Files"
 msgstr "Dateien"
@@ -2406,6 +2490,7 @@ msgid "Finding…"
 msgstr "Suche läuft…"
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Finish signing in at <0>{0}</0>. The final page may not load; paste its URL or code here."
@@ -2430,6 +2515,14 @@ msgstr "MCP-Verbindung wird abgeschlossen…"
 
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Flag unexpected actions"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Folder"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Forgetting"
 msgstr ""
 
 #: src/pages/Auth.tsx
@@ -2495,6 +2588,10 @@ msgstr ""
 msgid "Groups"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Handing off"
+msgstr ""
+
 #: src/components/call/CallCard.tsx
 msgid "Hang up"
 msgstr "Auflegen"
@@ -2520,6 +2617,10 @@ msgstr "Header-Wert"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Hear a sample"
 msgstr "Beispiel anhören"
+
+#: src/lib/activity-label.ts
+msgid "Helper"
+msgstr ""
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Hi, this is how I'll sound when I read replies out loud."
@@ -2621,6 +2722,14 @@ msgstr "Standard übernehmen"
 #: src/components/teach/SkillDraftCard.tsx
 msgid "Inputs"
 msgstr "Eingaben"
+
+#: src/lib/activity-label.ts
+msgid "Install"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Installing packages"
+msgstr ""
 
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Instance API key"
@@ -2827,6 +2936,18 @@ msgstr ""
 msgid "Log out"
 msgstr "Abmelden"
 
+#: src/lib/activity-label.ts
+msgid "Looking at the page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Looking at the screen"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Looking in a folder"
+msgstr ""
+
 #: src/lib/ticket-priority.ts
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -2990,6 +3111,10 @@ msgstr "Nachricht an {peer} gesendet"
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Messaging"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Messaging a bot"
 msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
@@ -3159,6 +3284,10 @@ msgstr ""
 #: src/pages/shell/bot-panel.tsx
 msgid "New bot"
 msgstr "Neuer Bot"
+
+#: src/lib/activity-label.ts
+msgid "New file"
+msgstr ""
 
 #: src/pages/GroupPanel.tsx
 msgid "New group"
@@ -3411,6 +3540,7 @@ msgid "Open <0>{0}</0> and enter this code:"
 msgstr ""
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Open <0>{0}</0> to finish signing in."
@@ -3466,8 +3596,20 @@ msgstr "{path} geöffnet"
 msgid "Opened its thread."
 msgstr "Thread geöffnet."
 
+#: src/lib/activity-label.ts
+msgid "Opening a file"
+msgstr ""
+
 #: src/components/call/CallCard.tsx
 msgid "Opening a page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Opening a site"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Opening an app"
 msgstr ""
 
 #: src/pages/Onboarding.tsx
@@ -3496,6 +3638,10 @@ msgstr "Oder einen API-Schlüssel verbinden"
 msgid "Or paste an API key"
 msgstr "Oder einen API-Schlüssel einfügen"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Or use an Anthropic API key"
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Organic"
 msgstr ""
@@ -3519,6 +3665,10 @@ msgstr ""
 
 #: src/pages/Board.tsx
 msgid "Owner"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Page"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -3565,6 +3715,7 @@ msgid "Paste the OpenAI-compatible address from your server. Quant adds /v1 if n
 msgstr "Füge die OpenAI-kompatible Adresse deines Servers ein. Quant ergänzt /v1 bei Bedarf."
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste your API key"
 msgstr "Füge deinen API-Schlüssel ein"
@@ -3597,6 +3748,10 @@ msgstr "Wähle ein Modell aus der Liste oder gib eine Modell-ID ein, die dieser 
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "Anheften"
+
+#: src/lib/activity-label.ts
+msgid "Plan"
+msgstr ""
 
 #: src/pages/shell/voice-message.tsx
 msgid "Play voice message"
@@ -3653,6 +3808,14 @@ msgstr "Anbieter"
 msgid "Pull request"
 msgstr "Pull Request"
 
+#: src/lib/activity-label.ts
+msgid "Push"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Pushing changes"
+msgstr ""
+
 #: src/pages/ActivityList.tsx
 msgid "Queued"
 msgstr "In Warteschlange"
@@ -3673,9 +3836,29 @@ msgstr ""
 msgid "Reactions"
 msgstr "Reaktionen"
 
+#: src/lib/activity-label.ts
+msgid "Read"
+msgstr ""
+
 #: src/pages/shell/bot-panel.tsx
 msgid "Read replies aloud"
 msgstr "Antworten vorlesen"
+
+#: src/lib/activity-label.ts
+msgid "Reading a file"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading a page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading a skill"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading the chat"
+msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -3795,6 +3978,11 @@ msgid "Release interrupted computer?"
 msgstr ""
 
 #: src/components/call/CallCard.tsx
+msgid "Remembering"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgctxt "activity"
 msgid "Remembering"
 msgstr ""
 
@@ -4071,7 +4259,12 @@ msgid "Running · Stop"
 msgstr "Wird ausgeführt · Stoppen"
 
 #: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
 msgid "Running a command"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Running tests"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -4133,6 +4326,14 @@ msgstr "Gespeichert."
 msgid "Saved. Rotate to reveal."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Saving a skill"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Saving to memory"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Saving your workspace"
 msgstr ""
@@ -4151,6 +4352,10 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "Wird gespeichert…"
+
+#: src/lib/activity-label.ts
+msgid "Scheduling"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -4202,7 +4407,16 @@ msgstr ""
 msgid "Search: {0}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Searching files"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Searching the chat"
+msgstr ""
+
 #: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
 msgid "Searching the web"
 msgstr ""
 
@@ -4281,6 +4495,18 @@ msgstr "Servername"
 #: src/pages/Onboarding.tsx
 msgid "Server URL"
 msgstr "Server-URL"
+
+#: src/lib/activity-label.ts
+msgid "Setting a reminder"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Setting up a bot"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Setting up a watch"
+msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
@@ -4372,6 +4598,7 @@ msgstr "Anmelden"
 
 #: src/components/AccountAccess.tsx
 #: src/lib/user-error.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Sign in again"
 msgstr ""
@@ -4384,6 +4611,10 @@ msgstr "Bei Quant anmelden"
 msgid "Sign in to your existing account to link SSO"
 msgstr "Melde dich bei deinem bestehenden Konto an, um SSO zu verknüpfen"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Sign in with Claude"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
 msgstr "Melde dich mit dem Abonnement an oder teste stattdessen den API-Schlüssel."
@@ -4393,8 +4624,16 @@ msgstr "Melde dich mit dem Abonnement an oder teste stattdessen den API-Schlüss
 msgid "Sign up"
 msgstr "Registrieren"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Signed in with Claude"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Site"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Skill"
 msgstr ""
 
 #. placeholder {0}: skill.name
@@ -4497,8 +4736,14 @@ msgstr "Aufnahme starten"
 msgid "Starting"
 msgstr "Startet"
 
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Starting"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/lib/roster-status.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Starting…"
@@ -4534,6 +4779,10 @@ msgstr "Vorlesen stoppen"
 msgid "Stop teaching"
 msgstr "Anlernen beenden"
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "Stopped"
+msgstr ""
+
 #. js-lingui-explicit-id
 #: src/lib/browser-notifications.ts
 msgid "Stopped."
@@ -4555,6 +4804,7 @@ msgstr "Antworten streamen"
 msgid "subagent"
 msgstr "Subagent"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Submit"
@@ -4646,6 +4896,10 @@ msgstr "Anmeldung testen"
 msgid "Testing…"
 msgstr "Wird getestet…"
 
+#: src/lib/activity-label.ts
+msgid "Tests"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
 msgstr ""
@@ -4684,6 +4938,11 @@ msgstr ""
 #: src/pages/shell/bot-panel.tsx
 msgid "Thinking"
 msgstr "Denkmodus"
+
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Thinking"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Thinking: {activeThinkingLabel}"
@@ -4814,6 +5073,10 @@ msgstr "An:"
 #: src/pages/shell/chat-context.tsx
 msgid "Today"
 msgstr "Heute"
+
+#: src/lib/activity-label.ts
+msgid "Tool"
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Tool sources"
@@ -4949,8 +5212,16 @@ msgstr "Updates"
 msgid "Updating {0}’s Computer"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Updating a task"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Updating Team Computer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Updating the plan"
 msgstr ""
 
 #: src/components/ComputerMaintenanceActions.tsx
@@ -5013,7 +5284,16 @@ msgid "Uses this server's own {hostCredentialSource} credentials to access {sele
 msgstr "Verwendet die eigenen {hostCredentialSource}-Zugangsdaten dieses Servers für den Zugriff auf {selectedProviderName}."
 
 #: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
 msgid "Using a tool"
+msgstr ""
+
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Using an Anthropic API key"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Using the page"
 msgstr ""
 
 #: src/pages/shell/bot-credentials.tsx
@@ -5058,12 +5338,24 @@ msgstr ""
 msgid "Wait a moment and test again."
 msgstr "Warte kurz und teste erneut."
 
+#: src/lib/activity-label.ts
+msgid "Waiting for a code"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Waiting for the API to come back…"
 msgstr ""
 
 #: src/pages/HostSettingsPanel.tsx
 msgid "Waiting for you"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your answer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your approval"
 msgstr ""
 
 #: src/lib/roster-status.ts
@@ -5073,6 +5365,10 @@ msgstr "Wartet in der Warteschlange…"
 #: src/pages/shell/message-cards.tsx
 msgid "Waiting…"
 msgstr "Warten…"
+
+#: src/lib/activity-label.ts
+msgid "Web search"
+msgstr ""
 
 #: src/pages/Paywall.tsx
 msgid "Web, desktop and mobile apps"
@@ -5144,8 +5440,17 @@ msgid "Won't do"
 msgstr ""
 
 #: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
 #: src/pages/Shell.tsx
 msgid "Working on the computer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Working with a cloud agent"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Working with a helper"
 msgstr ""
 
 #: src/components/call/CallCard.tsx
@@ -5157,6 +5462,10 @@ msgstr ""
 #: src/pages/HostSettingsPanel.tsx
 msgid "Working…"
 msgstr "Wird verarbeitet…"
+
+#: src/lib/activity-label.ts
+msgid "Writing a reply"
+msgstr ""
 
 #: src/components/computer/TerminalApp.tsx
 msgid "Wrote {path}"

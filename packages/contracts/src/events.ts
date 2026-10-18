@@ -1,5 +1,7 @@
 import * as z from "zod";
+import { ActivityStatusSchema } from "./activity.js";
 import { botSecretDestinationSchema } from "./bot-secrets.js";
+import { ClaudeCodeBlockSchema } from "./claude-code.js";
 import { Id } from "./ids.js";
 import { McpTransportSchema } from "./mcp.js";
 
@@ -197,6 +199,8 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     text: z.string(),
     /** Provider-generated tool status rather than assistant-authored narration. */
     activity: z.literal(true).optional(),
+    /** What the activity line says, for clients to word in their own language. */
+    activityStatus: ActivityStatusSchema.optional(),
     pendingToolNames: z.array(z.string()).optional(),
   }),
   z.object({
@@ -231,6 +235,7 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     prUrl: z.string().optional(),
     latestRunId: z.string().optional(),
   }),
+  ClaudeCodeBlockSchema,
   z.object({
     kind: z.literal("skill_draft"),
     skillId: Id,

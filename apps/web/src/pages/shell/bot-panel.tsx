@@ -2,6 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type {
   AgentSkillCatalogEntry,
   Bot,
+  BotClaudeCode,
   ComputerMode,
   Me,
   ModelCatalogEntry,
@@ -13,6 +14,9 @@ import {
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_NAME_MAX_LENGTH,
   BOT_TITLE_MAX_LENGTH,
+  CLAUDE_CODE_EFFORTS,
+  CLAUDE_CODE_MODELS,
+  DEFAULT_BOT_CLAUDE_CODE,
   isBuiltinToolName,
 } from "@rakazo/contracts";
 import {
@@ -223,6 +227,7 @@ export function BotSettings({
     modelId?: string | null;
     thinkingLevel?: ThinkingLevel | null;
     disabledBuiltinTools?: string[];
+    claudeCode?: BotClaudeCode;
   }) => Promise<void>;
   onExport: () => Promise<void>;
   onClear: () => void;
@@ -243,6 +248,9 @@ export function BotSettings({
   const [computerMode, setComputerMode] = useState(bot.computerMode);
   const [memoryScope, setMemoryScope] = useState(bot.memoryScope);
   const [autoSpeak, setAutoSpeak] = useState(bot.autoSpeak);
+  const [claudeCode, setClaudeCode] = useState<BotClaudeCode>(
+    bot.claudeCode ?? DEFAULT_BOT_CLAUDE_CODE,
+  );
   const [voiceId, setVoiceId] = useState(bot.voiceId ?? "");
   const [voices, setVoices] = useState<VoiceInfo[]>([]);
   const [modelKey, setModelKey] = useState(
@@ -281,6 +289,7 @@ export function BotSettings({
       notifyOnFinish?: boolean;
       disabledBuiltinTools?: string[];
       baseDisabledBuiltinTools?: string[];
+      claudeCode?: BotClaudeCode;
     }) => Promise<void>
   >(async () => undefined);
   useEffect(() => {
@@ -340,6 +349,7 @@ export function BotSettings({
     notifyOnFinish?: boolean;
     disabledBuiltinTools?: string[];
     baseDisabledBuiltinTools?: string[];
+    claudeCode?: BotClaudeCode;
   }) {
     const selected = selectedModel;
     const nextName = (patchOverrides?.name !== undefined ? patchOverrides.name : name).trim();
@@ -372,6 +382,7 @@ export function BotSettings({
         memoryScope,
         autoSpeak,
         voiceId: voiceId || null,
+        claudeCode: patchOverrides?.claudeCode ?? claudeCode,
         modelProvider: selected?.provider ?? null,
         modelId: selected?.modelId ?? null,
         ...(modelMetaReady
@@ -427,6 +438,11 @@ export function BotSettings({
   }
   executeSaveRef.current = executeSave;
 
+  function saveClaudeCode(next: BotClaudeCode) {
+    setClaudeCode(next);
+    void enqueueSave({ claudeCode: next });
+  }
+
   function disableBuiltinTool(raw: string) {
     const name = raw.trim();
     if (!name) return;
@@ -449,6 +465,7 @@ export function BotSettings({
     color?: string;
     notifyOnFinish?: boolean;
     disabledBuiltinTools?: string[];
+    claudeCode?: BotClaudeCode;
   }) {
     // Serialize full-object auto-saves so an older in-flight request cannot
     // finish after a newer one and clobber fields. Always call through a ref so
@@ -539,6 +556,66 @@ export function BotSettings({
           }}
         />
       </div>
+      <div className="mt-4 flex items-center justify-between border-t border-border/20 pt-4">
+        <div id={`${ids}-claude-code-label`} className="text-[13.5px] font-medium text-foreground">
+          Claude Code
+        </div>
+        <Switch
+          id={`${ids}-claude-code`}
+          data-testid="bot-claude-code"
+          checked={claudeCode.enabled}
+          aria-labelledby={`${ids}-claude-code-label`}
+          onCheckedChange={(checked) => saveClaudeCode({ ...claudeCode, enabled: checked })}
+        />
+      </div>
+      {claudeCode.enabled ? (
+        <div className="mt-1 grid grid-cols-2 gap-2">
+          <label htmlFor={`${ids}-claude-code-model`} className={fieldLabelClass}>
+            <Trans>Model</Trans>
+            <NativeSelect
+              id={`${ids}-claude-code-model`}
+              data-testid="bot-claude-code-model"
+              className="mt-2 w-full"
+              value={claudeCode.model ?? ""}
+              onChange={(event) =>
+                saveClaudeCode({
+                  ...claudeCode,
+                  model: (event.target.value || null) as BotClaudeCode["model"],
+                })
+              }
+            >
+              <NativeSelectOption value="">{t`Default`}</NativeSelectOption>
+              {CLAUDE_CODE_MODELS.map((model) => (
+                <NativeSelectOption key={model} value={model}>
+                  {claudeCodeModelLabel(model)}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </label>
+          <label htmlFor={`${ids}-claude-code-effort`} className={fieldLabelClass}>
+            <Trans>Effort</Trans>
+            <NativeSelect
+              id={`${ids}-claude-code-effort`}
+              data-testid="bot-claude-code-effort"
+              className="mt-2 w-full"
+              value={claudeCode.effort ?? ""}
+              onChange={(event) =>
+                saveClaudeCode({
+                  ...claudeCode,
+                  effort: (event.target.value || null) as BotClaudeCode["effort"],
+                })
+              }
+            >
+              <NativeSelectOption value="">{t`Default`}</NativeSelectOption>
+              {CLAUDE_CODE_EFFORTS.map((effort) => (
+                <NativeSelectOption key={effort} value={effort}>
+                  {thinkingLevelLabel(effort)}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </label>
+        </div>
+      ) : null}
       <details
         data-testid="bot-settings-advanced"
         className="group mt-5"
@@ -762,4 +839,8 @@ function catalogLabel(
 ) {
   if (!provider) return undefined;
   return catalog.find((entry) => entry.provider === provider && entry.id === modelId)?.label;
+}
+
+function claudeCodeModelLabel(model: BotClaudeCode["model"] & string): string {
+  return `${model.slice(0, 1).toUpperCase()}${model.slice(1)}`;
 }

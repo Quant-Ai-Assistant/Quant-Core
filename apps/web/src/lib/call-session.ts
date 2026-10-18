@@ -1,5 +1,6 @@
 import { t } from "@lingui/core/macro";
-import { LIVE_TOOL_POLL_MS } from "@rakazo/core";
+import type { ActivityStatus } from "@rakazo/contracts";
+import { LIVE_TOOL_POLL_MS, sameActivityStatus } from "@rakazo/core";
 import { useSyncExternalStore } from "react";
 import { pickUp } from "./call-pickup.js";
 import type { LiveConnection } from "./live-call.js";
@@ -22,6 +23,8 @@ export interface CallState {
   endedAt: number | null;
   /** The tool the bot is using right now, such as `computer_act`. */
   tool: string | null;
+  /** What that tool is doing, in the shared status vocabulary. */
+  activity: ActivityStatus | null;
   /** Why the call could not connect. */
   error: string | null;
   phase: CallPhase;
@@ -95,6 +98,7 @@ export function startCall(call: {
     connectedAt: null,
     endedAt: null,
     tool: null,
+    activity: null,
     error: null,
     phase: "ringing",
     muted: false,
@@ -151,13 +155,19 @@ export function startCall(call: {
     );
 }
 
+function sameStatus(a: ActivityStatus | null, b: ActivityStatus | null): boolean {
+  return a === b || (a !== null && b !== null && sameActivityStatus(a, b));
+}
+
 /** Asks what the bot is using while the call is connected, for the call's tool badge. */
 function watchTool(botId: string, thisCallId: string) {
   if (toolPoll) clearInterval(toolPoll);
   const poll = () => {
     void rpc.threads.activity({ botId }).then(
-      ({ tool }) => {
-        if (callId === thisCallId && state && !state.endedAt && state.tool !== tool) set({ tool });
+      ({ tool, status }) => {
+        if (callId !== thisCallId || !state || state.endedAt) return;
+        if (state.tool === tool && sameStatus(state.activity, status)) return;
+        set({ tool, activity: status });
       },
       () => undefined,
     );
@@ -188,7 +198,7 @@ export function endCall(): void {
     emit();
     return;
   }
-  set({ endedAt: Date.now(), tool: null });
+  set({ endedAt: Date.now(), tool: null, activity: null });
   closing = setTimeout(() => {
     closing = null;
     if (state?.endedAt) {

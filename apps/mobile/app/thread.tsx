@@ -97,6 +97,7 @@ import { AskActions } from "../components/AskActions";
 import { BotAvatar } from "../components/bot-avatar";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ComputerCard } from "../components/ComputerCard";
+import { ClaudeCodeCard } from "../components/claude-code-card";
 import { ComposerReplyPreview } from "../components/composer-reply-preview";
 import { ComputerUseBadge } from "../components/computer-use-badge";
 import { FailedSendBubble } from "../components/failed-send-bubble";
@@ -3434,8 +3435,12 @@ const MessageBubble = memo(function MessageBubble({
   }
   const special = message.blocks.find(
     (block) =>
-      block.kind === "subagent" || block.kind === "child_bot" || block.kind === "cloud_agent",
+      block.kind === "subagent" ||
+      block.kind === "child_bot" ||
+      block.kind === "cloud_agent" ||
+      block.kind === "claude_code",
   );
+  if (special?.kind === "claude_code") return <ClaudeCodeCard block={special} />;
   if (special?.kind === "subagent") {
     const running = special.status === "running";
     const failed = special.status === "failed";

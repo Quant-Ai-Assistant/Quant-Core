@@ -163,6 +163,8 @@ function replyBlockText(block: MessageBlock): string {
     case "voice_call":
     case "cloud_agent":
       return block.title;
+    case "claude_code":
+      return "Claude Code";
     case "call_request":
       return block.reason;
     case "reminder":

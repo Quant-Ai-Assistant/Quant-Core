@@ -1,4 +1,5 @@
 import type {
+  ActivityStatus,
   CacheCapabilities as ConnectionCacheCapabilities,
   ConnectionCatalogItem,
   SandboxKind,
@@ -576,6 +577,8 @@ export type AgentRuntimeEvent =
       activity?: true;
       /** The tool an activity line is about, so clients can say what the bot is using. */
       tool?: string;
+      /** What the activity line says, in the shared vocabulary clients translate. */
+      status?: ActivityStatus;
     }
   | { type: "tool"; name: string; args: Record<string, unknown>; executionId: string }
   | {

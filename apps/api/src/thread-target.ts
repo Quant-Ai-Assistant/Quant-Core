@@ -3,6 +3,7 @@ import type { JobPublisher, SandboxProvider } from "@rakazo/adapter-kit";
 import { runContinueJob } from "@rakazo/adapter-kit";
 import { cancelComputerRunWork, screenLeaseIdForRun, toComputerRef } from "@rakazo/adapters";
 import type {
+  ActivityStatus,
   Actor,
   GroupMember,
   MessageBlock,
@@ -12,6 +13,7 @@ import type {
   ThreadSnapshot,
 } from "@rakazo/contracts";
 import {
+  ActivityStatusSchema,
   ANSWERING_REACTIONS,
   GROUP_MEMBER_MIN,
   MessageBlock as MessageBlockSchema,
@@ -338,22 +340,22 @@ export async function threadHead(prisma: PrismaClient, target: ThreadTarget) {
 export async function threadActivity(
   prisma: PrismaClient,
   threadId: string,
-): Promise<{ tool: string | null }> {
+): Promise<{ tool: string | null; status: ActivityStatus | null }> {
   const run = await prisma.run.findFirst({
     where: { threadId, status: "running" },
     orderBy: { createdAt: "desc" },
     select: { id: true },
   });
-  if (!run) return { tool: null };
+  if (!run) return { tool: null, status: null };
   const event = await prisma.event.findFirst({
     where: { threadId, runId: run.id, type: "thread.progress" },
     orderBy: { seq: "desc" },
     select: { payload: true },
   });
   const payload = (event?.payload ?? {}) as Record<string, unknown>;
-  return {
-    tool: payload.activity === true && typeof payload.tool === "string" ? payload.tool : null,
-  };
+  const tool = payload.activity === true && typeof payload.tool === "string" ? payload.tool : null;
+  const status = ActivityStatusSchema.safeParse(payload.status);
+  return { tool, status: tool && status.success ? status.data : null };
 }
 
 export async function threadSnapshot(

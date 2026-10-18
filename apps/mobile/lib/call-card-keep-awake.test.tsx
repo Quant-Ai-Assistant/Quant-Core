@@ -106,7 +106,7 @@ describe("CallCard keep-awake lifetime", () => {
       connectLive: vi.fn(async () => ({ setMuted: vi.fn(), close: vi.fn() })),
       endCall: async () => undefined,
       cue: async () => undefined,
-      activity: async () => null,
+      activity: async () => ({ tool: null, status: null }),
     };
 
     act(() => root.render(<CallCard />));

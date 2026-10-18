@@ -1,9 +1,12 @@
-import type { ComputerMode, ThinkingLevel } from "@rakazo/contracts";
+import type { BotClaudeCode, ComputerMode, ThinkingLevel } from "@rakazo/contracts";
 import {
   BOT_COLORS,
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_NAME_MAX_LENGTH,
   BOT_TITLE_MAX_LENGTH,
+  CLAUDE_CODE_EFFORTS,
+  CLAUDE_CODE_MODELS,
+  DEFAULT_BOT_CLAUDE_CODE,
   normalizeCreateBotProfile,
 } from "@rakazo/contracts";
 import {
@@ -38,6 +41,8 @@ import { stopVoicePlayback } from "../lib/voice";
 
 type BotSettingsRecord = MobileBot & {
   description?: string;
+  /** Absent from servers older than Claude Code. */
+  claudeCode?: BotClaudeCode;
 };
 
 export default function BotSettingsScreen() {
@@ -55,6 +60,7 @@ export default function BotSettingsScreen() {
   const [modelKey, setModelKey] = useState("");
   const [thinkingLevel, setThinkingLevel] = useState("");
   const [autoSpeak, setAutoSpeak] = useState(false);
+  const [claudeCode, setClaudeCode] = useState<BotClaudeCode>(DEFAULT_BOT_CLAUDE_CODE);
   const [credentials, setCredentials] = useState<MobileModelCredential[]>([]);
   const [catalog, setCatalog] = useState<MobileModel[]>([]);
   const [me, setMe] = useState<MobileMe | null>(null);
@@ -86,6 +92,7 @@ export default function BotSettingsScreen() {
         );
         setThinkingLevel(next.thinkingLevel ?? "");
         setAutoSpeak(next.autoSpeak);
+        setClaudeCode(next.claudeCode ?? DEFAULT_BOT_CLAUDE_CODE);
       })
       .catch((err) => setError(errorText(err, t("Could not load bot"))));
   }, [botId]);
@@ -171,6 +178,18 @@ export default function BotSettingsScreen() {
     ],
     [t, thinkingOptions],
   );
+
+  const claudeCodeModelChoices: MenuPickerChoice[] = [
+    { key: "", label: t("Default") },
+    ...CLAUDE_CODE_MODELS.map((model) => ({
+      key: model,
+      label: `${model.slice(0, 1).toUpperCase()}${model.slice(1)}`,
+    })),
+  ];
+  const claudeCodeEffortChoices: MenuPickerChoice[] = [
+    { key: "", label: t("Default") },
+    ...CLAUDE_CODE_EFFORTS.map((effort) => ({ key: effort, label: thinkingLevelLabel(effort, t) })),
+  ];
 
   function selectModel(key: string) {
     if (key === selectedModelKey) return;
@@ -286,6 +305,7 @@ export default function BotSettingsScreen() {
         modelId?: string | null;
         thinkingLevel?: ThinkingLevel | null;
         autoSpeak?: boolean;
+        claudeCode?: BotClaudeCode;
       } = { botId };
       if (profile.name !== bot.name) input.name = profile.name;
       if (profile.title !== bot.title) input.title = profile.title;
@@ -309,6 +329,14 @@ export default function BotSettingsScreen() {
           : null;
       }
       if (autoSpeak !== bot.autoSpeak) input.autoSpeak = autoSpeak;
+      const savedClaudeCode = bot.claudeCode ?? DEFAULT_BOT_CLAUDE_CODE;
+      if (
+        claudeCode.enabled !== savedClaudeCode.enabled ||
+        claudeCode.model !== savedClaudeCode.model ||
+        claudeCode.effort !== savedClaudeCode.effort
+      ) {
+        input.claudeCode = claudeCode;
+      }
       if (computerMode !== bot.computerMode) {
         await rpc(
           "bots/setComputer",
@@ -479,6 +507,48 @@ export default function BotSettingsScreen() {
             value={autoSpeak}
           />
         </View>
+        <View style={[styles.row, { marginTop: 20 }]}>
+          <Text style={[styles.rowLabel, { color: tokens.mutedForeground }]}>Claude Code</Text>
+          <NativeSwitch
+            accessibilityLabel="Claude Code"
+            onValueChange={(enabled) => setClaudeCode((current) => ({ ...current, enabled }))}
+            value={claudeCode.enabled}
+          />
+        </View>
+        {claudeCode.enabled ? (
+          <View
+            style={{
+              marginTop: 8,
+              borderRadius: 14,
+              backgroundColor: native.fill,
+              overflow: "hidden",
+            }}
+          >
+            <MenuPicker
+              choices={claudeCodeModelChoices}
+              label={t("Model")}
+              onChange={(key) =>
+                setClaudeCode((current) => ({
+                  ...current,
+                  model: (key || null) as BotClaudeCode["model"],
+                }))
+              }
+              value={claudeCode.model ?? ""}
+            />
+            <MenuPicker
+              choices={claudeCodeEffortChoices}
+              divider
+              label={t("Effort")}
+              onChange={(key) =>
+                setClaudeCode((current) => ({
+                  ...current,
+                  effort: (key || null) as BotClaudeCode["effort"],
+                }))
+              }
+              value={claudeCode.effort ?? ""}
+            />
+          </View>
+        ) : null}
         {deviceVoiceEnabled ? (
           voiceError ? (
             <Pressable

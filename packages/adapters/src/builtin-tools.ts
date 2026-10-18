@@ -598,6 +598,26 @@ export const builtinAgentTools: ConnectorTool[] = [
     readOnly: true,
   },
   {
+    name: "claude_code",
+    description:
+      "Run the Claude Code CLI on this bot's computer for work on code: reading and searching a codebase, writing or editing files, running builds, tests and git. Claude Code uses its own tools, subagents, skills and the project's CLAUDE.md, and works until the task is done. Give it the whole task in prompt and the project folder in cwd. Pass session_id from an earlier result to continue that session. Returns Claude Code's final report and its session_id.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        prompt: { type: "string", description: "The complete task for Claude Code." },
+        cwd: {
+          type: "string",
+          description: "Project folder, relative to your home or absolute.",
+        },
+        session_id: {
+          type: "string",
+          description: "Continue this earlier Claude Code session.",
+        },
+      },
+      required: ["prompt"],
+    },
+  },
+  {
     name: "cloud_agent_launch",
     description:
       "Launch a remote cloud coding agent on a connected repository. Returns immediately with a tracking id and status; the agent link appears when launched. Opens a PR when openPr is true. Not the bot computer.",

@@ -1,4 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
+import type { ActivityStatus } from "@rakazo/contracts";
 import { liveToolKind } from "@rakazo/core";
 import { BotAvatar, Button, cn, defaultBotAvatarValue } from "@rakazo/ui-web";
 import type { LucideIcon } from "lucide-react";
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { activityIcon, activityLine } from "../../lib/activity-label";
 import type { CallState } from "../../lib/call-session";
 import { endCall, setCallMinimized, toggleMute, useCallSession } from "../../lib/call-session";
 
@@ -42,9 +44,13 @@ export function useCallElapsed(call: CallState | null): number {
 }
 
 /** What the call's badge says for the tool the bot is using, with its icon. */
-export function useCallTool(tool: string | null): { label: string; Icon: LucideIcon } | null {
+export function useCallTool(
+  tool: string | null,
+  activity: ActivityStatus | null = null,
+): { label: string; Icon: LucideIcon } | null {
   const { t } = useLingui();
   if (!tool) return null;
+  if (activity) return { label: activityLine(activity), Icon: activityIcon(activity.kind) };
   switch (liveToolKind(tool)) {
     case "computer":
       return { label: t`Working on the computer`, Icon: Monitor };
@@ -69,7 +75,7 @@ export function CallCard({ onOpenComputer }: { onOpenComputer: (botId: string) =
   const elapsed = useCallElapsed(call);
   const navigate = useNavigate();
   const { botId } = useParams();
-  const tool = useCallTool(call?.tool ?? null);
+  const tool = useCallTool(call?.tool ?? null, call?.activity ?? null);
   const onCall = Boolean(call);
   useEffect(() => {
     if (!onCall) return;

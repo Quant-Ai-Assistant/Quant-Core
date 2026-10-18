@@ -1,4 +1,5 @@
 import type { MessageBlock, ThreadMessage } from "@rakazo/contracts";
+import { ActivityStatusSchema } from "@rakazo/contracts";
 import { cloudAgentBlockFromPayload } from "./cloud-agent.js";
 
 export function projectMessages(
@@ -263,6 +264,17 @@ export function reduceLiveMessageBlocks(
     update.type === "progress"
       ? update.payload?.activity === true
       : tail?.kind === "progress" && tail.activity === true;
+  const parsedStatus =
+    update.type === "progress" ? ActivityStatusSchema.safeParse(update.payload?.status) : undefined;
+  // A new activity line brings its own status; text and tool updates keep the current one.
+  const status =
+    update.type === "progress"
+      ? parsedStatus?.success
+        ? parsedStatus.data
+        : undefined
+      : tail?.kind === "progress"
+        ? tail.activityStatus
+        : undefined;
 
   if (pendingToolNames.length > 0 && endsSentence(tailText)) {
     let next = activity ? [...segments] : appendTextSegment(segments, tailText);
@@ -276,6 +288,7 @@ export function reduceLiveMessageBlocks(
       kind: "progress",
       text: tailText,
       ...(activity ? { activity: true as const } : {}),
+      ...(activity && status ? { activityStatus: status } : {}),
       ...(pendingToolNames.length > 0 ? { pendingToolNames } : {}),
     },
   ];

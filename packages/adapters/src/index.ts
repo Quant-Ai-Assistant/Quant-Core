@@ -26,6 +26,8 @@ export * from "./call-request.js";
 export * from "./cartesia-voice.js";
 export * from "./chat-sdk-surface.js";
 export * from "./child-bots.js";
+export * from "./claude-code-account.js";
+export * from "./claude-code-run.js";
 export * from "./cloud-agent-emulator.js";
 export * from "./cloud-agent-factory.js";
 export * from "./cloud-agent-poll.js";

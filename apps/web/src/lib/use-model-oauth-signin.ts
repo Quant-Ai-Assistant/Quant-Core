@@ -22,8 +22,12 @@ export function useModelOAuthSignIn(options: {
   onFinished: (controller: AbortController) => void | Promise<void>;
   onError: (message: string) => void;
   onClearError?: () => void;
+  /** Saves the finished sign-in; a chat model connection unless the caller stores it elsewhere. */
+  finish?: (loginId: string, signal: AbortSignal) => Promise<unknown>;
 }) {
   const { onFinished, onError, onClearError } = options;
+  const finishRef = useRef(options.finish);
+  finishRef.current = options.finish;
   const [oauth, setOauth] = useState<ModelOAuthBegin | null>(null);
   const [pasteCode, setPasteCode] = useState("");
   const [oauthPending, setOauthPending] = useState(false);
@@ -63,7 +67,8 @@ export function useModelOAuthSignIn(options: {
   async function finishSubscriptionSignIn(loginId: string, controller: AbortController) {
     await waitForModelOAuth(loginId, controller.signal);
     if (controller.signal.aborted) return;
-    await rpc.models.finishOAuth({ loginId }, { signal: controller.signal });
+    if (finishRef.current) await finishRef.current(loginId, controller.signal);
+    else await rpc.models.finishOAuth({ loginId }, { signal: controller.signal });
     if (controller.signal.aborted) return;
     oauthLoginIdRef.current = null;
     setOauth(null);

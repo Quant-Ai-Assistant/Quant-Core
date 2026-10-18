@@ -11,6 +11,7 @@ import {
   Monitor,
   Phone,
   Settings,
+  SquareTerminal,
   Volume2,
   XIcon,
 } from "lucide-react";
@@ -26,6 +27,7 @@ import {
 } from "./AccountSettingsOverlay";
 import { BillingSettingsPanel } from "./BillingSettingsPanel";
 import { CallSettingsPanel } from "./CallSettingsPanel";
+import { ClaudeCodeSettingsPanel } from "./ClaudeCodeSettingsPanel";
 import { HostSettingsPanel } from "./HostSettingsPanel";
 import { MemorySettingsOverlay } from "./MemorySettingsOverlay";
 import { ModelSettingsOverlay } from "./ModelSettingsOverlay";
@@ -37,6 +39,7 @@ export type SettingsSection =
   | "memory"
   | "voice"
   | "calls"
+  | "claude-code"
   | "usage"
   | "computer"
   | "billing"
@@ -102,11 +105,12 @@ export function SettingsOverlay({
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [callsBusy, setCallsBusy] = useState(false);
+  const [claudeCodeBusy, setClaudeCodeBusy] = useState(false);
   const [keepComputerRecovery, setKeepComputerRecovery] = useState(false);
   const recoveryHoldTimer = useRef<number | undefined>(undefined);
   const showComputer =
     keepComputerRecovery || (isDeploymentOwner && computersAreUnavailable(sandboxProvider));
-  const panelBusy = memoryBusy || voiceBusy || callsBusy;
+  const panelBusy = memoryBusy || voiceBusy || callsBusy || claudeCodeBusy;
   const releaseComputerRecovery = useCallback(() => {
     window.clearTimeout(recoveryHoldTimer.current);
     recoveryHoldTimer.current = undefined;
@@ -155,6 +159,7 @@ export function SettingsOverlay({
     { id: "memory", label: t`Memory`, icon: Brain },
     { id: "voice", label: t`Voice`, icon: Volume2 },
     ...(callsEnabled ? [{ id: "calls" as const, label: t`Calls`, icon: Phone }] : []),
+    { id: "claude-code", label: "Claude Code", icon: SquareTerminal },
     { id: "usage", label: t`Usage`, icon: Gauge },
     ...(showComputer ? [{ id: "computer" as const, label: t`Computer`, icon: Monitor }] : []),
     ...(billingEnabled ? [{ id: "billing" as const, label: t`Billing`, icon: CreditCard }] : []),
@@ -325,6 +330,9 @@ export function SettingsOverlay({
               ) : null}
               {section === "voice" ? (
                 <VoiceSettingsOverlay embedded onClose={requestClose} onBusyChange={setVoiceBusy} />
+              ) : null}
+              {section === "claude-code" ? (
+                <ClaudeCodeSettingsPanel onBusyChange={setClaudeCodeBusy} />
               ) : null}
               {section === "calls" && callsEnabled ? (
                 <CallSettingsPanel onBusyChange={setCallsBusy} />

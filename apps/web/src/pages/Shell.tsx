@@ -147,6 +147,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArtifactFileCard } from "../components/ArtifactFileCard";
 import { AskCard } from "../components/AskCard";
 import { ActiveBotGlyph, CollaborationMarker } from "../components/ai/CollaborationMarker";
+import { ClaudeCodeCard } from "../components/ClaudeCodeCard";
 import { CloudAgentCard } from "../components/CloudAgentCard";
 import { ComputerMaintenanceActions } from "../components/ComputerMaintenanceActions";
 import {
@@ -7346,6 +7347,7 @@ const MessageView = memo(function MessageView({
           );
         }
         if (block.kind === "cloud_agent") return <CloudAgentCard key={i} block={block} />;
+        if (block.kind === "claude_code") return <ClaudeCodeCard key={i} block={block} />;
         if (block.kind === "reminder") return <ReminderCard key={i} block={block} />;
         if (block.kind === "skill_draft") {
           return (

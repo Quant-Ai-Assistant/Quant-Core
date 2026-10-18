@@ -2,6 +2,7 @@ import * as z from "zod";
 import { AGENT_SECRET_NAME_PATTERN } from "./agent-secret-name.js";
 import { BotAvatarValueSchema } from "./bot-avatar.js";
 import { DisabledBuiltinToolsSchema } from "./builtin-tools.js";
+import { BotClaudeCodeSchema, DEFAULT_BOT_CLAUDE_CODE } from "./claude-code.js";
 import {
   CLOUDFLARE_AI_GATEWAY_CONFIG_MESSAGE,
   cloudflareGatewayRoutingId,
@@ -78,6 +79,8 @@ export const BotSchema = z.object({
   teamChatAmbientEnabled: z.boolean(),
   teamChatRules: z.string(),
   disabledBuiltinTools: z.array(z.string()).default([]),
+  /** Coding work goes through the Claude Code CLI when enabled. */
+  claudeCode: BotClaudeCodeSchema.default(DEFAULT_BOT_CLAUDE_CODE),
   webhookConfigured: z.boolean(),
   /** Present when created with an idempotency key (e.g. onboarding:first). */
   spawnKey: z.string().nullable(),
@@ -367,6 +370,7 @@ export const UpdateBotInput = z
     teamChatAmbientEnabled: z.boolean().optional(),
     teamChatRules: z.string().max(TEAM_CHAT_RULES_MAX_LENGTH).optional(),
     disabledBuiltinTools: DisabledBuiltinToolsSchema.optional(),
+    claudeCode: BotClaudeCodeSchema.optional(),
   })
   .superRefine((value, ctx) => {
     const providerProvided = value.modelProvider !== undefined;
