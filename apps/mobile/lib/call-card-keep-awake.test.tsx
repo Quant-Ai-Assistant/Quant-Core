@@ -106,6 +106,7 @@ describe("CallCard keep-awake lifetime", () => {
       connectLive: vi.fn(async () => ({ setMuted: vi.fn(), close: vi.fn() })),
       endCall: async () => undefined,
       cue: async () => undefined,
+      activity: async () => ({ tool: null, status: null }),
     };
 
     act(() => root.render(<CallCard />));
@@ -121,6 +122,11 @@ describe("CallCard keep-awake lifetime", () => {
     expect(activeTags.has("rakazo-call")).toBe(true);
 
     await act(async () => endCall());
+    // An ended call shows its length for a moment, then the screen goes.
+    expect(container.textContent).toContain("Call ended");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_600));
+    });
     expect(container.childElementCount).toBe(0);
     expect(activeTags.has("rakazo-call")).toBe(false);
   });

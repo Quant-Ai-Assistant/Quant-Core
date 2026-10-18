@@ -45,10 +45,12 @@ test("launches with a narrow preload bridge and an isolated renderer", async () 
 
     expect(renderer.bridgeKeys).toEqual([
       "edge",
+      "host",
       "localSettings",
       "oauth",
       "platform",
       "update",
+      "virtualDesktop",
       "window",
     ]);
     expect(renderer.windowKeys).toEqual(["close", "minimize", "state", "toggleMaximize"]);

@@ -20,9 +20,11 @@ const payloadSchemas = {
   }),
   "skill.teaching-expire": z.object({ skillId: z.string().min(1) }),
   "call.expire": z.object({ threadId: z.string().min(1), callId: z.string().min(1) }),
+  "reminder.tick": z.object({ threadId: z.string().min(1), reminderId: z.string().min(1) }),
   "history.compact": z.object({ threadId: z.string().min(1) }),
   "messaging.deliver": z.object({ runId: z.string().min(1).optional() }),
   "cloud_agent.poll": z.object({ agentId: z.string().min(1) }),
+  "watch.check": z.object({ watchId: z.string().min(1) }),
 } satisfies { [Name in BackgroundJobName]: z.ZodType<BackgroundJobPayloads[Name]> };
 
 export function parseBackgroundJob(name: string, payload: unknown): BackgroundJob {
@@ -121,6 +123,19 @@ export function callExpireJob(threadId: string, callId: string, availableAt: Dat
   };
 }
 
+export function reminderTickJob(
+  threadId: string,
+  reminderId: string,
+  availableAt: Date,
+): BackgroundJob {
+  return {
+    name: "reminder.tick",
+    payload: { threadId, reminderId },
+    availableAt,
+    replaceKey: `reminder.tick:${reminderId}`,
+  };
+}
+
 export function historyCompactJobKey(threadId: string): string {
   return `history.compact:${threadId}`;
 }
@@ -164,5 +179,18 @@ export function cloudAgentPollJob(
     payload,
     replaceKey: cloudAgentPollJobKey(payload.agentId),
     ...(availableAt ? { availableAt } : {}),
+  };
+}
+
+export function watchCheckJobKey(watchId: string): string {
+  return `watch.check:${watchId}`;
+}
+
+export function watchCheckJob(watchId: string, availableAt: Date): BackgroundJob {
+  return {
+    name: "watch.check",
+    payload: { watchId },
+    availableAt,
+    replaceKey: watchCheckJobKey(watchId),
   };
 }

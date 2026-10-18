@@ -29,6 +29,7 @@ msgid "{0, plural, one {Waiting for sign-in — the code expires in about # minu
 msgstr ""
 
 #. placeholder {0}: Math.ceil(oauth.expiresInSeconds / 60)
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}"
@@ -113,6 +114,14 @@ msgstr "Ordinateur de {botName}"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable} est réservée et ne peut pas être utilisée comme variable de commande. Choisissez un autre nom."
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "{count, plural, one {# step} other {# steps}}"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
+msgstr ""
+
 #: src/lib/billing.ts
 msgid "{count} days"
 msgstr ""
@@ -134,6 +143,7 @@ msgstr ""
 msgid "{days}d ago"
 msgstr "il y a {days} j"
 
+#: src/components/ClaudeCodeCard.tsx
 #: src/components/ToolActivityDisclosure.tsx
 msgid "{hidden, plural, one {+# earlier step} other {+# earlier steps}}"
 msgstr ""
@@ -429,6 +439,10 @@ msgstr "Connexions d'agent"
 msgid "Agents:"
 msgstr "Agents :"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "All assistants are off"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "All bots"
 msgstr "Tous les bots"
@@ -471,6 +485,10 @@ msgstr "Autoriser une fois"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Allow purchase actions without asking"
 msgstr "Autoriser les actions d'achat sans demander"
+
+#: src/components/composer/HoldToTalk.tsx
+msgid "Allow the microphone to record"
+msgstr ""
 
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
@@ -620,6 +638,14 @@ msgstr "Demander avant d'envoyer un e-mail externe"
 msgid "Ask the server owner to configure this provider."
 msgstr "Demandez au propriétaire du serveur de configurer ce fournisseur."
 
+#: src/lib/activity-label.ts
+msgid "Asking you to take over"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Assistants"
+msgstr ""
+
 #. placeholder {0}: preset.time
 #: src/pages/RoutineSchedule.tsx
 msgid "at {0}"
@@ -637,6 +663,10 @@ msgstr "Joindre un fichier"
 msgid "Attached {path}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Attaching a file"
+msgstr ""
+
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
 msgid "Attachment"
@@ -646,6 +676,7 @@ msgstr "Pièce jointe"
 msgid "Authentication failed."
 msgstr "Échec de l'authentification."
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Authorization code or callback URL"
@@ -769,6 +800,7 @@ msgstr "Bot"
 msgid "Bot screen"
 msgstr "Écran du bot"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Shell.tsx
 msgid "Bot screen preview"
 msgstr "Aperçu de l'écran du bot"
@@ -776,6 +808,10 @@ msgstr "Aperçu de l'écran du bot"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Bot to link"
 msgstr "Bot à connecter"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Bot:"
+msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/RoutineEditor.tsx
@@ -815,8 +851,13 @@ msgid "Call"
 msgstr "Appeler"
 
 #: src/components/call/VoiceChatCard.tsx
-msgid "Call back"
-msgstr "Rappeler"
+msgid "Call again"
+msgstr ""
+
+#. placeholder {0}: callClock(elapsed)
+#: src/components/call/CallCard.tsx
+msgid "Call ended · {0}"
+msgstr ""
 
 #. placeholder {0}: call.botName
 #: src/components/call/CallCard.tsx
@@ -824,16 +865,13 @@ msgid "Call with {0}"
 msgstr "Appel avec {0}"
 
 #: src/components/call/IncomingCall.tsx
+#: src/lib/activity-label.ts
 msgid "Calling you"
 msgstr "Vous appelle"
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Calling you…"
 msgstr "Vous appelle…"
-
-#: src/components/call/CallCard.tsx
-msgid "Calling…"
-msgstr "Appel en cours…"
 
 #: src/pages/SettingsOverlay.tsx
 msgid "Calls"
@@ -849,6 +887,7 @@ msgstr "Impossible d'atteindre le serveur."
 #: src/components/markdown-link-prompt.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/pages/Artifacts.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -882,6 +921,10 @@ msgstr "annulé"
 #: src/pages/ActivityList.tsx
 msgid "Cancelled"
 msgstr "Annulé"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Cancelled call"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
@@ -947,6 +990,10 @@ msgstr "Vérifiez votre e-mail"
 
 #: src/components/ComputersUnavailableHint.tsx
 msgid "Checking computer setup…"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Checking tasks"
 msgstr ""
 
 #: src/components/ComputersUnavailableHint.tsx
@@ -1110,6 +1157,7 @@ msgstr ""
 msgid "Coming soon"
 msgstr "Bientôt disponible"
 
+#: src/lib/activity-label.ts
 #: src/pages/McpServersOverlay.tsx
 msgid "Command"
 msgstr "Commande"
@@ -1121,6 +1169,14 @@ msgstr "Variable de commande"
 
 #: src/pages/Board.tsx
 msgid "Comment"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Commit"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Committing"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -1193,6 +1249,7 @@ msgstr "Confirmez que l'URL est accessible depuis cette session du navigateur, p
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -1260,8 +1317,13 @@ msgstr "Connecté et utilise {0}."
 msgid "Connected. Its tools are available from your next message."
 msgstr "Connecté. Ses outils sont disponibles dès votre prochain message."
 
+#: src/lib/activity-label.ts
+msgid "Connecting"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
@@ -1269,6 +1331,11 @@ msgstr "Connecté. Ses outils sont disponibles dès votre prochain message."
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connecting…"
 msgstr "Connexion en cours…"
+
+#: src/components/call/CallCard.tsx
+msgctxt "call status"
+msgid "Connecting…"
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Connection test failed."
@@ -1527,6 +1594,10 @@ msgstr "Impossible de charger les bots. Rechargez pour réessayer."
 msgid "Could not load call settings"
 msgstr ""
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Could not load Claude Code"
+msgstr ""
+
 #: src/components/computer/TerminalApp.tsx
 msgid "Could not load commands"
 msgstr ""
@@ -1617,6 +1688,10 @@ msgstr "Impossible d'atteindre le serveur"
 msgid "Could not reach the update server."
 msgstr ""
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Could not record"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "Impossible de retirer"
@@ -1661,6 +1736,7 @@ msgstr "Impossible de révoquer la connexion"
 msgid "Could not run routine"
 msgstr "Impossible d'exécuter la routine"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ExternalConversationSettings.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1728,8 +1804,17 @@ msgid "Could not send reset email"
 msgstr "Impossible d'envoyer l'e-mail de réinitialisation"
 
 #: src/components/call/IncomingCall.tsx
+#: src/components/reminder/RingingReminder.tsx
 msgid "Could not send that"
 msgstr "Impossible d'envoyer cela"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not set up the virtual desktop"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not show this screen"
+msgstr ""
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not start OAuth"
@@ -1742,6 +1827,10 @@ msgstr "Impossible de démarrer l'enseignement"
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
 msgstr "Impossible de soumettre cette réponse"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not switch the computer"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Could not take control"
@@ -1773,6 +1862,10 @@ msgstr ""
 
 #: src/components/ComputersUnavailableHint.tsx
 msgid "Could not verify computer setup ({failureMessage}). Fix the connection, then check again."
+msgstr ""
+
+#: src/components/ClaudeCodeCard.tsx
+msgid "Couldn’t finish"
 msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
@@ -1836,6 +1929,14 @@ msgstr "Créez votre Quant"
 #: src/components/AskCard.tsx
 msgid "Created"
 msgstr "Créé"
+
+#: src/lib/activity-label.ts
+msgid "Creating a file"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Creating a space"
+msgstr ""
 
 #: src/pages/GroupPanel.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1907,9 +2008,14 @@ msgstr "jours"
 msgid "Decline"
 msgstr "Refuser"
 
+#: src/components/call/VoiceChatCard.tsx
+msgid "Declined call"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
+#: src/pages/shell/bot-panel.tsx
 msgid "Default"
 msgstr "Par défaut"
 
@@ -1982,6 +2088,14 @@ msgstr "Supprimer l'espace"
 msgid "deleted"
 msgstr "supprimé"
 
+#: src/lib/activity-label.ts
+msgid "Deleted"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Deleting a file"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Deleting…"
@@ -2033,6 +2147,7 @@ msgid "Discard recording"
 msgstr "Supprimer l’enregistrement"
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2050,6 +2165,7 @@ msgid "Disconnected {0}."
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -2090,16 +2206,34 @@ msgstr "Docker limite l'accès à votre ordinateur pour une sécurité renforcé
 msgid "Don’t have an account?"
 msgstr "Vous n'avez pas de compte ?"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this computer"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this Mac"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Done"
 msgstr "Terminé"
 
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgctxt "reminder"
+msgid "Done"
+msgstr ""
+
 #: src/components/computer/FilesApp.tsx
 #: src/pages/Artifacts.tsx
 msgid "Download"
 msgstr "Télécharger"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Download · {size}"
+msgstr ""
 
 #. placeholder {0}: basename(entry.path)
 #. placeholder {0}: props.name
@@ -2122,6 +2256,10 @@ msgstr "Télécharger en markdown"
 msgid "Download Executor"
 msgstr "Télécharger l'exécuteur"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Downloading the virtual desktop"
+msgstr ""
+
 #: src/components/DesktopUpdates.tsx
 msgid "Downloading…"
 msgstr "Téléchargement en cours…"
@@ -2134,6 +2272,10 @@ msgstr "Compétence en brouillon"
 msgid "Drag, drop, or paste an image"
 msgstr "Glissez, déposez ou collez une image"
 
+#: src/lib/activity-label.ts
+msgid "Drawing a chart"
+msgstr ""
+
 #: src/pages/BotContextMenu.tsx
 msgid "Duplicate"
 msgstr "Dupliquer"
@@ -2142,6 +2284,10 @@ msgstr "Dupliquer"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "ex. Agent Hivenet, Préventes, bot de feuilles de temps"
 
+#: src/lib/activity-label.ts
+msgid "Edit"
+msgstr ""
+
 #: src/components/AskCard.tsx
 msgid "Edit first"
 msgstr "Modifier d'abord"
@@ -2149,6 +2295,14 @@ msgstr "Modifier d'abord"
 #: src/pages/BotContextMenu.tsx
 msgid "Edit Profile"
 msgstr "Modifier le profil"
+
+#: src/lib/activity-label.ts
+msgid "Editing a file"
+msgstr ""
+
+#: src/pages/shell/bot-panel.tsx
+msgid "Effort"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Email"
@@ -2161,6 +2315,10 @@ msgstr "Cette adresse e-mail ne peut pas s’inscrire"
 #: src/lib/user-error.ts
 msgid "Email verification required"
 msgstr "Vérification de l’e-mail requise"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Emergency stop"
+msgstr ""
 
 #: src/pages/BillingSettingsPanel.tsx
 msgid "Ends {day}"
@@ -2305,6 +2463,10 @@ msgstr "Gestion des échecs"
 msgid "File is too large to upload."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "File search"
+msgstr ""
+
 #: src/components/computer/ComputerWorkspace.tsx
 msgid "Files"
 msgstr ""
@@ -2328,6 +2490,7 @@ msgid "Finding…"
 msgstr "Recherche en cours…"
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Finish signing in at <0>{0}</0>. The final page may not load; paste its URL or code here."
@@ -2353,6 +2516,14 @@ msgstr "Finalisation de la connexion MCP…"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Flag unexpected actions"
 msgstr "Signaler les actions inattendues"
+
+#: src/lib/activity-label.ts
+msgid "Folder"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Forgetting"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Forgot password?"
@@ -2417,6 +2588,10 @@ msgstr "Mises à jour du groupe"
 msgid "Groups"
 msgstr "Groupes"
 
+#: src/lib/activity-label.ts
+msgid "Handing off"
+msgstr ""
+
 #: src/components/call/CallCard.tsx
 msgid "Hang up"
 msgstr "Raccrocher"
@@ -2443,6 +2618,10 @@ msgstr "Valeur de l'en-tête"
 msgid "Hear a sample"
 msgstr "Écouter un extrait"
 
+#: src/lib/activity-label.ts
+msgid "Helper"
+msgstr ""
+
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Hi, this is how I'll sound when I read replies out loud."
 msgstr "Bonjour, c'est ainsi que je sonnerai quand je lirai les réponses à voix haute."
@@ -2456,6 +2635,7 @@ msgid "Hide password"
 msgstr "Masquer le mot de passe"
 
 #: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Hide transcript"
 msgstr "Masquer la transcription"
 
@@ -2471,12 +2651,8 @@ msgid "High"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk"
-msgstr "Maintenir pour parler"
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk, release to send"
-msgstr "Maintenir pour parler, relâcher pour envoyer"
+msgid "Hold to record, release to send"
+msgstr ""
 
 #: src/pages/RoutineSchedule.tsx
 msgid "hour"
@@ -2499,6 +2675,10 @@ msgstr "Comment vérifier"
 msgid "I’m done"
 msgstr "J'ai terminé"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Idle"
+msgstr ""
+
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
 msgstr "Ignorer"
@@ -2510,6 +2690,10 @@ msgstr "Zone de téléchargement d'image"
 #: src/pages/PluginsOverlay.tsx
 msgid "Import OpenAPI JSON"
 msgstr "Importer OpenAPI JSON"
+
+#: src/components/reminder/RingingReminder.tsx
+msgid "In 5 minutes"
+msgstr ""
 
 #: src/lib/ticket-status.ts
 msgid "In progress"
@@ -2539,6 +2723,14 @@ msgstr "Hériter du défaut"
 msgid "Inputs"
 msgstr "Entrées"
 
+#: src/lib/activity-label.ts
+msgid "Install"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Installing packages"
+msgstr ""
+
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Instance API key"
 msgstr "Clé API de l'instance"
@@ -2559,6 +2751,14 @@ msgstr "Options d'intégration"
 #: src/pages/Shell.tsx
 msgid "Integrations"
 msgstr "Intégrations"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupt"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupts whatever assistants are doing and turns them off"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 #: src/pages/RoutineSchedule.tsx
@@ -2659,15 +2859,6 @@ msgstr "Écouter"
 msgid "Listening"
 msgstr "Écoute"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Listening"
-msgstr "À l’écoute"
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Listening…"
-msgstr "À l’écoute…"
-
 #: src/pages/Shell.tsx
 msgid "Load earlier messages"
 msgstr "Charger les messages précédents"
@@ -2744,6 +2935,18 @@ msgstr "Paramètres du serveur local"
 #: src/pages/Shell.tsx
 msgid "Log out"
 msgstr "Se déconnecter"
+
+#: src/lib/activity-label.ts
+msgid "Looking at the page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Looking at the screen"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Looking in a folder"
+msgstr ""
 
 #: src/lib/ticket-priority.ts
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2910,6 +3113,10 @@ msgstr "A contacté {peer}"
 msgid "Messaging"
 msgstr "Messagerie"
 
+#: src/lib/activity-label.ts
+msgid "Messaging a bot"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Minimal"
@@ -2939,6 +3146,10 @@ msgstr "minute"
 #: src/pages/RoutineSchedule.tsx
 msgid "minutes"
 msgstr "minutes"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Missed"
+msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Missed call"
@@ -3031,11 +3242,6 @@ msgstr "Déplacer vers"
 msgid "Mute"
 msgstr "Couper le micro"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Muted"
-msgstr "Micro coupé"
-
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
@@ -3079,6 +3285,10 @@ msgstr "A besoin de vous"
 msgid "New bot"
 msgstr "Nouveau bot"
 
+#: src/lib/activity-label.ts
+msgid "New file"
+msgstr ""
+
 #: src/pages/GroupPanel.tsx
 msgid "New group"
 msgstr "Nouveau groupe"
@@ -3109,13 +3319,13 @@ msgstr "Nouvel espace"
 msgid "New ticket"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "No"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr "Aucune connexion d'agent pour le moment."
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "No answer"
-msgstr "Sans réponse"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "No apps match your search."
@@ -3234,6 +3444,10 @@ msgstr "Aucun outil disponible."
 msgid "No trigger"
 msgstr "Aucun déclencheur"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "None of them will reply until you start them"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "None yet"
 msgstr "Aucun pour le moment"
@@ -3291,6 +3505,10 @@ msgstr "Échec de la connexion OAuth"
 msgid "OAuth expired"
 msgstr "OAuth expiré"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Off"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "On a schedule"
 msgstr "Sur planification"
@@ -3322,6 +3540,7 @@ msgid "Open <0>{0}</0> and enter this code:"
 msgstr ""
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Open <0>{0}</0> to finish signing in."
@@ -3377,6 +3596,22 @@ msgstr ""
 msgid "Opened its thread."
 msgstr "Fil ouvert."
 
+#: src/lib/activity-label.ts
+msgid "Opening a file"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Opening a page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Opening a site"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Opening an app"
+msgstr ""
+
 #: src/pages/Onboarding.tsx
 msgid "Opening chat…"
 msgstr "Ouverture de la conversation…"
@@ -3403,6 +3638,10 @@ msgstr "Ou connectez une clé API"
 msgid "Or paste an API key"
 msgstr "Ou collez une clé API"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Or use an Anthropic API key"
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Organic"
 msgstr "Organique"
@@ -3420,8 +3659,16 @@ msgstr "Message d’origine indisponible"
 msgid "Other model…"
 msgstr "Autre modèle…"
 
+#: src/components/call/VoiceChatCard.tsx
+msgid "Outgoing call"
+msgstr ""
+
 #: src/pages/Board.tsx
 msgid "Owner"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Page"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -3468,6 +3715,7 @@ msgid "Paste the OpenAI-compatible address from your server. Quant adds /v1 if n
 msgstr "Collez l'adresse compatible OpenAI de votre serveur. Quant ajoute /v1 si nécessaire."
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste your API key"
 msgstr "Collez votre clé API"
@@ -3476,13 +3724,13 @@ msgstr "Collez votre clé API"
 msgid "Paste your API key, then test again."
 msgstr "Collez votre clé API, puis testez à nouveau."
 
+#: src/pages/shell/voice-message.tsx
+msgid "Pause voice message"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "Paused"
 msgstr "En pause"
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "Phone call"
-msgstr "Appel téléphonique"
 
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
@@ -3500,6 +3748,14 @@ msgstr "Choisissez un modèle dans la liste ou saisissez un identifiant de modè
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "Épingler"
+
+#: src/lib/activity-label.ts
+msgid "Plan"
+msgstr ""
+
+#: src/pages/shell/voice-message.tsx
+msgid "Play voice message"
+msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -3552,6 +3808,14 @@ msgstr "Fournisseurs"
 msgid "Pull request"
 msgstr "Demande de fusion"
 
+#: src/lib/activity-label.ts
+msgid "Push"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Pushing changes"
+msgstr ""
+
 #: src/pages/ActivityList.tsx
 msgid "Queued"
 msgstr "En file d'attente"
@@ -3565,12 +3829,36 @@ msgid "React"
 msgstr "Réagir"
 
 #: src/pages/Shell.tsx
+msgid "React {emoji}"
+msgstr ""
+
+#: src/pages/Shell.tsx
 msgid "Reactions"
 msgstr "Réactions"
+
+#: src/lib/activity-label.ts
+msgid "Read"
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Read replies aloud"
 msgstr "Lire les réponses à voix haute"
+
+#: src/lib/activity-label.ts
+msgid "Reading a file"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading a page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading a skill"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading the chat"
+msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -3598,6 +3886,10 @@ msgstr "Reconnecter OAuth"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Reconnecting"
 msgstr "Reconnexion en cours"
+
+#: src/components/composer/HoldToTalk.tsx
+msgid "Record voice message"
+msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Recording may have started, but the view could not refresh"
@@ -3685,6 +3977,25 @@ msgstr "Rendre le contrôle"
 msgid "Release interrupted computer?"
 msgstr "Libérer l'ordinateur interrompu ?"
 
+#: src/components/call/CallCard.tsx
+msgid "Remembering"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Remembering"
+msgstr ""
+
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder"
+msgstr ""
+
+#. placeholder {0}: reminder.botName
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder from {0}"
+msgstr ""
+
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3718,6 +4029,10 @@ msgstr "Retirer la mention {0}"
 #: src/pages/RoutineEditor.tsx
 msgid "Remove message trigger"
 msgstr "Retirer le déclencheur de message"
+
+#: src/pages/Shell.tsx
+msgid "Remove reaction {emoji}"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Remove schedule"
@@ -3847,6 +4162,7 @@ msgid "Restoring your workspace"
 msgstr "Restauration de votre espace de travail"
 
 #: src/components/AccountAccess.tsx
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Auth.tsx
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Retry"
@@ -3882,6 +4198,10 @@ msgstr "Vérifiez les paramètres du fournisseur et testez à nouveau."
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "Révoquer"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Ringing now"
+msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Robot"
@@ -3925,12 +4245,27 @@ msgid "running"
 msgstr "en cours"
 
 #: src/pages/ActivityList.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Running"
 msgstr "En cours"
+
+#. placeholder {0}: hostState.server.port
+#: src/pages/HostSettingsPanel.tsx
+msgid "Running · port {0}"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running · Stop"
 msgstr "En cours · Arrêter"
+
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Running a command"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Running tests"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running…"
@@ -3991,6 +4326,14 @@ msgstr "Enregistré."
 msgid "Saved. Rotate to reveal."
 msgstr "Enregistré. Tournez pour révéler."
 
+#: src/lib/activity-label.ts
+msgid "Saving a skill"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Saving to memory"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Saving your workspace"
 msgstr "Enregistrement de votre espace de travail"
@@ -4009,6 +4352,10 @@ msgstr "Enregistrement..."
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "Enregistrement en cours…"
+
+#: src/lib/activity-label.ts
+msgid "Scheduling"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -4060,6 +4407,19 @@ msgstr ""
 msgid "Search: {0}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Searching files"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Searching the chat"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Searching the web"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
 msgid "Searching…"
@@ -4102,6 +4462,8 @@ msgid "Send reset link"
 msgstr "Envoyer le lien de réinitialisation"
 
 #: src/components/AskCard.tsx
+#: src/pages/Shell.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Sending…"
 msgstr "Envoi en cours…"
 
@@ -4112,6 +4474,10 @@ msgstr "Alerte Sentry"
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Serenity endpoint is required."
 msgstr "Le point de terminaison Serenity est obligatoire."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Server"
+msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/AccountSettingsOverlay.tsx
@@ -4130,7 +4496,18 @@ msgstr "Nom du serveur"
 msgid "Server URL"
 msgstr "URL du serveur"
 
-#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Setting a reminder"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Setting up a bot"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Setting up a watch"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/Shell.tsx
@@ -4203,7 +4580,7 @@ msgstr "Afficher les paramètres"
 msgid "Show tool activity"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Show transcript"
 msgstr "Afficher la transcription"
 
@@ -4221,6 +4598,7 @@ msgstr "Se connecter"
 
 #: src/components/AccountAccess.tsx
 #: src/lib/user-error.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Sign in again"
 msgstr ""
@@ -4233,6 +4611,10 @@ msgstr "Connectez-vous à Quant"
 msgid "Sign in to your existing account to link SSO"
 msgstr "Connectez-vous à votre compte existant pour associer SSO"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Sign in with Claude"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
 msgstr "Connectez-vous avec l'abonnement, ou testez la clé API à la place."
@@ -4242,8 +4624,16 @@ msgstr "Connectez-vous avec l'abonnement, ou testez la clé API à la place."
 msgid "Sign up"
 msgstr "S'inscrire"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Signed in with Claude"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Site"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Skill"
 msgstr ""
 
 #. placeholder {0}: skill.name
@@ -4274,8 +4664,12 @@ msgid "Slack not enabled"
 msgstr "Slack non activé"
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Slide up to lock"
-msgstr "Glisser vers le haut pour verrouiller"
+msgid "Slide to cancel"
+msgstr ""
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Snoozed until {time}"
+msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Software update"
@@ -4318,11 +4712,6 @@ msgstr "Parler uniquement"
 msgid "Speak this reply"
 msgstr "Lire cette réponse à voix haute"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Speaking"
-msgstr "Parle"
-
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Speech model"
 msgstr "Modèle de parole"
@@ -4335,6 +4724,10 @@ msgstr "SSO est temporairement indisponible. Réessayez."
 msgid "Start {trialDays}-day free trial"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Start all"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
 msgstr "Démarrer l'enregistrement"
@@ -4343,8 +4736,14 @@ msgstr "Démarrer l'enregistrement"
 msgid "Starting"
 msgstr "Démarrage"
 
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Starting"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/lib/roster-status.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Starting…"
@@ -4364,6 +4763,14 @@ msgstr "Étapes"
 msgid "Stop"
 msgstr "Arrêter"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all assistants?"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Stop speaking"
 msgstr "Arrêter la lecture"
@@ -4371,6 +4778,10 @@ msgstr "Arrêter la lecture"
 #: src/components/teach/TeachRecordingChrome.tsx
 msgid "Stop teaching"
 msgstr "Arrêter l'enseignement"
+
+#: src/components/ClaudeCodeCard.tsx
+msgid "Stopped"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/lib/browser-notifications.ts
@@ -4393,6 +4804,7 @@ msgstr "Diffuser les réponses"
 msgid "subagent"
 msgstr "sous-agent"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Submit"
@@ -4484,6 +4896,10 @@ msgstr "Tester la connexion"
 msgid "Testing…"
 msgstr "Test en cours…"
 
+#: src/lib/activity-label.ts
+msgid "Tests"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
 msgstr "L'API n'est pas revenue. Actualisez cette page."
@@ -4500,9 +4916,17 @@ msgstr ""
 msgid "The provider is rate-limiting requests."
 msgstr "Le fournisseur limite le débit des requêtes."
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "The screen stays on and never asks for the password"
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "The selected memory provider is not available in this build."
 msgstr "Le fournisseur de mémoire sélectionné n'est pas disponible dans cette version."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Their current work stops, and none of them will reply until you start them."
+msgstr ""
 
 #: src/pages/shell/bot-credentials.tsx
 msgid "These saved settings can't be read. Remove it and add it again."
@@ -4515,10 +4939,10 @@ msgstr ""
 msgid "Thinking"
 msgstr "Réflexion"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
+#: src/lib/activity-label.ts
+msgctxt "activity"
 msgid "Thinking"
-msgstr "Réfléchit"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Thinking: {activeThinkingLabel}"
@@ -4548,6 +4972,11 @@ msgstr "Cette conversation est en lecture seule"
 msgid "this computer"
 msgstr "cet ordinateur"
 
+#: src/components/computer/HostScreen.tsx
+#: src/pages/SettingsOverlay.tsx
+msgid "This computer"
+msgstr ""
+
 #. placeholder {0}: pendingDelete.versionCount
 #: src/pages/Artifacts.tsx
 msgid "This deletes all {0} versions of this artifact. This can't be undone."
@@ -4560,6 +4989,11 @@ msgstr "Ce fichier n'est pas un texte UTF-8 valide."
 #: src/pages/HostComputerPrompt.tsx
 msgid "this Mac"
 msgstr "ce Mac"
+
+#: src/components/computer/HostScreen.tsx
+#: src/pages/SettingsOverlay.tsx
+msgid "This Mac"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "This month"
@@ -4640,6 +5074,10 @@ msgstr "À :"
 msgid "Today"
 msgstr "Aujourd'hui"
 
+#: src/lib/activity-label.ts
+msgid "Tool"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Tool sources"
 msgstr "Sources d'outils"
@@ -4648,11 +5086,7 @@ msgstr "Sources d'outils"
 msgid "Tools"
 msgstr "Outils"
 
-#: src/components/composer/HoldToTalk.tsx
-msgid "Transcribing…"
-msgstr "Transcription…"
-
-#: src/components/call/CallCard.tsx
+#: src/components/call/VoiceChatCard.tsx
 msgid "Transcript"
 msgstr "Transcription"
 
@@ -4778,9 +5212,17 @@ msgstr "Mises à jour"
 msgid "Updating {0}’s Computer"
 msgstr "Mise à jour de l'ordinateur de {0}"
 
+#: src/lib/activity-label.ts
+msgid "Updating a task"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Updating Team Computer"
 msgstr "Mise à jour de l'ordinateur d'équipe"
+
+#: src/lib/activity-label.ts
+msgid "Updating the plan"
+msgstr ""
 
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/DesktopUpdates.tsx
@@ -4841,6 +5283,19 @@ msgstr ""
 msgid "Uses this server's own {hostCredentialSource} credentials to access {selectedProviderName}."
 msgstr "Utilise les identifiants {hostCredentialSource} propres à ce serveur pour accéder à {selectedProviderName}."
 
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Using a tool"
+msgstr ""
+
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Using an Anthropic API key"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Using the page"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Value"
 msgstr ""
@@ -4865,19 +5320,43 @@ msgstr "Version"
 msgid "View chat"
 msgstr "Voir la conversation"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Virtual"
+msgstr ""
+
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Voice"
 msgstr "Voix"
 
+#: src/pages/Shell.tsx
+msgid "Voice message"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Wait a moment and test again."
 msgstr "Patientez un instant et testez à nouveau."
 
+#: src/lib/activity-label.ts
+msgid "Waiting for a code"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Waiting for the API to come back…"
 msgstr "En attente du retour de l'API…"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Waiting for you"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your answer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your approval"
+msgstr ""
 
 #: src/lib/roster-status.ts
 msgid "Waiting in line…"
@@ -4886,6 +5365,10 @@ msgstr "En attente dans la file…"
 #: src/pages/shell/message-cards.tsx
 msgid "Waiting…"
 msgstr "En attente…"
+
+#: src/lib/activity-label.ts
+msgid "Web search"
+msgstr ""
 
 #: src/pages/Paywall.tsx
 msgid "Web, desktop and mobile apps"
@@ -4948,14 +5431,41 @@ msgstr "Quand utiliser"
 msgid "Where should bots run?"
 msgstr "Où les bots doivent-ils s'exécuter ?"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Where this bot works"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 msgid "Won't do"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+#: src/pages/Shell.tsx
+msgid "Working on the computer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Working with a cloud agent"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Working with a helper"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Working with files"
+msgstr ""
+
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Working…"
 msgstr "En cours…"
+
+#: src/lib/activity-label.ts
+msgid "Writing a reply"
+msgstr ""
 
 #: src/components/computer/TerminalApp.tsx
 msgid "Wrote {path}"
@@ -4963,6 +5473,10 @@ msgstr ""
 
 #: src/lib/billing.ts
 msgid "year"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Yes, stop"
 msgstr ""
 
 #: src/pages/Shell.tsx
@@ -4982,13 +5496,13 @@ msgstr "Vous pouvez fermer cet onglet s'il ne redirige pas automatiquement."
 msgid "You can close this window."
 msgstr "Vous pouvez fermer cette fenêtre."
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "You declined"
-msgstr "Vous avez refusé"
-
 #: src/pages/Shell.tsx
 msgid "You have control"
 msgstr "Vous avez le contrôle"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "You:"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Your email address"

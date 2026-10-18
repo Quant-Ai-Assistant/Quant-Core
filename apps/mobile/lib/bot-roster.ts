@@ -14,12 +14,30 @@ export function retainUnchangedBotRoster(current: MobileBot[], next: MobileBot[]
           if (!Object.hasOwn(candidate, key)) return false;
           const value = bot[key];
           const nextValue = candidate[key];
-          return Array.isArray(value) && Array.isArray(nextValue)
-            ? value.length === nextValue.length &&
-                value.every((item, index) => item === nextValue[index])
-            : value === nextValue;
+          if (Array.isArray(value) && Array.isArray(nextValue)) {
+            return (
+              value.length === nextValue.length &&
+              value.every((item, index) => item === nextValue[index])
+            );
+          }
+          return value === nextValue || sameFlatRecord(value, nextValue);
         })
       );
     });
   return unchanged ? current : next;
+}
+
+/** Settings objects such as `claudeCode` hold only scalars, so one level of comparison is enough. */
+function sameFlatRecord(value: unknown, nextValue: unknown): boolean {
+  if (!value || !nextValue || typeof value !== "object" || typeof nextValue !== "object") {
+    return false;
+  }
+  if (Array.isArray(value) || Array.isArray(nextValue)) return false;
+  const left = value as Record<string, unknown>;
+  const right = nextValue as Record<string, unknown>;
+  const keys = Object.keys(left);
+  return (
+    keys.length === Object.keys(right).length &&
+    keys.every((key) => Object.hasOwn(right, key) && left[key] === right[key])
+  );
 }

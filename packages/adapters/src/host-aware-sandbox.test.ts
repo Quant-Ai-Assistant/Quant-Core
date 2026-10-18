@@ -112,6 +112,30 @@ describe("host-aware sandbox", () => {
     await sandbox.destroy(computer, ctx);
   });
 
+  it("gives a dedicated computer its own virtual desktop while the host is on", async () => {
+    const isolated = new FakeSandboxProvider();
+    const host = new DesktopSandboxProvider();
+    const sandbox = new HostAwareSandbox(isolated, host, async () => true);
+    const team = await sandbox.provision(
+      { botId: "team-s", homePath: "/tmp/team", scope: "team" },
+      ctx,
+    );
+    const own = await sandbox.provision(
+      { botId: "own", homePath: "/tmp/own", scope: "dedicated" },
+      ctx,
+    );
+    expect(team.kind).toBe("desktop");
+    expect(own.kind).toBe("fake");
+    expect(sandbox.virtualDesktops).toBe(true);
+    await sandbox.destroy(team, ctx);
+    await sandbox.destroy(own, ctx);
+  });
+
+  it("serves the desktop app's host screen alone without a supervisor token", () => {
+    expect(createRunSandbox("desktop", {}).virtualDesktops).toBeUndefined();
+    expect(createRunSandbox("desktop", { supervisorToken: "t" }).virtualDesktops).toBe(true);
+  });
+
   it("describes the provider that serves a computer", () => {
     const isolated = new FakeSandboxProvider();
     const host = new DesktopSandboxProvider();

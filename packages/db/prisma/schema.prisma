@@ -38,6 +38,7 @@ model User {
   modelCredentials            UserModelCredential[]
   voiceCredentials            UserVoiceCredential[]
   callSettings                UserCallSettings?
+  claudeCode                  UserClaudeCode?
   secrets                     Secret[]
   mcpServers                  McpServer[]
   botSections                 BotSection[]
@@ -216,6 +217,7 @@ model Space {
   tasks                       Task[]
   runs                        Run[]
   routines                    Routine[]
+  watches                     Watch[]
   scratchpadItems             ScratchpadItem[]
   taughtSkills                TaughtSkill[]
   agentSkills                 AgentSkill[]
@@ -352,6 +354,21 @@ model UserCallSettings {
   @@map("user_call_settings")
 }
 
+/// The Claude account the Claude Code CLI signs in with: a Claude subscription sign-in or an
+/// Anthropic API key. Kept apart from model credentials so it never becomes a chat model.
+model UserClaudeCode {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secretId  String   @unique
+  secret    Secret   @relation(fields: [secretId], references: [id], onDelete: Cascade)
+  /// "subscription" or "api_key"; the secret holds the matching stored model secret.
+  kind      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_claude_code")
+}
+
 model SpaceModelPreference {
   id           String              @id @default(cuid())
   spaceId      String
@@ -423,6 +440,8 @@ model Bot {
   sectionId         String?
   section           BotSection?       @relation(fields: [sectionId], references: [id], onDelete: SetNull)
   archivedAt        DateTime?
+  /// Turned off from the desktop controls: no run of this bot may start.
+  pausedAt          DateTime?
   parentBotId       String?
   spawnKey          String?
   memoryScope       String?
@@ -440,10 +459,16 @@ model Bot {
   modelId           String?
   thinkingLevel     String?
   disabledBuiltinTools String[] @default([])
+  /// Coding work runs through the Claude Code CLI with this model and effort.
+  claudeCodeEnabled Boolean @default(false)
+  claudeCodeModel   String?
+  claudeCodeEffort  String?
   webhookSecretId   String?
   teamChatAmbientEnabled Boolean @default(false)
   teamChatRules          String  @default("")
   routines          Routine[]
+  watches           Watch[]           @relation("BotWatches")
+  watchedBy         Watch[]           @relation("BotWatchedBy")
   scratchpadItems   ScratchpadItem[]
   taughtSkills      TaughtSkill[]
   memoryDocuments   MemoryDocument[]
@@ -558,6 +583,7 @@ model Thread {
   tasks                       Task[]
   runs                        Run[]
   routines                    Routine[]
+  watches                     Watch[]
 
   @@index([spaceId])
   @@map("threads")
@@ -657,6 +683,8 @@ model Run {
   sourceMessage        Message?         @relation("RunSourceMessage", fields: [sourceMessageId], references: [id], onDelete: SetNull)
   routineId            String?
   routine              Routine?         @relation(fields: [routineId], references: [id], onDelete: SetNull)
+  watchId              String?
+  watch                Watch?           @relation(fields: [watchId], references: [id], onDelete: SetNull)
   startedAt            DateTime?
   completedAt          DateTime?
   botOutcomeReturnedAt DateTime?
@@ -680,6 +708,7 @@ model Run {
   @@index([sourceMessageId])
   @@index([threadId, status, createdAt])
   @@index([routineId])
+  @@index([watchId, status])
   @@map("runs")
 }
 
@@ -810,6 +839,41 @@ model Routine {
   @@index([active, nextRunAt])
   @@index([spaceId, botId])
   @@map("routines")
+}
+
+/// A bot waiting for something to happen instead of polling on a schedule. It
+/// watches either another bot's chat or a check command on its own computer,
+/// and is woken only when the watched bot posts or the command passes.
+model Watch {
+  id              String    @id @default(cuid())
+  spaceId         String
+  space           Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  botId           String
+  bot             Bot       @relation("BotWatches", fields: [botId], references: [id], onDelete: Cascade)
+  userId          String
+  threadId        String
+  thread          Thread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  name            String
+  goal            String    @db.Text
+  /// Every visible update this bot posts in its own chat wakes the watcher.
+  watchedBotId    String?
+  watchedBot      Bot?      @relation("BotWatchedBy", fields: [watchedBotId], references: [id], onDelete: Cascade)
+  /// Or the server runs this on the watcher's computer until it exits 0.
+  command         String?   @db.Text
+  intervalSeconds Int?
+  nextCheckAt     DateTime?
+  active          Boolean   @default(true)
+  expiresAt       DateTime
+  fireCount       Int       @default(0)
+  lastFiredAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  runs            Run[]
+
+  @@index([watchedBotId, active])
+  @@index([active, nextCheckAt])
+  @@index([spaceId, botId])
+  @@map("watches")
 }
 
 model ScratchpadItem {
@@ -1161,6 +1225,7 @@ model Secret {
   spaceMemoryConfig SpaceMemoryConfig?
   agentSecret       AgentSecret?
   callSettings      UserCallSettings?
+  claudeCode        UserClaudeCode?
 
   @@index([userId, spaceId])
   @@map("secrets")

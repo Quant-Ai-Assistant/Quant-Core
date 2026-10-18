@@ -345,12 +345,20 @@ describe("Android mobile platform contract", () => {
     expect(calls).toContain("Notification.CallStyle.forIncomingCall");
     expect(calls).toContain("setFullScreenIntent(screen, true)");
     expect(calls).toContain('"threads/ringingCalls"');
+    // Reminders wake the phone like an alarm from the same service, answered from the notification.
+    expect(calls).toContain('"threads/ringingReminders"');
+    expect(calls).toContain("Notification.CATEGORY_ALARM");
+    expect(calls).toContain('"threads/settleReminder"');
+    expect(manifest).toContain('android:name=".QuantReminderActionReceiver"');
     expect(calls).toContain("isAllowedNotificationEndpoint(storage.endpoint)");
     expect(calls).toContain("START_STICKY");
     expect(notifications).toContain('connection.setRequestProperty("X-Quant-Auth", gateAuth)');
     for (const locale of ["values", "values-ru"]) {
       expect(readFileSync(resolve(native, `res/${locale}/strings.xml`), "utf8")).toContain(
         "quant_calls_incoming",
+      );
+      expect(readFileSync(resolve(native, `res/${locale}/strings.xml`), "utf8")).toContain(
+        "quant_reminders_snooze",
       );
     }
   });

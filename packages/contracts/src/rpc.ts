@@ -1,11 +1,13 @@
 import { eventIterator, oc } from "@orpc/contract";
 import * as z from "zod";
+import { ActivityStatusSchema } from "./activity.js";
 import { AiConsentQuerySchema, AiConsentStatusSchema } from "./ai-consent.js";
 import {
   ARTIFACT_DESCRIPTION_MAX_LENGTH,
   ARTIFACT_NAME_MAX_LENGTH,
   ATTACHMENT_MAX_BASE64_LENGTH,
   ATTACHMENT_MAX_COUNT,
+  VOICE_MESSAGE_MAX_MS,
 } from "./attachments.js";
 import {
   BoardEventSchema,
@@ -22,6 +24,7 @@ import {
   UpdateTicketInput,
 } from "./board.js";
 import { BotSecretMetadata, BotSecretPutInput, StoredBotSecretName } from "./bot-secrets.js";
+import { ClaudeCodeAccountSchema } from "./claude-code.js";
 import {
   ActionApprovalRuleSchema,
   ActionAutoReviewSettingsSchema,
@@ -35,6 +38,7 @@ import {
   ArtifactWithContentSchema,
   AvatarStyleSchema,
   BillingStatusSchema,
+  BotControlSchema,
   BotMcpServerSchema,
   BotSchema,
   BotSectionSchema,
@@ -137,6 +141,20 @@ const structuredMentionTarget = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("connector"), id: Id }),
 ]);
 
+const VoiceMessageInput = z.object({
+  artifactId: Id,
+  durationMs: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(VOICE_MESSAGE_MAX_MS + 5_000),
+  waveform: z.array(z.number().min(0).max(1)).max(128),
+  /** A transcript the device already made, used when the server cannot transcribe. */
+  transcript: z.string().trim().max(20_000).optional(),
+  /** Language hint for transcription, such as `ru`. */
+  language: z.string().min(2).max(16).optional(),
+});
+
 const threadSendInput = threadTarget
   .safeExtend({
     text: z.string().optional(),
@@ -149,11 +167,13 @@ const threadSendInput = threadTarget
     replyToMessageId: Id.optional(),
     replyQuote: z.string().trim().min(1).max(REPLY_QUOTE_MAX_LENGTH).optional(),
     clientNonce: z.string().min(1).max(200).optional(),
+    /** A recorded voice message, uploaded as an artifact; the server transcribes it. */
+    voice: VoiceMessageInput.optional(),
   })
   .superRefine((input, ctx) => {
     const text = input.text?.trim() ?? "";
     const artifactIds = input.artifactIds ?? [];
-    if (!text && artifactIds.length === 0) {
+    if (!text && artifactIds.length === 0 && !input.voice) {
       ctx.addIssue({
         code: "custom",
         message: "Provide text or at least one attachment",
@@ -303,6 +323,16 @@ export const appContract = {
     remove: oc
       .input(z.object({ botId: Id, deleteMemories: z.boolean().default(false) }))
       .output(z.object({ ok: z.literal(true) })),
+    controls: oc.output(z.array(BotControlSchema)),
+    /** Cancels whatever the bot is doing now; it stays on. */
+    stop: oc.input(botId).output(z.object({ ok: z.literal(true) })),
+    /** Turning a bot off also cancels what it is doing. */
+    setPaused: oc
+      .input(z.object({ botId: Id, paused: z.boolean() }))
+      .output(z.object({ ok: z.literal(true) })),
+    setAllPaused: oc
+      .input(z.object({ paused: z.boolean() }))
+      .output(z.object({ ok: z.literal(true) })),
     rotateWebhookSecret: oc.input(botId).output(
       z.object({
         secret: z.string(),
@@ -339,6 +369,10 @@ export const appContract = {
       }),
     ),
     get: oc.input(threadTarget).output(ThreadSnapshotSchema),
+    /** The tool the bot's running work is using right now, if any; calls show it live. */
+    activity: oc
+      .input(threadTarget)
+      .output(z.object({ tool: z.string().nullable(), status: ActivityStatusSchema.nullable() })),
     messages: oc
       .input(
         threadTarget.safeExtend({
@@ -369,7 +403,8 @@ export const appContract = {
       .input(
         threadTarget.safeExtend({
           messageId: Id,
-          reaction: MessageReactionSchema,
+          /** Null removes the user's reaction. */
+          reaction: MessageReactionSchema.nullable(),
           clientNonce: z.string().min(1).max(200),
         }),
       )
@@ -458,7 +493,35 @@ export const appContract = {
             .min(1)
             .max(200)
             .regex(/^[^:]+$/),
-          outcome: z.enum(["declined", "missed"]),
+          /** Older Android builds send no outcome when the user hangs up. */
+          outcome: z.enum(["declined", "missed"]).default("declined"),
+        }),
+      )
+      .output(z.object({ ok: z.literal(true) })),
+    /** Reminders ringing the user now, for the phone and the desktop to show over everything. */
+    ringingReminders: oc.output(
+      z.array(
+        z.object({
+          botId: z.string(),
+          botName: z.string(),
+          botColor: z.string(),
+          reminderId: z.string(),
+          text: z.string(),
+          details: z.string().optional(),
+          ringsAt: z.string(),
+        }),
+      ),
+    ),
+    /** The user marked a reminder done, or asked for it again in five minutes. */
+    settleReminder: oc
+      .input(
+        botId.safeExtend({
+          reminderId: z
+            .string()
+            .min(1)
+            .max(200)
+            .regex(/^[^:]+$/),
+          action: z.enum(["done", "snooze"]),
         }),
       )
       .output(z.object({ ok: z.literal(true) })),
@@ -534,6 +597,8 @@ export const appContract = {
       .input(botId)
       .output(z.array(ComputerCommandSchema.extend({ createdAt: z.string() }))),
     screenUrl: oc.input(botId).output(z.object({ url: z.string().nullable() })),
+    /** One picture of the host screen a bot on this computer works on. */
+    screenFrame: oc.input(botId).output(z.object({ imageBase64: z.string() })),
     heartbeat: oc.input(botId).output(z.object({ ok: z.literal(true) })),
   },
   memory: {
@@ -1021,6 +1086,17 @@ export const appContract = {
         }),
       )
       .output(CallSettingsSchema),
+  },
+  claudeCode: {
+    account: oc.output(ClaudeCodeAccountSchema),
+    /** Saves the Claude sign-in started with `models.beginOAuth` for Claude Code, not for chat. */
+    finishSignIn: oc
+      .input(z.object({ loginId: z.string().min(1) }))
+      .output(ClaudeCodeAccountSchema),
+    connectKey: oc
+      .input(z.object({ apiKey: z.string().trim().min(8).max(500) }))
+      .output(ClaudeCodeAccountSchema),
+    disconnect: oc.output(ClaudeCodeAccountSchema),
   },
   externalConversations: {
     updatePolicy: oc

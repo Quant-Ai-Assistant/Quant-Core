@@ -778,10 +778,13 @@ describe("Pi connector tool dispatch", () => {
       events.push(event);
     }
 
+    // The activity line names its tool, so a call can show what the bot is using.
     expect(events).toContainEqual({
       type: "progress",
       text: "Using destination_write",
       activity: true,
+      tool: "destination_write",
+      status: { kind: "tool", detail: "destination write" },
     });
     expect(events).not.toContainEqual({
       type: "text",

@@ -7,15 +7,18 @@ import {
   Cpu,
   CreditCard,
   Gauge,
+  Laptop,
   Monitor,
   Phone,
   Settings,
+  SquareTerminal,
   Volume2,
   XIcon,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { computersAreUnavailable } from "../components/ComputersUnavailableHint";
+import { desktopBridge } from "../lib/desktop";
 import {
   ComputerSettingsPanel,
   GeneralSettingsPanels,
@@ -24,6 +27,8 @@ import {
 } from "./AccountSettingsOverlay";
 import { BillingSettingsPanel } from "./BillingSettingsPanel";
 import { CallSettingsPanel } from "./CallSettingsPanel";
+import { ClaudeCodeSettingsPanel } from "./ClaudeCodeSettingsPanel";
+import { HostSettingsPanel } from "./HostSettingsPanel";
 import { MemorySettingsOverlay } from "./MemorySettingsOverlay";
 import { ModelSettingsOverlay } from "./ModelSettingsOverlay";
 import { VoiceSettingsOverlay } from "./VoiceSettingsOverlay";
@@ -34,9 +39,11 @@ export type SettingsSection =
   | "memory"
   | "voice"
   | "calls"
+  | "claude-code"
   | "usage"
   | "computer"
   | "billing"
+  | "host"
   | "updates";
 
 type NavItem = {
@@ -91,17 +98,19 @@ export function SettingsOverlay({
   onVoiceStatusMaybeChanged?: () => void | Promise<void>;
 }) {
   const { t } = useLingui();
+  const desktop = desktopBridge();
   const panelRef = useRef<HTMLDivElement>(null);
   const usageRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<SettingsSection>(initialSection);
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [callsBusy, setCallsBusy] = useState(false);
+  const [claudeCodeBusy, setClaudeCodeBusy] = useState(false);
   const [keepComputerRecovery, setKeepComputerRecovery] = useState(false);
   const recoveryHoldTimer = useRef<number | undefined>(undefined);
   const showComputer =
     keepComputerRecovery || (isDeploymentOwner && computersAreUnavailable(sandboxProvider));
-  const panelBusy = memoryBusy || voiceBusy || callsBusy;
+  const panelBusy = memoryBusy || voiceBusy || callsBusy || claudeCodeBusy;
   const releaseComputerRecovery = useCallback(() => {
     window.clearTimeout(recoveryHoldTimer.current);
     recoveryHoldTimer.current = undefined;
@@ -150,9 +159,19 @@ export function SettingsOverlay({
     { id: "memory", label: t`Memory`, icon: Brain },
     { id: "voice", label: t`Voice`, icon: Volume2 },
     ...(callsEnabled ? [{ id: "calls" as const, label: t`Calls`, icon: Phone }] : []),
+    { id: "claude-code", label: "Claude Code", icon: SquareTerminal },
     { id: "usage", label: t`Usage`, icon: Gauge },
     ...(showComputer ? [{ id: "computer" as const, label: t`Computer`, icon: Monitor }] : []),
     ...(billingEnabled ? [{ id: "billing" as const, label: t`Billing`, icon: CreditCard }] : []),
+    ...(desktop?.host
+      ? [
+          {
+            id: "host" as const,
+            label: desktop.platform === "darwin" ? t`This Mac` : t`This computer`,
+            icon: Laptop,
+          },
+        ]
+      : []),
     { id: "updates", label: t`Updates`, icon: CloudDownload },
   ];
 
@@ -291,6 +310,9 @@ export function SettingsOverlay({
                 />
               ) : null}
               {section === "billing" && billingEnabled ? <BillingSettingsPanel /> : null}
+              {section === "host" && desktop?.host ? (
+                <HostSettingsPanel avatarStyle={avatarStyle} />
+              ) : null}
               {section === "updates" ? (
                 <UpdatesSettingsPanel isDeploymentOwner={isDeploymentOwner} />
               ) : null}
@@ -308,6 +330,9 @@ export function SettingsOverlay({
               ) : null}
               {section === "voice" ? (
                 <VoiceSettingsOverlay embedded onClose={requestClose} onBusyChange={setVoiceBusy} />
+              ) : null}
+              {section === "claude-code" ? (
+                <ClaudeCodeSettingsPanel onBusyChange={setClaudeCodeBusy} />
               ) : null}
               {section === "calls" && callsEnabled ? (
                 <CallSettingsPanel onBusyChange={setCallsBusy} />

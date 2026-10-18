@@ -5,7 +5,7 @@
 Quant is a fork of Rakazo with its own name, logo, self-host gate, release pipeline and in-app updates. The rules below the Quant section are the upstream ones and still apply; [`CodeStyle.md`](CodeStyle.md) is the numbered, mandatory version of them.
 
 - Never break: the release workflow (`.github/workflows/release.yml`) and the three update paths it feeds (server updater, Android Check for updates, desktop updater); the Basic Auth gate (`infra/compose/Caddyfile.gate`) and the credentials the apps send to it; the Android signing key in the repository secrets; `install-images.sh` on a clean machine.
-- Git: branch from `main`, open a pull request, merge into `main`. Every push to `main` publishes a release, so `main` must stay releasable. Commit with the GitHub noreply address. Merge upstream with `git fetch upstream && git merge upstream/main`.
+- Git: work goes through the release train in [`RELEASE.md`](RELEASE.md): branch from the current release branch it names, open the pull request against that branch, and never merge into `main` unless the maintainer says to ship. Every push to `main` publishes a release, so `main` must stay releasable. Commit with the maintainer's own git config identity (`user.name` and `user.email`), not a noreply address. Merge upstream with `git fetch upstream && git merge upstream/main`.
 - Quality gate: `pnpm gate` (Prisma client, Biome lint, TypeScript, unit tests) must pass before a push. The `ci` workflow runs the same lint, typecheck and unit tests on every push and pull request.
 - Languages: code, comments, commit messages and `README.md` are in English. Guides live in `docs/en/` and `docs/ru/` with identical content. Every new user-facing string gets a Russian translation.
 

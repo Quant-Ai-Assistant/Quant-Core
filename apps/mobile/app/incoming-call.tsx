@@ -86,7 +86,7 @@ export default function IncomingCallScreen() {
     if (handled.current) return;
     handled.current = true;
     setBusy(true);
-    await rpc("threads/declineCall", { botId, callId }).catch(() => undefined);
+    await rpc("threads/declineCall", { botId, callId, outcome: "declined" }).catch(() => undefined);
     await dismissIncomingCall(callId).catch(() => undefined);
     close();
   };

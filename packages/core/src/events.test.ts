@@ -3,6 +3,7 @@ import {
   appendTextSegment,
   appendToolCallSegment,
   appendToolStep,
+  computerUseCount,
   containsSecret,
   createStreamingRedactor,
   endsSentence,
@@ -813,5 +814,24 @@ describe("sanitizeUtf16ForJson", () => {
         "meta\uFFFD#2": "also",
       },
     });
+  });
+});
+
+describe("computerUseCount", () => {
+  it("counts the computer steps of a reply and nothing else", () => {
+    expect(
+      computerUseCount([
+        { kind: "text", text: "Done" },
+        {
+          kind: "steps",
+          steps: [
+            { label: "Computer observe", count: 2 },
+            { label: "Shell", count: 1 },
+            { label: "Computer act", count: 5 },
+          ],
+        },
+      ]),
+    ).toBe(7);
+    expect(computerUseCount([{ kind: "steps", steps: [{ label: "Shell", count: 3 }] }])).toBe(0);
   });
 });

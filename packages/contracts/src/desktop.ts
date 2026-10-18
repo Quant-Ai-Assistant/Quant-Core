@@ -55,7 +55,44 @@ export interface RakazoDesktopOAuthCallback {
   state?: string;
 }
 
+export interface DesktopHostState {
+  keepAwake: boolean;
+  /** The server this app runs itself; null when it is connected to another one. */
+  server: { running: boolean; port: number | null } | null;
+}
+
+/** Controls over the computer the desktop app runs on. */
+export interface RakazoDesktopHost {
+  state: () => Promise<DesktopHostState>;
+  setKeepAwake: (on: boolean) => Promise<DesktopHostState>;
+  /** Stops the server this app runs and frees its port; a small window offers to start it. */
+  stopServer: () => Promise<void>;
+}
+
+/**
+ * The engine that runs bots' virtual desktops without Docker: a small Linux VM the app downloads
+ * into its own folder. `unsupported` hosts (and hosts with Docker running) never show a download.
+ */
+export interface DesktopVirtualDesktopState {
+  phase: "unsupported" | "absent" | "downloading" | "preparing" | "ready" | "error";
+  /** Download progress 0-100, only while `downloading`. */
+  percent: number | null;
+  /** What the first install downloads in all, for the button. */
+  downloadBytes: number;
+  message: string | null;
+}
+
+export interface RakazoDesktopVirtualDesktop {
+  state: () => Promise<DesktopVirtualDesktopState>;
+  /** Downloads and starts the engine; resolves once it is started or failed. */
+  install: () => Promise<DesktopVirtualDesktopState>;
+}
+
 export interface RakazoDesktop {
+  /** Optional: older desktop apps have no host controls. */
+  host?: RakazoDesktopHost;
+  /** Optional: older desktop apps have no built-in virtual desktops. */
+  virtualDesktop?: RakazoDesktopVirtualDesktop;
   /** Only the isolated local settings window is authorized to call this bridge. */
   localSettings?: {
     request: (pathname: string, body: string) => Promise<{ status: number; body: string }>;

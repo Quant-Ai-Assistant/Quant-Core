@@ -6,4 +6,9 @@
   <string name="quant_calls_decline">Decline</string>
   <string name="quant_calls_channel_incoming">Incoming calls</string>
   <string name="quant_calls_channel_service">Call connection</string>
+  <string name="quant_reminders_ready">Ready for reminders</string>
+  <string name="quant_calls_and_reminders_ready">Ready for calls and reminders</string>
+  <string name="quant_reminders_done">Done</string>
+  <string name="quant_reminders_snooze">In 5 minutes</string>
+  <string name="quant_reminders_channel">Reminders</string>
 </resources>

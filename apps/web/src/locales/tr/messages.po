@@ -29,6 +29,7 @@ msgid "{0, plural, one {Waiting for sign-in — the code expires in about # minu
 msgstr ""
 
 #. placeholder {0}: Math.ceil(oauth.expiresInSeconds / 60)
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}"
@@ -113,6 +114,14 @@ msgstr "{botName} adlı botun bilgisayarı"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable} ayrılmıştır ve komut değişkeni olarak kullanılamaz. Başka bir ad seçin."
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "{count, plural, one {# step} other {# steps}}"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
+msgstr ""
+
 #: src/lib/billing.ts
 msgid "{count} days"
 msgstr ""
@@ -134,6 +143,7 @@ msgstr ""
 msgid "{days}d ago"
 msgstr "{days} g önce"
 
+#: src/components/ClaudeCodeCard.tsx
 #: src/components/ToolActivityDisclosure.tsx
 msgid "{hidden, plural, one {+# earlier step} other {+# earlier steps}}"
 msgstr ""
@@ -429,6 +439,10 @@ msgstr ""
 msgid "Agents:"
 msgstr "Agent'lar:"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "All assistants are off"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "All bots"
 msgstr ""
@@ -471,6 +485,10 @@ msgstr "Bir kez izin ver"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Allow purchase actions without asking"
 msgstr "Satın alma işlemlerine sormadan izin ver"
+
+#: src/components/composer/HoldToTalk.tsx
+msgid "Allow the microphone to record"
+msgstr ""
 
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
@@ -620,6 +638,14 @@ msgstr "Dışarıya e-posta göndermeden önce sor"
 msgid "Ask the server owner to configure this provider."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Asking you to take over"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Assistants"
+msgstr ""
+
 #. placeholder {0}: preset.time
 #: src/pages/RoutineSchedule.tsx
 msgid "at {0}"
@@ -637,6 +663,10 @@ msgstr "Dosya ekle"
 msgid "Attached {path}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Attaching a file"
+msgstr ""
+
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
 msgid "Attachment"
@@ -646,6 +676,7 @@ msgstr "Ek"
 msgid "Authentication failed."
 msgstr "Kimlik doğrulama başarısız."
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Authorization code or callback URL"
@@ -769,12 +800,17 @@ msgstr "Bot"
 msgid "Bot screen"
 msgstr "Bot ekranı"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Shell.tsx
 msgid "Bot screen preview"
 msgstr "Bot ekranı önizlemesi"
 
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Bot to link"
+msgstr ""
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Bot:"
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
@@ -815,7 +851,12 @@ msgid "Call"
 msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
-msgid "Call back"
+msgid "Call again"
+msgstr ""
+
+#. placeholder {0}: callClock(elapsed)
+#: src/components/call/CallCard.tsx
+msgid "Call ended · {0}"
 msgstr ""
 
 #. placeholder {0}: call.botName
@@ -824,15 +865,12 @@ msgid "Call with {0}"
 msgstr ""
 
 #: src/components/call/IncomingCall.tsx
+#: src/lib/activity-label.ts
 msgid "Calling you"
 msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Calling you…"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
-msgid "Calling…"
 msgstr ""
 
 #: src/pages/SettingsOverlay.tsx
@@ -849,6 +887,7 @@ msgstr "Sunucuya ulaşılamıyor."
 #: src/components/markdown-link-prompt.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/pages/Artifacts.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -882,6 +921,10 @@ msgstr "iptal edildi"
 #: src/pages/ActivityList.tsx
 msgid "Cancelled"
 msgstr "İptal edildi"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Cancelled call"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
@@ -947,6 +990,10 @@ msgstr "E-postanızı kontrol edin"
 
 #: src/components/ComputersUnavailableHint.tsx
 msgid "Checking computer setup…"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Checking tasks"
 msgstr ""
 
 #: src/components/ComputersUnavailableHint.tsx
@@ -1110,6 +1157,7 @@ msgstr ""
 msgid "Coming soon"
 msgstr ""
 
+#: src/lib/activity-label.ts
 #: src/pages/McpServersOverlay.tsx
 msgid "Command"
 msgstr "Komut"
@@ -1121,6 +1169,14 @@ msgstr "Komut değişkeni"
 
 #: src/pages/Board.tsx
 msgid "Comment"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Commit"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Committing"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -1193,6 +1249,7 @@ msgstr "URL'nin bu tarayıcı oturumundan erişilebilir olduğunu doğrula, sonr
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -1260,8 +1317,13 @@ msgstr "Bağlandı, {0} kullanılıyor."
 msgid "Connected. Its tools are available from your next message."
 msgstr "Bağlandı. Araçları bir sonraki mesajından itibaren kullanılabilir."
 
+#: src/lib/activity-label.ts
+msgid "Connecting"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
@@ -1269,6 +1331,11 @@ msgstr "Bağlandı. Araçları bir sonraki mesajından itibaren kullanılabilir.
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connecting…"
 msgstr "Bağlanıyor…"
+
+#: src/components/call/CallCard.tsx
+msgctxt "call status"
+msgid "Connecting…"
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Connection test failed."
@@ -1527,6 +1594,10 @@ msgstr ""
 msgid "Could not load call settings"
 msgstr ""
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Could not load Claude Code"
+msgstr ""
+
 #: src/components/computer/TerminalApp.tsx
 msgid "Could not load commands"
 msgstr ""
@@ -1617,6 +1688,10 @@ msgstr "Sunucuya ulaşılamadı"
 msgid "Could not reach the update server."
 msgstr ""
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Could not record"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "Kaldırılamadı"
@@ -1661,6 +1736,7 @@ msgstr "Bağlantı iptal edilemedi"
 msgid "Could not run routine"
 msgstr ""
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ExternalConversationSettings.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1728,8 +1804,17 @@ msgid "Could not send reset email"
 msgstr "Sıfırlama e-postası gönderilemedi"
 
 #: src/components/call/IncomingCall.tsx
+#: src/components/reminder/RingingReminder.tsx
 msgid "Could not send that"
 msgstr "Gönderilemedi"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not set up the virtual desktop"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not show this screen"
+msgstr ""
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not start OAuth"
@@ -1742,6 +1827,10 @@ msgstr ""
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
 msgstr "Bu yanıt gönderilemedi"
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not switch the computer"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Could not take control"
@@ -1773,6 +1862,10 @@ msgstr ""
 
 #: src/components/ComputersUnavailableHint.tsx
 msgid "Could not verify computer setup ({failureMessage}). Fix the connection, then check again."
+msgstr ""
+
+#: src/components/ClaudeCodeCard.tsx
+msgid "Couldn’t finish"
 msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
@@ -1835,6 +1928,14 @@ msgstr "Quant hesabını oluştur"
 
 #: src/components/AskCard.tsx
 msgid "Created"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Creating a file"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Creating a space"
 msgstr ""
 
 #: src/pages/GroupPanel.tsx
@@ -1907,9 +2008,14 @@ msgstr "gün"
 msgid "Decline"
 msgstr ""
 
+#: src/components/call/VoiceChatCard.tsx
+msgid "Declined call"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
+#: src/pages/shell/bot-panel.tsx
 msgid "Default"
 msgstr "Varsayılan"
 
@@ -1982,6 +2088,14 @@ msgstr ""
 msgid "deleted"
 msgstr "silindi"
 
+#: src/lib/activity-label.ts
+msgid "Deleted"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Deleting a file"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Deleting…"
@@ -2033,6 +2147,7 @@ msgid "Discard recording"
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2050,6 +2165,7 @@ msgid "Disconnected {0}."
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -2090,15 +2206,33 @@ msgstr "Docker, ek güvenlik için bilgisayarına erişimi sınırlar. {hostLabe
 msgid "Don’t have an account?"
 msgstr "Hesabın yok mu?"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this computer"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this Mac"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Done"
 msgstr "Bitti"
 
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgctxt "reminder"
+msgid "Done"
+msgstr ""
+
 #: src/components/computer/FilesApp.tsx
 #: src/pages/Artifacts.tsx
 msgid "Download"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Download · {size}"
 msgstr ""
 
 #. placeholder {0}: basename(entry.path)
@@ -2122,6 +2256,10 @@ msgstr "Markdown olarak indir"
 msgid "Download Executor"
 msgstr ""
 
+#: src/components/computer/HostScreen.tsx
+msgid "Downloading the virtual desktop"
+msgstr ""
+
 #: src/components/DesktopUpdates.tsx
 msgid "Downloading…"
 msgstr ""
@@ -2134,6 +2272,10 @@ msgstr "Taslak beceri"
 msgid "Drag, drop, or paste an image"
 msgstr "Görüntüyü sürükleyip bırakın veya yapıştırın"
 
+#: src/lib/activity-label.ts
+msgid "Drawing a chart"
+msgstr ""
+
 #: src/pages/BotContextMenu.tsx
 msgid "Duplicate"
 msgstr "Çoğalt"
@@ -2142,6 +2284,10 @@ msgstr "Çoğalt"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "örn. Hivenet Agent, Presales, puantaj botu"
 
+#: src/lib/activity-label.ts
+msgid "Edit"
+msgstr ""
+
 #: src/components/AskCard.tsx
 msgid "Edit first"
 msgstr "Önce düzenle"
@@ -2149,6 +2295,14 @@ msgstr "Önce düzenle"
 #: src/pages/BotContextMenu.tsx
 msgid "Edit Profile"
 msgstr "Profili Düzenle"
+
+#: src/lib/activity-label.ts
+msgid "Editing a file"
+msgstr ""
+
+#: src/pages/shell/bot-panel.tsx
+msgid "Effort"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Email"
@@ -2161,6 +2315,10 @@ msgstr "Bu e-posta adresinin kaydolmasına izin verilmiyor"
 #: src/lib/user-error.ts
 msgid "Email verification required"
 msgstr "E-posta doğrulaması gerekiyor"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Emergency stop"
+msgstr ""
 
 #: src/pages/BillingSettingsPanel.tsx
 msgid "Ends {day}"
@@ -2305,6 +2463,10 @@ msgstr "Hata yönetimi"
 msgid "File is too large to upload."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "File search"
+msgstr ""
+
 #: src/components/computer/ComputerWorkspace.tsx
 msgid "Files"
 msgstr ""
@@ -2328,6 +2490,7 @@ msgid "Finding…"
 msgstr "Aranıyor…"
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Finish signing in at <0>{0}</0>. The final page may not load; paste its URL or code here."
@@ -2352,6 +2515,14 @@ msgstr "MCP bağlantısı tamamlanıyor…"
 
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Flag unexpected actions"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Folder"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Forgetting"
 msgstr ""
 
 #: src/pages/Auth.tsx
@@ -2417,6 +2588,10 @@ msgstr ""
 msgid "Groups"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Handing off"
+msgstr ""
+
 #: src/components/call/CallCard.tsx
 msgid "Hang up"
 msgstr "Aramayı sonlandır"
@@ -2443,6 +2618,10 @@ msgstr "Üstbilgi değeri"
 msgid "Hear a sample"
 msgstr "Örnek dinle"
 
+#: src/lib/activity-label.ts
+msgid "Helper"
+msgstr ""
+
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Hi, this is how I'll sound when I read replies out loud."
 msgstr "Merhaba, yanıtları sesli okuduğumda böyle duyulacağım."
@@ -2456,6 +2635,7 @@ msgid "Hide password"
 msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Hide transcript"
 msgstr "Dökümü gizle"
 
@@ -2471,11 +2651,7 @@ msgid "High"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk"
-msgstr ""
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk, release to send"
+msgid "Hold to record, release to send"
 msgstr ""
 
 #: src/pages/RoutineSchedule.tsx
@@ -2499,6 +2675,10 @@ msgstr "Nasıl kontrol edilir"
 msgid "I’m done"
 msgstr "Bitirdim"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Idle"
+msgstr ""
+
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
 msgstr ""
@@ -2510,6 +2690,10 @@ msgstr "Görüntü yükleme alanı"
 #: src/pages/PluginsOverlay.tsx
 msgid "Import OpenAPI JSON"
 msgstr "OpenAPI JSON içe aktar"
+
+#: src/components/reminder/RingingReminder.tsx
+msgid "In 5 minutes"
+msgstr ""
 
 #: src/lib/ticket-status.ts
 msgid "In progress"
@@ -2539,6 +2723,14 @@ msgstr "Varsayılanı devral"
 msgid "Inputs"
 msgstr "Girdiler"
 
+#: src/lib/activity-label.ts
+msgid "Install"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Installing packages"
+msgstr ""
+
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Instance API key"
 msgstr "Instance API anahtarı"
@@ -2559,6 +2751,14 @@ msgstr ""
 #: src/pages/Shell.tsx
 msgid "Integrations"
 msgstr "Entegrasyonlar"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupt"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupts whatever assistants are doing and turns them off"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 #: src/pages/RoutineSchedule.tsx
@@ -2659,15 +2859,6 @@ msgstr ""
 msgid "Listening"
 msgstr ""
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Listening"
-msgstr ""
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Listening…"
-msgstr ""
-
 #: src/pages/Shell.tsx
 msgid "Load earlier messages"
 msgstr "Önceki mesajları yükle"
@@ -2744,6 +2935,18 @@ msgstr ""
 #: src/pages/Shell.tsx
 msgid "Log out"
 msgstr "Çıkış yap"
+
+#: src/lib/activity-label.ts
+msgid "Looking at the page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Looking at the screen"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Looking in a folder"
+msgstr ""
 
 #: src/lib/ticket-priority.ts
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2910,6 +3113,10 @@ msgstr "{peer} botuna mesaj gönderildi"
 msgid "Messaging"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Messaging a bot"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Minimal"
@@ -2939,6 +3146,10 @@ msgstr "dakika"
 #: src/pages/RoutineSchedule.tsx
 msgid "minutes"
 msgstr "dakika"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Missed"
+msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Missed call"
@@ -3031,11 +3242,6 @@ msgstr "Taşı"
 msgid "Mute"
 msgstr "Sesi kapat"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Muted"
-msgstr ""
-
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
@@ -3079,6 +3285,10 @@ msgstr ""
 msgid "New bot"
 msgstr "Yeni bot"
 
+#: src/lib/activity-label.ts
+msgid "New file"
+msgstr ""
+
 #: src/pages/GroupPanel.tsx
 msgid "New group"
 msgstr "Yeni grup"
@@ -3109,12 +3319,12 @@ msgstr ""
 msgid "New ticket"
 msgstr ""
 
-#: src/pages/MessagingSettingsOverlay.tsx
-msgid "No agent connections yet."
+#: src/pages/HostSettingsPanel.tsx
+msgid "No"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "No answer"
+#: src/pages/MessagingSettingsOverlay.tsx
+msgid "No agent connections yet."
 msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
@@ -3234,6 +3444,10 @@ msgstr ""
 msgid "No trigger"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "None of them will reply until you start them"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "None yet"
 msgstr "Henüz yok"
@@ -3291,6 +3505,10 @@ msgstr "OAuth bağlantısı başarısız"
 msgid "OAuth expired"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Off"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "On a schedule"
 msgstr ""
@@ -3322,6 +3540,7 @@ msgid "Open <0>{0}</0> and enter this code:"
 msgstr ""
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Open <0>{0}</0> to finish signing in."
@@ -3377,6 +3596,22 @@ msgstr ""
 msgid "Opened its thread."
 msgstr "Sohbeti açıldı."
 
+#: src/lib/activity-label.ts
+msgid "Opening a file"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Opening a page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Opening a site"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Opening an app"
+msgstr ""
+
 #: src/pages/Onboarding.tsx
 msgid "Opening chat…"
 msgstr "Sohbet açılıyor…"
@@ -3403,6 +3638,10 @@ msgstr "Veya bir API anahtarı bağla"
 msgid "Or paste an API key"
 msgstr "Veya bir API anahtarı yapıştır"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Or use an Anthropic API key"
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Organic"
 msgstr ""
@@ -3420,8 +3659,16 @@ msgstr "Orijinal mesaj kullanılamıyor"
 msgid "Other model…"
 msgstr "Başka model…"
 
+#: src/components/call/VoiceChatCard.tsx
+msgid "Outgoing call"
+msgstr ""
+
 #: src/pages/Board.tsx
 msgid "Owner"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Page"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -3468,6 +3715,7 @@ msgid "Paste the OpenAI-compatible address from your server. Quant adds /v1 if n
 msgstr "Sunucundaki OpenAI uyumlu adresi yapıştır. Gerekirse Quant /v1 ekler."
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste your API key"
 msgstr "API anahtarını yapıştır"
@@ -3476,12 +3724,12 @@ msgstr "API anahtarını yapıştır"
 msgid "Paste your API key, then test again."
 msgstr "API anahtarını yapıştır, sonra yeniden test et."
 
-#: src/pages/RoutineEditor.tsx
-msgid "Paused"
+#: src/pages/shell/voice-message.tsx
+msgid "Pause voice message"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "Phone call"
+#: src/pages/RoutineEditor.tsx
+msgid "Paused"
 msgstr ""
 
 #: src/pages/Shell.tsx
@@ -3500,6 +3748,14 @@ msgstr "Listeden bir model seç veya bu uç noktanın sunduğu bir model kimliğ
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "Sabitle"
+
+#: src/lib/activity-label.ts
+msgid "Plan"
+msgstr ""
+
+#: src/pages/shell/voice-message.tsx
+msgid "Play voice message"
+msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -3552,6 +3808,14 @@ msgstr "Sağlayıcılar"
 msgid "Pull request"
 msgstr "Çekme isteği"
 
+#: src/lib/activity-label.ts
+msgid "Push"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Pushing changes"
+msgstr ""
+
 #: src/pages/ActivityList.tsx
 msgid "Queued"
 msgstr "Kuyrukta"
@@ -3565,12 +3829,36 @@ msgid "React"
 msgstr "Tepki ver"
 
 #: src/pages/Shell.tsx
+msgid "React {emoji}"
+msgstr ""
+
+#: src/pages/Shell.tsx
 msgid "Reactions"
 msgstr "Tepkiler"
+
+#: src/lib/activity-label.ts
+msgid "Read"
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Read replies aloud"
 msgstr "Yanıtları sesli oku"
+
+#: src/lib/activity-label.ts
+msgid "Reading a file"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading a page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading a skill"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading the chat"
+msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -3598,6 +3886,10 @@ msgstr "OAuth'u yeniden bağla"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Reconnecting"
 msgstr "Yeniden bağlanıyor"
+
+#: src/components/composer/HoldToTalk.tsx
+msgid "Record voice message"
+msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Recording may have started, but the view could not refresh"
@@ -3685,6 +3977,25 @@ msgstr "Kontrolü bırak"
 msgid "Release interrupted computer?"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
+msgid "Remembering"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Remembering"
+msgstr ""
+
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder"
+msgstr ""
+
+#. placeholder {0}: reminder.botName
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder from {0}"
+msgstr ""
+
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3717,6 +4028,10 @@ msgstr "{0} bahsini kaldır"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Remove message trigger"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Remove reaction {emoji}"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -3847,6 +4162,7 @@ msgid "Restoring your workspace"
 msgstr ""
 
 #: src/components/AccountAccess.tsx
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Auth.tsx
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Retry"
@@ -3882,6 +4198,10 @@ msgstr "Sağlayıcı ayarlarını gözden geçir ve yeniden test et."
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "İptal et"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Ringing now"
+msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Robot"
@@ -3925,12 +4245,27 @@ msgid "running"
 msgstr "çalışıyor"
 
 #: src/pages/ActivityList.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Running"
 msgstr "Çalışıyor"
+
+#. placeholder {0}: hostState.server.port
+#: src/pages/HostSettingsPanel.tsx
+msgid "Running · port {0}"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running · Stop"
 msgstr "Çalışıyor · Durdur"
+
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Running a command"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Running tests"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running…"
@@ -3991,6 +4326,14 @@ msgstr "Kaydedildi."
 msgid "Saved. Rotate to reveal."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Saving a skill"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Saving to memory"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Saving your workspace"
 msgstr ""
@@ -4009,6 +4352,10 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "Kaydediliyor…"
+
+#: src/lib/activity-label.ts
+msgid "Scheduling"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -4060,6 +4407,19 @@ msgstr ""
 msgid "Search: {0}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Searching files"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Searching the chat"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Searching the web"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
 msgid "Searching…"
@@ -4102,6 +4462,8 @@ msgid "Send reset link"
 msgstr "Sıfırlama bağlantısı gönder"
 
 #: src/components/AskCard.tsx
+#: src/pages/Shell.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Sending…"
 msgstr "Gönderiliyor…"
 
@@ -4111,6 +4473,10 @@ msgstr ""
 
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Serenity endpoint is required."
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Server"
 msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
@@ -4130,7 +4496,18 @@ msgstr "Sunucu adı"
 msgid "Server URL"
 msgstr "Sunucu URL'si"
 
-#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Setting a reminder"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Setting up a bot"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Setting up a watch"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/Shell.tsx
@@ -4203,7 +4580,7 @@ msgstr "Ayarları göster"
 msgid "Show tool activity"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Show transcript"
 msgstr "Dökümü göster"
 
@@ -4221,6 +4598,7 @@ msgstr "Oturum aç"
 
 #: src/components/AccountAccess.tsx
 #: src/lib/user-error.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Sign in again"
 msgstr ""
@@ -4233,6 +4611,10 @@ msgstr "Quant'da oturum aç"
 msgid "Sign in to your existing account to link SSO"
 msgstr "SSO bağlamak için mevcut hesabınıza giriş yapın"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Sign in with Claude"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
 msgstr "Abonelikle oturum aç veya bunun yerine API anahtarını test et."
@@ -4242,8 +4624,16 @@ msgstr "Abonelikle oturum aç veya bunun yerine API anahtarını test et."
 msgid "Sign up"
 msgstr "Kaydol"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Signed in with Claude"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Site"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Skill"
 msgstr ""
 
 #. placeholder {0}: skill.name
@@ -4274,7 +4664,11 @@ msgid "Slack not enabled"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Slide up to lock"
+msgid "Slide to cancel"
+msgstr ""
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Snoozed until {time}"
 msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx
@@ -4318,11 +4712,6 @@ msgstr "Yalnızca seslendir"
 msgid "Speak this reply"
 msgstr "Bu yanıtı seslendir"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Speaking"
-msgstr ""
-
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Speech model"
 msgstr "Konuşma modeli"
@@ -4335,6 +4724,10 @@ msgstr "SSO geçici olarak kullanılamıyor. Yeniden deneyin."
 msgid "Start {trialDays}-day free trial"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Start all"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
 msgstr "Kaydı başlat"
@@ -4343,8 +4736,14 @@ msgstr "Kaydı başlat"
 msgid "Starting"
 msgstr "Başlıyor"
 
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Starting"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/lib/roster-status.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Starting…"
@@ -4364,6 +4763,14 @@ msgstr "Adımlar"
 msgid "Stop"
 msgstr "Durdur"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all assistants?"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Stop speaking"
 msgstr "Seslendirmeyi durdur"
@@ -4371,6 +4778,10 @@ msgstr "Seslendirmeyi durdur"
 #: src/components/teach/TeachRecordingChrome.tsx
 msgid "Stop teaching"
 msgstr "Öğretmeyi durdur"
+
+#: src/components/ClaudeCodeCard.tsx
+msgid "Stopped"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/lib/browser-notifications.ts
@@ -4393,6 +4804,7 @@ msgstr "Yanıtları akışla göster"
 msgid "subagent"
 msgstr "alt ajan"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Submit"
@@ -4484,6 +4896,10 @@ msgstr "Oturum açmayı test et"
 msgid "Testing…"
 msgstr "Test ediliyor…"
 
+#: src/lib/activity-label.ts
+msgid "Tests"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
 msgstr ""
@@ -4500,9 +4916,17 @@ msgstr ""
 msgid "The provider is rate-limiting requests."
 msgstr "Sağlayıcı istek hızını sınırlıyor."
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "The screen stays on and never asks for the password"
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "The selected memory provider is not available in this build."
 msgstr "Seçilen hafıza sağlayıcısı bu sürümde kullanılamıyor."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Their current work stops, and none of them will reply until you start them."
+msgstr ""
 
 #: src/pages/shell/bot-credentials.tsx
 msgid "These saved settings can't be read. Remove it and add it again."
@@ -4515,8 +4939,8 @@ msgstr ""
 msgid "Thinking"
 msgstr "Düşünüyor"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
+#: src/lib/activity-label.ts
+msgctxt "activity"
 msgid "Thinking"
 msgstr ""
 
@@ -4548,6 +4972,11 @@ msgstr "Bu sohbet yalnızca görüntülenebilir"
 msgid "this computer"
 msgstr "bu bilgisayar"
 
+#: src/components/computer/HostScreen.tsx
+#: src/pages/SettingsOverlay.tsx
+msgid "This computer"
+msgstr ""
+
 #. placeholder {0}: pendingDelete.versionCount
 #: src/pages/Artifacts.tsx
 msgid "This deletes all {0} versions of this artifact. This can't be undone."
@@ -4560,6 +4989,11 @@ msgstr ""
 #: src/pages/HostComputerPrompt.tsx
 msgid "this Mac"
 msgstr "bu Mac"
+
+#: src/components/computer/HostScreen.tsx
+#: src/pages/SettingsOverlay.tsx
+msgid "This Mac"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "This month"
@@ -4640,6 +5074,10 @@ msgstr "Kime:"
 msgid "Today"
 msgstr "Bugün"
 
+#: src/lib/activity-label.ts
+msgid "Tool"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Tool sources"
 msgstr "Araç kaynakları"
@@ -4648,11 +5086,7 @@ msgstr "Araç kaynakları"
 msgid "Tools"
 msgstr ""
 
-#: src/components/composer/HoldToTalk.tsx
-msgid "Transcribing…"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
+#: src/components/call/VoiceChatCard.tsx
 msgid "Transcript"
 msgstr "Döküm"
 
@@ -4778,8 +5212,16 @@ msgstr "Güncellemeler"
 msgid "Updating {0}’s Computer"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Updating a task"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Updating Team Computer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Updating the plan"
 msgstr ""
 
 #: src/components/ComputerMaintenanceActions.tsx
@@ -4841,6 +5283,19 @@ msgstr ""
 msgid "Uses this server's own {hostCredentialSource} credentials to access {selectedProviderName}."
 msgstr "{selectedProviderName} erişimi için bu sunucunun kendi {hostCredentialSource} kimlik bilgilerini kullanır."
 
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Using a tool"
+msgstr ""
+
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Using an Anthropic API key"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Using the page"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Value"
 msgstr ""
@@ -4865,18 +5320,42 @@ msgstr ""
 msgid "View chat"
 msgstr "Sohbeti görüntüle"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Virtual"
+msgstr ""
+
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Voice"
 msgstr "Ses"
 
+#: src/pages/Shell.tsx
+msgid "Voice message"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Wait a moment and test again."
 msgstr "Biraz bekle ve yeniden test et."
 
+#: src/lib/activity-label.ts
+msgid "Waiting for a code"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Waiting for the API to come back…"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Waiting for you"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your answer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your approval"
 msgstr ""
 
 #: src/lib/roster-status.ts
@@ -4886,6 +5365,10 @@ msgstr "Sırada bekleniyor…"
 #: src/pages/shell/message-cards.tsx
 msgid "Waiting…"
 msgstr "Bekleniyor…"
+
+#: src/lib/activity-label.ts
+msgid "Web search"
+msgstr ""
 
 #: src/pages/Paywall.tsx
 msgid "Web, desktop and mobile apps"
@@ -4948,14 +5431,41 @@ msgstr "Ne zaman kullanılır"
 msgid "Where should bots run?"
 msgstr "Botlar nerede çalışsın?"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Where this bot works"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 msgid "Won't do"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+#: src/pages/Shell.tsx
+msgid "Working on the computer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Working with a cloud agent"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Working with a helper"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Working with files"
+msgstr ""
+
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Working…"
 msgstr "Çalışıyor…"
+
+#: src/lib/activity-label.ts
+msgid "Writing a reply"
+msgstr ""
 
 #: src/components/computer/TerminalApp.tsx
 msgid "Wrote {path}"
@@ -4963,6 +5473,10 @@ msgstr ""
 
 #: src/lib/billing.ts
 msgid "year"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Yes, stop"
 msgstr ""
 
 #: src/pages/Shell.tsx
@@ -4982,13 +5496,13 @@ msgstr "Otomatik yönlendirilmezsen bu sekmeyi kapatabilirsin."
 msgid "You can close this window."
 msgstr "Bu pencereyi kapatabilirsin."
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "You declined"
-msgstr ""
-
 #: src/pages/Shell.tsx
 msgid "You have control"
 msgstr "Kontrol sende"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "You:"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Your email address"

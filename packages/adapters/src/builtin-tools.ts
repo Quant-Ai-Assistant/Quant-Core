@@ -2,6 +2,7 @@ import type { ConnectorTool } from "@rakazo/adapter-kit";
 import {
   BotSecretName,
   botSecretDestinationSchema,
+  MESSAGE_REACTIONS,
   SecretAskPurpose,
   SecretHttpRequest,
   TICKET_PRIORITIES,
@@ -153,7 +154,7 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "computer_act",
     description:
-      'Perform up to 24 ordered desktop actions on this bot\'s computer and return the resulting screen. Batch only predictable actions; stop before an outcome you need to inspect. Action kinds: click, move, down, up, type, key, scroll, wait, focus (raises the application\'s window, launching it if absent). When computer_observe listed elements: click takes element instead of x/y; press (accessibility press), fill (replace a field\'s text), and hover take element; menu presses a menu bar item by its titles, e.g. path ["File", "Export"].',
+      'Perform up to 24 ordered desktop actions on this bot\'s computer and return the resulting screen. Batch only predictable actions; stop before an outcome you need to inspect. Action kinds: click, move, hover, down, up, type, key, scroll, wait, focus (raises the application\'s window, launching it if absent). move and hover only point the mouse at x/y (or hover at an element) and press nothing: use them to reveal a tooltip or a hover menu, or to keep an open dropdown open while you look. Click only to press something; a click to "look at" a spot can close menus and change the page. When computer_observe listed elements: click takes element instead of x/y; press (accessibility press) and fill (replace a field\'s text) take element; menu presses a menu bar item by its titles, e.g. path ["File", "Export"].',
     inputSchema: {
       type: "object",
       properties: {
@@ -401,6 +402,23 @@ export const builtinAgentTools: ConnectorTool[] = [
     },
   },
   {
+    name: "react_to_message",
+    description:
+      "React to a message in this chat with an emoji instead of writing a reply, like a 👍 in a messenger. Use it when your whole answer would only acknowledge the user (ok, done, will do), for example after setting a reminder they asked for. It defaults to the message that started this turn. A reaction does not end your turn.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        emoji: { type: "string", enum: [...MESSAGE_REACTIONS] },
+        messageId: {
+          type: "string",
+          description:
+            "The user's message to react to. Omit for the message that started this turn.",
+        },
+      },
+      required: ["emoji"],
+    },
+  },
+  {
     name: "request_secret",
     get description() {
       return secretAskToolSurface().description;
@@ -578,6 +596,26 @@ export const builtinAgentTools: ConnectorTool[] = [
       required: ["url"],
     },
     readOnly: true,
+  },
+  {
+    name: "claude_code",
+    description:
+      "Run the Claude Code CLI on this bot's computer for work on code: reading and searching a codebase, writing or editing files, running builds, tests and git. Claude Code uses its own tools, subagents, skills and the project's CLAUDE.md, and works until the task is done. Give it the whole task in prompt and the project folder in cwd. Pass session_id from an earlier result to continue that session. Returns Claude Code's final report and its session_id.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        prompt: { type: "string", description: "The complete task for Claude Code." },
+        cwd: {
+          type: "string",
+          description: "Project folder, relative to your home or absolute.",
+        },
+        session_id: {
+          type: "string",
+          description: "Continue this earlier Claude Code session.",
+        },
+      },
+      required: ["prompt"],
+    },
   },
   {
     name: "cloud_agent_launch",
@@ -901,7 +939,7 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "schedule_create",
     description:
-      'Create a reminder or recurring job for this bot. Use for "remind me in 10 minutes" or "every morning send a joke". Repeats: cron or every/unit (min 1 minute). One-shot: runAt, delayMinutes, or delaySeconds.',
+      'Create a reminder or recurring job for this bot. Use for "remind me in 10 minutes" or "every morning send a joke". Repeats: cron or every/unit (min 1 minute). One-shot: runAt, delayMinutes, or delaySeconds. To wait for another bot\'s progress or for something to finish, use watch_create instead of polling.',
     inputSchema: scheduleCreateInputSchema,
   },
   {
@@ -916,6 +954,56 @@ export const builtinAgentTools: ConnectorTool[] = [
       type: "object",
       properties: {
         routineId: { type: "string" },
+        name: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "watch_create",
+    description:
+      "Wait for something to happen instead of polling on a schedule. Watch a teammate bot (bot_id or confirm_name): every update it posts in its chat wakes you, you stay silent on the ones that do not matter and report the ones that do, e.g. key milestones. Or watch a check command (e.g. test -f ~/Downloads/report.pdf): the server runs it on your computer every intervalSeconds and wakes you once when it exits 0, or when the watch expires.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Short label for watch_list and watch_cancel." },
+        goal: {
+          type: "string",
+          description:
+            "What you are waiting for and what to do then. It is given back to you each time the watch wakes you.",
+        },
+        bot_id: { type: "string", description: "Teammate bot to watch, from your teammate list." },
+        confirm_name: {
+          type: "string",
+          description: "Exact name of the teammate bot when bot_id is omitted.",
+        },
+        command: {
+          type: "string",
+          description: "Shell check that exits 0 once the thing has happened.",
+        },
+        intervalSeconds: {
+          type: "integer",
+          description: "Seconds between command checks (5 to 3600). Defaults to 10.",
+        },
+        expiresInMinutes: {
+          type: "integer",
+          description: "When the watch lapses (1 to 10080). Defaults to 1440 (one day).",
+        },
+      },
+      required: ["goal"],
+    },
+  },
+  {
+    name: "watch_list",
+    description: "List this bot's watches.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "watch_cancel",
+    description: "Stop a watch by watchId or exact name.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        watchId: { type: "string" },
         name: { type: "string" },
       },
     },
@@ -958,6 +1046,26 @@ export const builtinAgentTools: ConnectorTool[] = [
         },
       },
       required: ["reason", "opening"],
+    },
+  },
+  {
+    name: "remind_user",
+    description:
+      "Ring the user's phone and desktop with a reminder, like an alarm: it wakes a locked phone and shows your text full screen until they tap Done or ask again in 5 minutes. Use it when a reminder the user asked for comes due, usually from the schedule that fires it, so when you schedule a reminder, say in the schedule's prompt to call remind_user. The chat shows whether they finished it, snoozed it or missed it. Never use it for updates a message can carry.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: {
+          type: "string",
+          description:
+            'What to do, short and in the user\'s language, e.g. "Call the bank about the card". Max 120 chars.',
+        },
+        details: {
+          type: "string",
+          description: "Optional one or two sentences that help do it. Max 400 chars.",
+        },
+      },
+      required: ["text"],
     },
   },
   {

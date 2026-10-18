@@ -132,9 +132,11 @@ export async function openUserSettings(
     | "models"
     | "memory"
     | "voice"
+    | "claude-code"
     | "usage"
     | "computer"
     | "billing"
+    | "host"
     | "updates",
 ) {
   await page.getByTestId("user-menu-trigger").click();

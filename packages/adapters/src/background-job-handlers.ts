@@ -20,7 +20,9 @@ import type { createRunExecutor } from "./executor.js";
 import { compactHistory } from "./history-compaction.js";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
 import { deliverMessagingOutbound, mirrorMessagingOutbound } from "./messaging-delivery.js";
+import { advanceReminderMessage } from "./reminders.js";
 import { expireTaughtSkillTeaching } from "./teaching-session.js";
+import { checkCommandWatch } from "./watches.js";
 
 export function createBackgroundJobHandlers(deps: {
   executor: ReturnType<typeof createRunExecutor>;
@@ -91,6 +93,12 @@ export function createBackgroundJobHandlers(deps: {
     },
     "call.expire": async (payload) => {
       await settleCallRequest(deps, { ...payload, from: ["ringing"], status: "missed" });
+    },
+    "reminder.tick": async (payload) => {
+      await advanceReminderMessage(deps, { ...payload, event: "tick" });
+    },
+    "watch.check": async (payload) => {
+      await checkCommandWatch(deps, payload.watchId);
     },
     "cloud_agent.poll": async (payload) => {
       await pollCloudAgent(

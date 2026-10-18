@@ -163,8 +163,12 @@ function replyBlockText(block: MessageBlock): string {
     case "voice_call":
     case "cloud_agent":
       return block.title;
+    case "claude_code":
+      return "Claude Code";
     case "call_request":
       return block.reason;
+    case "reminder":
+      return block.text;
     case "subagent":
       return block.name || block.task;
     case "child_bot":
@@ -177,6 +181,8 @@ function replyBlockText(block: MessageBlock): string {
     case "image":
     case "file":
       return block.name || blocksToAgentHistoryText([block]);
+    case "voice":
+      return "";
   }
 }
 

@@ -29,6 +29,7 @@ msgid "{0, plural, one {Waiting for sign-in — the code expires in about # minu
 msgstr ""
 
 #. placeholder {0}: Math.ceil(oauth.expiresInSeconds / 60)
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}"
@@ -113,6 +114,14 @@ msgstr "{botName}의 컴퓨터"
 msgid "{commandVariable} is reserved and cannot be used as a command variable. Choose another name."
 msgstr "{commandVariable}은(는) 예약되어 있어 명령 변수로 사용할 수 없습니다. 다른 이름을 선택하세요."
 
+#: src/components/ClaudeCodeCard.tsx
+msgid "{count, plural, one {# step} other {# steps}}"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "{count, plural, one {Computer · # action} other {Computer · # actions}}"
+msgstr ""
+
 #: src/lib/billing.ts
 msgid "{count} days"
 msgstr ""
@@ -134,6 +143,7 @@ msgstr ""
 msgid "{days}d ago"
 msgstr "{days}일 전"
 
+#: src/components/ClaudeCodeCard.tsx
 #: src/components/ToolActivityDisclosure.tsx
 msgid "{hidden, plural, one {+# earlier step} other {+# earlier steps}}"
 msgstr ""
@@ -429,6 +439,10 @@ msgstr "Agent 연결"
 msgid "Agents:"
 msgstr "사용 Bot:"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "All assistants are off"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 msgid "All bots"
 msgstr ""
@@ -471,6 +485,10 @@ msgstr "한 번 허용"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Allow purchase actions without asking"
 msgstr "확인 없이 결제 동작 허용"
+
+#: src/components/composer/HoldToTalk.tsx
+msgid "Allow the microphone to record"
+msgstr ""
 
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
@@ -620,6 +638,14 @@ msgstr "외부 이메일을 보내기 전에 확인"
 msgid "Ask the server owner to configure this provider."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Asking you to take over"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Assistants"
+msgstr ""
+
 #. placeholder {0}: preset.time
 #: src/pages/RoutineSchedule.tsx
 msgid "at {0}"
@@ -637,6 +663,10 @@ msgstr "파일 첨부"
 msgid "Attached {path}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Attaching a file"
+msgstr ""
+
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
 msgid "Attachment"
@@ -646,6 +676,7 @@ msgstr "첨부 파일"
 msgid "Authentication failed."
 msgstr "인증에 실패했습니다."
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Authorization code or callback URL"
@@ -769,6 +800,7 @@ msgstr "Bot"
 msgid "Bot screen"
 msgstr "Bot 화면"
 
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Shell.tsx
 msgid "Bot screen preview"
 msgstr "Bot 화면 미리보기"
@@ -776,6 +808,10 @@ msgstr "Bot 화면 미리보기"
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Bot to link"
 msgstr "연결할 Bot"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Bot:"
+msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/RoutineEditor.tsx
@@ -815,7 +851,12 @@ msgid "Call"
 msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
-msgid "Call back"
+msgid "Call again"
+msgstr ""
+
+#. placeholder {0}: callClock(elapsed)
+#: src/components/call/CallCard.tsx
+msgid "Call ended · {0}"
 msgstr ""
 
 #. placeholder {0}: call.botName
@@ -824,15 +865,12 @@ msgid "Call with {0}"
 msgstr ""
 
 #: src/components/call/IncomingCall.tsx
+#: src/lib/activity-label.ts
 msgid "Calling you"
 msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Calling you…"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
-msgid "Calling…"
 msgstr ""
 
 #: src/pages/SettingsOverlay.tsx
@@ -849,6 +887,7 @@ msgstr "서버에 연결할 수 없습니다."
 #: src/components/markdown-link-prompt.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/pages/Artifacts.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
@@ -882,6 +921,10 @@ msgstr "취소됨"
 #: src/pages/ActivityList.tsx
 msgid "Cancelled"
 msgstr "취소됨"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "Cancelled call"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "Card view"
@@ -947,6 +990,10 @@ msgstr "이메일을 확인하세요"
 
 #: src/components/ComputersUnavailableHint.tsx
 msgid "Checking computer setup…"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Checking tasks"
 msgstr ""
 
 #: src/components/ComputersUnavailableHint.tsx
@@ -1110,6 +1157,7 @@ msgstr ""
 msgid "Coming soon"
 msgstr "준비 중"
 
+#: src/lib/activity-label.ts
 #: src/pages/McpServersOverlay.tsx
 msgid "Command"
 msgstr "실행 명령"
@@ -1121,6 +1169,14 @@ msgstr "명령 변수"
 
 #: src/pages/Board.tsx
 msgid "Comment"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Commit"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Committing"
 msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
@@ -1193,6 +1249,7 @@ msgstr "이 브라우저 세션에서 URL에 연결할 수 있는지 확인한 �
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -1260,8 +1317,13 @@ msgstr "{0}에 연결하고 기본 모델로 설정했습니다."
 msgid "Connected. Its tools are available from your next message."
 msgstr "연결되었습니다. 다음 메시지부터 이 도구를 사용할 수 있습니다."
 
+#: src/lib/activity-label.ts
+msgid "Connecting"
+msgstr ""
+
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
@@ -1269,6 +1331,11 @@ msgstr "연결되었습니다. 다음 메시지부터 이 도구를 사용할 �
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connecting…"
 msgstr "연결 중…"
+
+#: src/components/call/CallCard.tsx
+msgctxt "call status"
+msgid "Connecting…"
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Connection test failed."
@@ -1527,6 +1594,10 @@ msgstr ""
 msgid "Could not load call settings"
 msgstr ""
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Could not load Claude Code"
+msgstr ""
+
 #: src/components/computer/TerminalApp.tsx
 msgid "Could not load commands"
 msgstr ""
@@ -1617,6 +1688,10 @@ msgstr "서버에 연결할 수 없습니다"
 msgid "Could not reach the update server."
 msgstr ""
 
+#: src/components/composer/HoldToTalk.tsx
+msgid "Could not record"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "Could not remove"
 msgstr "삭제하지 못했습니다."
@@ -1661,6 +1736,7 @@ msgstr "연결을 해제하지 못했습니다."
 msgid "Could not run routine"
 msgstr "루틴을 실행할 수 없습니다"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ExternalConversationSettings.tsx
 #: src/pages/KnowledgeSection.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1728,8 +1804,17 @@ msgid "Could not send reset email"
 msgstr "재설정 이메일을 보낼 수 없습니다"
 
 #: src/components/call/IncomingCall.tsx
+#: src/components/reminder/RingingReminder.tsx
 msgid "Could not send that"
 msgstr "메시지를 보내지 못했습니다."
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not set up the virtual desktop"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not show this screen"
+msgstr ""
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Could not start OAuth"
@@ -1742,6 +1827,10 @@ msgstr "가르치기를 시작하지 못했습니다."
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
 msgstr "답변을 보내지 못했습니다."
+
+#: src/components/computer/HostScreen.tsx
+msgid "Could not switch the computer"
+msgstr ""
 
 #: src/pages/Shell.tsx
 msgid "Could not take control"
@@ -1773,6 +1862,10 @@ msgstr ""
 
 #: src/components/ComputersUnavailableHint.tsx
 msgid "Could not verify computer setup ({failureMessage}). Fix the connection, then check again."
+msgstr ""
+
+#: src/components/ClaudeCodeCard.tsx
+msgid "Couldn’t finish"
 msgstr ""
 
 #: src/pages/MessagingSettingsOverlay.tsx
@@ -1836,6 +1929,14 @@ msgstr "Quant 계정 만들기"
 #: src/components/AskCard.tsx
 msgid "Created"
 msgstr "생성됨"
+
+#: src/lib/activity-label.ts
+msgid "Creating a file"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Creating a space"
+msgstr ""
 
 #: src/pages/GroupPanel.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -1907,9 +2008,14 @@ msgstr "일"
 msgid "Decline"
 msgstr "거절"
 
+#: src/components/call/VoiceChatCard.tsx
+msgid "Declined call"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
+#: src/pages/shell/bot-panel.tsx
 msgid "Default"
 msgstr "기본값"
 
@@ -1982,6 +2088,14 @@ msgstr ""
 msgid "deleted"
 msgstr "삭제됨"
 
+#: src/lib/activity-label.ts
+msgid "Deleted"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Deleting a file"
+msgstr ""
+
 #: src/pages/Artifacts.tsx
 #: src/pages/shell/dialogs.tsx
 msgid "Deleting…"
@@ -2033,6 +2147,7 @@ msgid "Discard recording"
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2050,6 +2165,7 @@ msgid "Disconnected {0}."
 msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
@@ -2090,15 +2206,33 @@ msgstr "Docker는 보안을 위해 컴퓨터 접근을 제한합니다. {hostLab
 msgid "Don’t have an account?"
 msgstr "계정이 없나요?"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this computer"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Don't lock this Mac"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Done"
 msgstr "완료"
 
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgctxt "reminder"
+msgid "Done"
+msgstr ""
+
 #: src/components/computer/FilesApp.tsx
 #: src/pages/Artifacts.tsx
 msgid "Download"
+msgstr ""
+
+#: src/components/computer/HostScreen.tsx
+msgid "Download · {size}"
 msgstr ""
 
 #. placeholder {0}: basename(entry.path)
@@ -2122,6 +2256,10 @@ msgstr "마크다운으로 다운로드"
 msgid "Download Executor"
 msgstr ""
 
+#: src/components/computer/HostScreen.tsx
+msgid "Downloading the virtual desktop"
+msgstr ""
+
 #: src/components/DesktopUpdates.tsx
 msgid "Downloading…"
 msgstr ""
@@ -2134,6 +2272,10 @@ msgstr "작업 기술 초안"
 msgid "Drag, drop, or paste an image"
 msgstr "이미지를 끌어다 놓거나 붙여넣으세요"
 
+#: src/lib/activity-label.ts
+msgid "Drawing a chart"
+msgstr ""
+
 #: src/pages/BotContextMenu.tsx
 msgid "Duplicate"
 msgstr "복제"
@@ -2142,6 +2284,10 @@ msgstr "복제"
 msgid "e.g. Hivenet Agent, Presales, Timesheets bot"
 msgstr "예: Hivenet Agent, Presales, 근무표 봇"
 
+#: src/lib/activity-label.ts
+msgid "Edit"
+msgstr ""
+
 #: src/components/AskCard.tsx
 msgid "Edit first"
 msgstr "수정 후 보내기"
@@ -2149,6 +2295,14 @@ msgstr "수정 후 보내기"
 #: src/pages/BotContextMenu.tsx
 msgid "Edit Profile"
 msgstr "Bot 정보 수정"
+
+#: src/lib/activity-label.ts
+msgid "Editing a file"
+msgstr ""
+
+#: src/pages/shell/bot-panel.tsx
+msgid "Effort"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Email"
@@ -2161,6 +2315,10 @@ msgstr "이 이메일은 가입이 허용되지 않습니다"
 #: src/lib/user-error.ts
 msgid "Email verification required"
 msgstr "이메일 인증이 필요합니다"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Emergency stop"
+msgstr ""
 
 #: src/pages/BillingSettingsPanel.tsx
 msgid "Ends {day}"
@@ -2305,6 +2463,10 @@ msgstr "실패했을 때 처리"
 msgid "File is too large to upload."
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "File search"
+msgstr ""
+
 #: src/components/computer/ComputerWorkspace.tsx
 msgid "Files"
 msgstr ""
@@ -2328,6 +2490,7 @@ msgid "Finding…"
 msgstr "찾는 중…"
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Finish signing in at <0>{0}</0>. The final page may not load; paste its URL or code here."
@@ -2353,6 +2516,14 @@ msgstr "MCP 연결을 마무리하는 중…"
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Flag unexpected actions"
 msgstr "예상하지 못한 작업 표시"
+
+#: src/lib/activity-label.ts
+msgid "Folder"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Forgetting"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Forgot password?"
@@ -2417,6 +2588,10 @@ msgstr ""
 msgid "Groups"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Handing off"
+msgstr ""
+
 #: src/components/call/CallCard.tsx
 msgid "Hang up"
 msgstr "통화 종료"
@@ -2443,6 +2618,10 @@ msgstr "헤더 값"
 msgid "Hear a sample"
 msgstr "샘플 듣기"
 
+#: src/lib/activity-label.ts
+msgid "Helper"
+msgstr ""
+
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Hi, this is how I'll sound when I read replies out loud."
 msgstr "안녕하세요. 답변을 소리 내어 읽을 때 이런 목소리로 들립니다."
@@ -2456,6 +2635,7 @@ msgid "Hide password"
 msgstr "비밀번호 숨기기"
 
 #: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Hide transcript"
 msgstr "대화 기록 숨기기"
 
@@ -2471,11 +2651,7 @@ msgid "High"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk"
-msgstr ""
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Hold to talk, release to send"
+msgid "Hold to record, release to send"
 msgstr ""
 
 #: src/pages/RoutineSchedule.tsx
@@ -2499,6 +2675,10 @@ msgstr "완료 확인 방법"
 msgid "I’m done"
 msgstr "조작 끝내기"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Idle"
+msgstr ""
+
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
 msgstr ""
@@ -2510,6 +2690,10 @@ msgstr "이미지 업로드 영역"
 #: src/pages/PluginsOverlay.tsx
 msgid "Import OpenAPI JSON"
 msgstr "OpenAPI JSON 가져오기"
+
+#: src/components/reminder/RingingReminder.tsx
+msgid "In 5 minutes"
+msgstr ""
 
 #: src/lib/ticket-status.ts
 msgid "In progress"
@@ -2539,6 +2723,14 @@ msgstr "기본 설정 사용"
 msgid "Inputs"
 msgstr "입력값"
 
+#: src/lib/activity-label.ts
+msgid "Install"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Installing packages"
+msgstr ""
+
 #: src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Instance API key"
 msgstr "인스턴스 API 키"
@@ -2559,6 +2751,14 @@ msgstr ""
 #: src/pages/Shell.tsx
 msgid "Integrations"
 msgstr "앱·도구 연동"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupt"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Interrupts whatever assistants are doing and turns them off"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 #: src/pages/RoutineSchedule.tsx
@@ -2659,15 +2859,6 @@ msgstr ""
 msgid "Listening"
 msgstr ""
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Listening"
-msgstr ""
-
-#: src/components/composer/HoldToTalk.tsx
-msgid "Listening…"
-msgstr ""
-
 #: src/pages/Shell.tsx
 msgid "Load earlier messages"
 msgstr "이전 메시지 불러오기"
@@ -2744,6 +2935,18 @@ msgstr ""
 #: src/pages/Shell.tsx
 msgid "Log out"
 msgstr "로그아웃"
+
+#: src/lib/activity-label.ts
+msgid "Looking at the page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Looking at the screen"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Looking in a folder"
+msgstr ""
 
 #: src/lib/ticket-priority.ts
 #: src/pages/ModelSettingsOverlay.tsx
@@ -2910,6 +3113,10 @@ msgstr "{peer}에게 메시지 보냄"
 msgid "Messaging"
 msgstr "메시징"
 
+#: src/lib/activity-label.ts
+msgid "Messaging a bot"
+msgstr ""
+
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Minimal"
@@ -2939,6 +3146,10 @@ msgstr "분"
 #: src/pages/RoutineSchedule.tsx
 msgid "minutes"
 msgstr "분"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Missed"
+msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Missed call"
@@ -3031,11 +3242,6 @@ msgstr "섹션으로 이동"
 msgid "Mute"
 msgstr "음소거"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Muted"
-msgstr ""
-
 #: src/components/teach/SkillDraftCard.tsx
 #: src/pages/Auth.tsx
 #: src/pages/GroupPanel.tsx
@@ -3079,6 +3285,10 @@ msgstr ""
 msgid "New bot"
 msgstr "새 Bot 만들기"
 
+#: src/lib/activity-label.ts
+msgid "New file"
+msgstr ""
+
 #: src/pages/GroupPanel.tsx
 msgid "New group"
 msgstr "새 그룹 만들기"
@@ -3109,13 +3319,13 @@ msgstr "새 스페이스"
 msgid "New ticket"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "No"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "No agent connections yet."
 msgstr "아직 Agent 연결이 없습니다."
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "No answer"
-msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "No apps match your search."
@@ -3234,6 +3444,10 @@ msgstr ""
 msgid "No trigger"
 msgstr "트리거 없음"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "None of them will reply until you start them"
+msgstr ""
+
 #: src/pages/ScratchpadSection.tsx
 msgid "None yet"
 msgstr "아직 없음"
@@ -3291,6 +3505,10 @@ msgstr "OAuth 연결 실패"
 msgid "OAuth expired"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Off"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "On a schedule"
 msgstr "일정에 따라"
@@ -3322,6 +3540,7 @@ msgid "Open <0>{0}</0> and enter this code:"
 msgstr ""
 
 #. placeholder {0}: new URL(oauth.verificationUri).hostname
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Open <0>{0}</0> to finish signing in."
@@ -3377,6 +3596,22 @@ msgstr ""
 msgid "Opened its thread."
 msgstr "대화가 만들어졌습니다."
 
+#: src/lib/activity-label.ts
+msgid "Opening a file"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Opening a page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Opening a site"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Opening an app"
+msgstr ""
+
 #: src/pages/Onboarding.tsx
 msgid "Opening chat…"
 msgstr "채팅 여는 중…"
@@ -3403,6 +3638,10 @@ msgstr "또는 API 키 연결"
 msgid "Or paste an API key"
 msgstr "또는 API 키 붙여넣기"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Or use an Anthropic API key"
+msgstr ""
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Organic"
 msgstr "자연스럽게"
@@ -3420,8 +3659,16 @@ msgstr "원본 메시지를 사용할 수 없습니다"
 msgid "Other model…"
 msgstr "다른 모델 직접 입력…"
 
+#: src/components/call/VoiceChatCard.tsx
+msgid "Outgoing call"
+msgstr ""
+
 #: src/pages/Board.tsx
 msgid "Owner"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Page"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -3468,6 +3715,7 @@ msgid "Paste the OpenAI-compatible address from your server. Quant adds /v1 if n
 msgstr "서버의 OpenAI 호환 주소를 붙여넣으세요. 필요하면 Quant가 /v1을 추가합니다."
 
 #: src/pages/CallSettingsPanel.tsx
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste your API key"
 msgstr "API 키를 붙여넣으세요"
@@ -3476,13 +3724,13 @@ msgstr "API 키를 붙여넣으세요"
 msgid "Paste your API key, then test again."
 msgstr "API 키를 붙여넣은 뒤 다시 테스트하세요."
 
+#: src/pages/shell/voice-message.tsx
+msgid "Pause voice message"
+msgstr ""
+
 #: src/pages/RoutineEditor.tsx
 msgid "Paused"
 msgstr "일시 중지됨"
-
-#: src/components/call/VoiceChatCard.tsx
-msgid "Phone call"
-msgstr ""
 
 #: src/pages/Shell.tsx
 #: src/pages/shell/chat-context.tsx
@@ -3500,6 +3748,14 @@ msgstr "목록에서 모델을 선택하거나 이 엔드포인트가 제공하�
 #: src/pages/BotContextMenu.tsx
 msgid "Pin"
 msgstr "고정"
+
+#: src/lib/activity-label.ts
+msgid "Plan"
+msgstr ""
+
+#: src/pages/shell/voice-message.tsx
+msgid "Play voice message"
+msgstr ""
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -3552,6 +3808,14 @@ msgstr "서비스"
 msgid "Pull request"
 msgstr "풀 리퀘스트"
 
+#: src/lib/activity-label.ts
+msgid "Push"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Pushing changes"
+msgstr ""
+
 #: src/pages/ActivityList.tsx
 msgid "Queued"
 msgstr "대기 중"
@@ -3565,12 +3829,36 @@ msgid "React"
 msgstr "반응하기"
 
 #: src/pages/Shell.tsx
+msgid "React {emoji}"
+msgstr ""
+
+#: src/pages/Shell.tsx
 msgid "Reactions"
 msgstr "반응"
+
+#: src/lib/activity-label.ts
+msgid "Read"
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Read replies aloud"
 msgstr "답변을 자동으로 읽기"
+
+#: src/lib/activity-label.ts
+msgid "Reading a file"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading a page"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading a skill"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Reading the chat"
+msgstr ""
 
 #: src/pages/CallSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
@@ -3598,6 +3886,10 @@ msgstr "OAuth 다시 연결"
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Reconnecting"
 msgstr "다시 연결 중"
+
+#: src/components/composer/HoldToTalk.tsx
+msgid "Record voice message"
+msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Recording may have started, but the view could not refresh"
@@ -3685,6 +3977,25 @@ msgstr "제어권 넘기기"
 msgid "Release interrupted computer?"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
+msgid "Remembering"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Remembering"
+msgstr ""
+
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder"
+msgstr ""
+
+#. placeholder {0}: reminder.botName
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder from {0}"
+msgstr ""
+
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3717,6 +4028,10 @@ msgstr "{0} 멘션 삭제"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Remove message trigger"
+msgstr ""
+
+#: src/pages/Shell.tsx
+msgid "Remove reaction {emoji}"
 msgstr ""
 
 #: src/pages/RoutineEditor.tsx
@@ -3847,6 +4162,7 @@ msgid "Restoring your workspace"
 msgstr ""
 
 #: src/components/AccountAccess.tsx
+#: src/components/computer/HostScreen.tsx
 #: src/pages/Auth.tsx
 #: src/pages/ModelBackupsSettings.tsx
 msgid "Retry"
@@ -3882,6 +4198,10 @@ msgstr "서비스 설정을 확인한 뒤 다시 테스트하세요."
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "연결 해제"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Ringing now"
+msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Robot"
@@ -3925,12 +4245,27 @@ msgid "running"
 msgstr "실행 중"
 
 #: src/pages/ActivityList.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Running"
 msgstr "실행 중"
+
+#. placeholder {0}: hostState.server.port
+#: src/pages/HostSettingsPanel.tsx
+msgid "Running · port {0}"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running · Stop"
 msgstr "실행 중 · 중지"
+
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Running a command"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Running tests"
+msgstr ""
 
 #: src/pages/RoutineEditor.tsx
 msgid "Running…"
@@ -3991,6 +4326,14 @@ msgstr "저장되었습니다."
 msgid "Saved. Rotate to reveal."
 msgstr "저장되었습니다. key를 교체하면 표시됩니다."
 
+#: src/lib/activity-label.ts
+msgid "Saving a skill"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Saving to memory"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Saving your workspace"
 msgstr ""
@@ -4009,6 +4352,10 @@ msgstr ""
 #: src/pages/shell/dialogs.tsx
 msgid "Saving…"
 msgstr "저장 중…"
+
+#: src/lib/activity-label.ts
+msgid "Scheduling"
+msgstr ""
 
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -4060,6 +4407,19 @@ msgstr ""
 msgid "Search: {0}"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Searching files"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Searching the chat"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Searching the web"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/SpaceSearch.tsx
 msgid "Searching…"
@@ -4102,6 +4462,8 @@ msgid "Send reset link"
 msgstr "재설정 링크 보내기"
 
 #: src/components/AskCard.tsx
+#: src/pages/Shell.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Sending…"
 msgstr "보내는 중…"
 
@@ -4111,6 +4473,10 @@ msgstr "Sentry 알림"
 
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Serenity endpoint is required."
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Server"
 msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
@@ -4130,7 +4496,18 @@ msgstr "서버 이름"
 msgid "Server URL"
 msgstr "서버 URL"
 
-#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Setting a reminder"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Setting up a bot"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Setting up a watch"
+msgstr ""
+
 #: src/pages/MessagingSettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/Shell.tsx
@@ -4203,7 +4580,7 @@ msgstr "설정 보기"
 msgid "Show tool activity"
 msgstr ""
 
-#: src/components/call/VoiceChatCard.tsx
+#: src/pages/shell/voice-message.tsx
 msgid "Show transcript"
 msgstr "대화 기록 표시"
 
@@ -4221,6 +4598,7 @@ msgstr "로그인"
 
 #: src/components/AccountAccess.tsx
 #: src/lib/user-error.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 msgid "Sign in again"
 msgstr ""
@@ -4233,6 +4611,10 @@ msgstr "Quant 로그인"
 msgid "Sign in to your existing account to link SSO"
 msgstr "SSO를 연결하려면 기존 계정에 로그인하세요"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Sign in with Claude"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
 msgstr "구독으로 로그인하거나 대신 API 키를 테스트하세요."
@@ -4242,8 +4624,16 @@ msgstr "구독으로 로그인하거나 대신 API 키를 테스트하세요."
 msgid "Sign up"
 msgstr "가입하기"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Signed in with Claude"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Site"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Skill"
 msgstr ""
 
 #. placeholder {0}: skill.name
@@ -4274,7 +4664,11 @@ msgid "Slack not enabled"
 msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
-msgid "Slide up to lock"
+msgid "Slide to cancel"
+msgstr ""
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Snoozed until {time}"
 msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx
@@ -4318,11 +4712,6 @@ msgstr "음성 출력만"
 msgid "Speak this reply"
 msgstr "이 답변 읽기"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
-msgid "Speaking"
-msgstr ""
-
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Speech model"
 msgstr "음성 모델"
@@ -4335,6 +4724,10 @@ msgstr "SSO를 일시적으로 사용할 수 없습니다. 다시 시도하세�
 msgid "Start {trialDays}-day free trial"
 msgstr ""
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Start all"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Start recording"
 msgstr "작업 녹화 시작"
@@ -4343,8 +4736,14 @@ msgstr "작업 녹화 시작"
 msgid "Starting"
 msgstr "시작 중"
 
+#: src/lib/activity-label.ts
+msgctxt "activity"
+msgid "Starting"
+msgstr ""
+
 #: src/components/teach/TeachComputerOverlay.tsx
 #: src/lib/roster-status.ts
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Starting…"
@@ -4364,6 +4763,14 @@ msgstr "실행 단계"
 msgid "Stop"
 msgstr "중지"
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Stop all assistants?"
+msgstr ""
+
 #: src/pages/Shell.tsx
 msgid "Stop speaking"
 msgstr "읽기 중지"
@@ -4371,6 +4778,10 @@ msgstr "읽기 중지"
 #: src/components/teach/TeachRecordingChrome.tsx
 msgid "Stop teaching"
 msgstr "가르치기 종료"
+
+#: src/components/ClaudeCodeCard.tsx
+msgid "Stopped"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/lib/browser-notifications.ts
@@ -4393,6 +4804,7 @@ msgstr "답변 스트리밍"
 msgid "subagent"
 msgstr "보조 에이전트"
 
+#: src/pages/ClaudeCodeSettingsPanel.tsx
 #: src/pages/ModelSettingsOverlay.tsx
 #: src/pages/Onboarding.tsx
 msgid "Submit"
@@ -4484,6 +4896,10 @@ msgstr "로그인 테스트"
 msgid "Testing…"
 msgstr "테스트 중…"
 
+#: src/lib/activity-label.ts
+msgid "Tests"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "The API did not come back. Refresh this page."
 msgstr "API가 다시 작동하지 않습니다. 이 페이지를 새로 고침하세요."
@@ -4500,9 +4916,17 @@ msgstr ""
 msgid "The provider is rate-limiting requests."
 msgstr "서비스가 요청 속도를 제한하고 있습니다."
 
+#: src/pages/HostSettingsPanel.tsx
+msgid "The screen stays on and never asks for the password"
+msgstr ""
+
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "The selected memory provider is not available in this build."
 msgstr "선택한 기억 서비스는 현재 빌드에서 사용할 수 없습니다."
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Their current work stops, and none of them will reply until you start them."
+msgstr ""
 
 #: src/pages/shell/bot-credentials.tsx
 msgid "These saved settings can't be read. Remove it and add it again."
@@ -4515,8 +4939,8 @@ msgstr ""
 msgid "Thinking"
 msgstr "생각 깊이"
 
-#: src/components/call/CallCard.tsx
-msgctxt "call status"
+#: src/lib/activity-label.ts
+msgctxt "activity"
 msgid "Thinking"
 msgstr ""
 
@@ -4548,6 +4972,11 @@ msgstr "이 채팅은 읽기 전용입니다"
 msgid "this computer"
 msgstr "이 컴퓨터"
 
+#: src/components/computer/HostScreen.tsx
+#: src/pages/SettingsOverlay.tsx
+msgid "This computer"
+msgstr ""
+
 #. placeholder {0}: pendingDelete.versionCount
 #: src/pages/Artifacts.tsx
 msgid "This deletes all {0} versions of this artifact. This can't be undone."
@@ -4560,6 +4989,11 @@ msgstr ""
 #: src/pages/HostComputerPrompt.tsx
 msgid "this Mac"
 msgstr "이 Mac"
+
+#: src/components/computer/HostScreen.tsx
+#: src/pages/SettingsOverlay.tsx
+msgid "This Mac"
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "This month"
@@ -4640,6 +5074,10 @@ msgstr "받는 사람:"
 msgid "Today"
 msgstr "오늘"
 
+#: src/lib/activity-label.ts
+msgid "Tool"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Tool sources"
 msgstr "도구 소스"
@@ -4648,11 +5086,7 @@ msgstr "도구 소스"
 msgid "Tools"
 msgstr ""
 
-#: src/components/composer/HoldToTalk.tsx
-msgid "Transcribing…"
-msgstr ""
-
-#: src/components/call/CallCard.tsx
+#: src/components/call/VoiceChatCard.tsx
 msgid "Transcript"
 msgstr "대화 기록"
 
@@ -4778,8 +5212,16 @@ msgstr "업데이트"
 msgid "Updating {0}’s Computer"
 msgstr ""
 
+#: src/lib/activity-label.ts
+msgid "Updating a task"
+msgstr ""
+
 #: src/components/ComputerUpdateProgress.tsx
 msgid "Updating Team Computer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Updating the plan"
 msgstr ""
 
 #: src/components/ComputerMaintenanceActions.tsx
@@ -4841,6 +5283,19 @@ msgstr ""
 msgid "Uses this server's own {hostCredentialSource} credentials to access {selectedProviderName}."
 msgstr "이 서버의 자체 {hostCredentialSource} 자격 증명으로 {selectedProviderName}에 액세스합니다."
 
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+msgid "Using a tool"
+msgstr ""
+
+#: src/pages/ClaudeCodeSettingsPanel.tsx
+msgid "Using an Anthropic API key"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Using the page"
+msgstr ""
+
 #: src/pages/shell/bot-credentials.tsx
 msgid "Value"
 msgstr ""
@@ -4865,19 +5320,43 @@ msgstr ""
 msgid "View chat"
 msgstr "채팅 보기"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Virtual"
+msgstr ""
+
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Voice"
 msgstr "음성"
 
+#: src/pages/Shell.tsx
+msgid "Voice message"
+msgstr ""
+
 #: src/lib/model-connection-preflight.ts
 msgid "Wait a moment and test again."
 msgstr "잠시 기다린 뒤 다시 테스트하세요."
 
+#: src/lib/activity-label.ts
+msgid "Waiting for a code"
+msgstr ""
+
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Waiting for the API to come back…"
 msgstr "API가 다시 작동하기를 기다리는 중…"
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Waiting for you"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your answer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Waiting for your approval"
+msgstr ""
 
 #: src/lib/roster-status.ts
 msgid "Waiting in line…"
@@ -4886,6 +5365,10 @@ msgstr "줄에서 기다리는 중…"
 #: src/pages/shell/message-cards.tsx
 msgid "Waiting…"
 msgstr "기다리는 중…"
+
+#: src/lib/activity-label.ts
+msgid "Web search"
+msgstr ""
 
 #: src/pages/Paywall.tsx
 msgid "Web, desktop and mobile apps"
@@ -4948,14 +5431,41 @@ msgstr "언제 사용할지"
 msgid "Where should bots run?"
 msgstr "Bot을 어디에서 실행할까요?"
 
+#: src/components/computer/HostScreen.tsx
+msgid "Where this bot works"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 msgid "Won't do"
 msgstr ""
 
+#: src/components/call/CallCard.tsx
+#: src/lib/activity-label.ts
+#: src/pages/Shell.tsx
+msgid "Working on the computer"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Working with a cloud agent"
+msgstr ""
+
+#: src/lib/activity-label.ts
+msgid "Working with a helper"
+msgstr ""
+
+#: src/components/call/CallCard.tsx
+msgid "Working with files"
+msgstr ""
+
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx
+#: src/pages/HostSettingsPanel.tsx
 msgid "Working…"
 msgstr "처리 중…"
+
+#: src/lib/activity-label.ts
+msgid "Writing a reply"
+msgstr ""
 
 #: src/components/computer/TerminalApp.tsx
 msgid "Wrote {path}"
@@ -4963,6 +5473,10 @@ msgstr ""
 
 #: src/lib/billing.ts
 msgid "year"
+msgstr ""
+
+#: src/pages/HostSettingsPanel.tsx
+msgid "Yes, stop"
 msgstr ""
 
 #: src/pages/Shell.tsx
@@ -4982,13 +5496,13 @@ msgstr "자동으로 이동하지 않으면 이 탭을 닫아도 됩니다."
 msgid "You can close this window."
 msgstr "이 창을 닫아도 됩니다."
 
-#: src/components/call/VoiceChatCard.tsx
-msgid "You declined"
-msgstr ""
-
 #: src/pages/Shell.tsx
 msgid "You have control"
 msgstr "직접 조작 중"
+
+#: src/components/call/VoiceChatCard.tsx
+msgid "You:"
+msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Your email address"

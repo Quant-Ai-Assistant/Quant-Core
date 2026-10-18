@@ -3,6 +3,7 @@ import type { JobPublisher, SandboxProvider } from "@rakazo/adapter-kit";
 import { runContinueJob } from "@rakazo/adapter-kit";
 import { cancelComputerRunWork, screenLeaseIdForRun, toComputerRef } from "@rakazo/adapters";
 import type {
+  ActivityStatus,
   Actor,
   GroupMember,
   MessageBlock,
@@ -11,13 +12,19 @@ import type {
   RunStatus,
   ThreadSnapshot,
 } from "@rakazo/contracts";
-import { GROUP_MEMBER_MIN, MessageBlock as MessageBlockSchema } from "@rakazo/contracts";
+import {
+  ActivityStatusSchema,
+  ANSWERING_REACTIONS,
+  GROUP_MEMBER_MIN,
+  MessageBlock as MessageBlockSchema,
+} from "@rakazo/contracts";
 import {
   ACTIVE_RUN_STATUSES,
   BACKGROUND_RUN_TRIGGERS,
   callIdFromClientNonce,
   isActive,
   isConversationalRun,
+  messageReaction,
   projectMessages,
   resolveGroupTargetBotIds,
   runFailureError,
@@ -33,6 +40,7 @@ import {
   expireComputerExecutionLeases,
   IsolationError,
   lockOwnedGroup,
+  setMessageReactionInTransaction,
   touchGroupUpdatedAt,
 } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
@@ -134,7 +142,7 @@ function sendRunClientNonce(
   return botId ? `send:${messageId}:${botId}` : `send:${messageId}`;
 }
 
-async function enqueueRunsNeedingContinue(
+export async function enqueueRunsNeedingContinue(
   jobs: JobPublisher,
   runs: Array<{ id: string; status: string }>,
 ) {
@@ -157,7 +165,7 @@ async function findSendReceipt(prisma: PrismaClient, threadId: string, clientNon
   });
 }
 
-async function replayExistingSend(
+export async function replayExistingSend(
   deps: { prisma: PrismaClient; events: ThreadEvents; jobs: JobPublisher },
   threadId: string,
   clientNonce: string | undefined,
@@ -326,6 +334,28 @@ export async function threadHead(prisma: PrismaClient, target: ThreadTarget) {
     select: { seq: true },
   });
   return { threadId: target.threadId, cursor: latest?.seq ?? -1 };
+}
+
+/** The tool the thread's running work is using now: the last line it posted, if a tool's. */
+export async function threadActivity(
+  prisma: PrismaClient,
+  threadId: string,
+): Promise<{ tool: string | null; status: ActivityStatus | null }> {
+  const run = await prisma.run.findFirst({
+    where: { threadId, status: "running" },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+  if (!run) return { tool: null, status: null };
+  const event = await prisma.event.findFirst({
+    where: { threadId, runId: run.id, type: "thread.progress" },
+    orderBy: { seq: "desc" },
+    select: { payload: true },
+  });
+  const payload = (event?.payload ?? {}) as Record<string, unknown>;
+  const tool = payload.activity === true && typeof payload.tool === "string" ? payload.tool : null;
+  const status = ActivityStatusSchema.safeParse(payload.status);
+  return { tool, status: tool && status.success ? status.data : null };
 }
 
 export async function threadSnapshot(
@@ -601,6 +631,40 @@ function mapRun(run: {
   };
 }
 
+/**
+ * Validates a voice message's recording like any attachment and draws it as a voice block.
+ * Exported for tests.
+ */
+export async function resolveVoiceBlock(
+  voice:
+    | { artifactId: string; durationMs: number; waveform: number[]; transcribed: boolean }
+    | undefined,
+  resolve: (ids: string[]) => Promise<{ artifacts: Array<{ id: string; mimeType: string }> }>,
+): Promise<Extract<MessageBlock, { kind: "voice" }> | undefined> {
+  if (!voice) return undefined;
+  const { artifacts } = await resolve([voice.artifactId]);
+  const artifact = artifacts[0];
+  if (!artifact?.mimeType.startsWith("audio/")) {
+    throw new ORPCError("BAD_REQUEST", { message: "That voice message is not a recording." });
+  }
+  return {
+    kind: "voice",
+    artifactId: artifact.id,
+    mimeType: artifact.mimeType,
+    durationMs: voice.durationMs,
+    waveform: voice.waveform,
+    transcribed: voice.transcribed,
+  };
+}
+
+/** What the bot reads for a send: the text, or a note when a voice message had no words. */
+function voicePromptText(input: { text?: string; voice?: { transcribed: boolean } }) {
+  if (input.voice && !input.voice.transcribed && !input.text?.trim()) {
+    return "The user sent a voice message that could not be transcribed. Ask them to type it.";
+  }
+  return input.text;
+}
+
 export async function sendThreadMessage(
   deps: {
     prisma: PrismaClient;
@@ -616,6 +680,8 @@ export async function sendThreadMessage(
     replyToMessageId?: string;
     replyQuote?: string;
     clientNonce?: string;
+    /** A voice message; `text` then holds its transcript. */
+    voice?: { artifactId: string; durationMs: number; waveform: number[]; transcribed: boolean };
     /** The model a new run keeps, e.g. the one chosen for tasks from a call. */
     modelPin?: { modelProvider: string; modelId: string; thinkingLevel: string | null };
   },
@@ -686,12 +752,15 @@ export async function sendThreadMessage(
           target.botId,
           input.artifactIds,
         );
+        const voiceBlock = await resolveVoiceBlock(input.voice, (ids) =>
+          resolveSendAttachments({ prisma: tx }, actor, target.botId, ids),
+        );
         const connectorNames = await resolveOwnedConnectorDisplayNames(
           tx,
           actor,
           mentionTargets.connectorMentionIds,
         );
-        const blocks = buildUserMessageBlocks(input.text, attachmentBlocks);
+        const blocks = buildUserMessageBlocks(input.text, attachmentBlocks, voiceBlock);
         const message = await createThreadMessageInTransaction(tx, {
           threadId: target.threadId,
           role: "user",
@@ -745,6 +814,7 @@ export async function sendThreadMessage(
               role: "user",
               blocks,
               callId,
+              clientNonce: input.clientNonce,
               runIds: answered.map((run) => run.id),
               replyToMessageId,
               replyQuote,
@@ -785,6 +855,7 @@ export async function sendThreadMessage(
               role: "user",
               blocks,
               callId,
+              clientNonce: input.clientNonce,
               replyToMessageId,
               replyQuote,
               replyPreview,
@@ -798,7 +869,7 @@ export async function sendThreadMessage(
             botId: target.botId,
             threadId: target.threadId,
             userId: actor.userId,
-            prompt: buildSendPrompt(input.text, artifacts, connectorNames),
+            prompt: buildSendPrompt(voicePromptText(input), artifacts, connectorNames),
             status: "queued",
           },
         });
@@ -833,6 +904,7 @@ export async function sendThreadMessage(
             role: "user",
             blocks,
             callId,
+            clientNonce: input.clientNonce,
             runIds: [run.id],
             replyToMessageId,
             replyQuote,
@@ -857,12 +929,15 @@ export async function sendThreadMessage(
         memberBotIds,
         input.artifactIds,
       );
+      const voiceBlock = await resolveVoiceBlock(input.voice, (ids) =>
+        resolveGroupSendAttachments({ prisma: tx }, actor, target.groupId, memberBotIds, ids),
+      );
       const connectorNames = await resolveOwnedConnectorDisplayNames(
         tx,
         actor,
         mentionTargets.connectorMentionIds,
       );
-      const blocks = buildUserMessageBlocks(input.text, attachmentBlocks);
+      const blocks = buildUserMessageBlocks(input.text, attachmentBlocks, voiceBlock);
       const message = await createThreadMessageInTransaction(tx, {
         threadId: target.threadId,
         role: "user",
@@ -947,7 +1022,7 @@ export async function sendThreadMessage(
             botId,
             threadId: target.threadId,
             userId: actor.userId,
-            prompt: buildSendPrompt(input.text, artifacts, connectorNames),
+            prompt: buildSendPrompt(voicePromptText(input), artifacts, connectorNames),
             status: "queued",
           },
         });
@@ -994,6 +1069,7 @@ export async function sendThreadMessage(
           role: "user",
           blocks,
           callId,
+          clientNonce: input.clientNonce,
           runIds: runs.map((run) => run.id),
           replyToMessageId,
           replyQuote,
@@ -1018,8 +1094,8 @@ export async function sendThreadMessage(
 }
 
 /**
- * Append an emoji reply to the conversation so the next AI turn sees its target.
- * Clients render it beneath that message; the reaction itself does not start an AI turn.
+ * Set or remove the user's reaction on a message. A 👍 or 👎 on the bot's latest message
+ * answers it, so it starts a turn; any other reaction is only read on the bot's next turn.
  */
 export async function reactToThreadMessage(
   deps: { prisma: PrismaClient },
@@ -1027,15 +1103,17 @@ export async function reactToThreadMessage(
   target: ThreadTarget,
   input: {
     messageId: string;
-    reaction: MessageReaction;
+    reaction: MessageReaction | null;
     clientNonce: string;
+    /** False while no model is connected, so the reaction is kept without a turn. */
+    canStartTurn: boolean;
   },
 ) {
   return deps.prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM threads WHERE id = ${target.threadId} FOR UPDATE`;
     const parent = await tx.message.findFirst({
       where: { id: input.messageId, threadId: target.threadId },
-      select: { id: true },
+      select: { id: true, seq: true, role: true, botId: true },
     });
     if (!parent) throw new IsolationError();
     const existing = await tx.message.findUnique({
@@ -1044,44 +1122,128 @@ export async function reactToThreadMessage(
       },
       select: { id: true },
     });
-    if (existing) return { eventSeq: null };
+    if (existing) return { eventSeq: null, runs: [] };
     const botId = target.kind === "bot" ? target.botId : target.memberBotIds[0];
     if (!botId) throw new IsolationError();
-    const blocks: MessageBlock[] = [{ kind: "text", text: input.reaction }];
-    const message = await createThreadMessageInTransaction(tx, {
+    const { message, eventSeq } = await setMessageReactionInTransaction(tx, {
+      spaceId: actor.spaceId,
       threadId: target.threadId,
-      role: "user",
-      blocks,
-      replyToMessageId: parent.id,
+      eventBotId: botId,
+      parentId: parent.id,
+      reactor: { role: "user" },
+      reaction: input.reaction,
       clientNonce: input.clientNonce,
     });
     if (target.kind === "group") await touchGroupUpdatedAt(tx, target.groupId);
-    const event = await appendEventInTransaction(tx, {
-      spaceId: actor.spaceId,
-      threadId: target.threadId,
-      botId,
-      type: "thread.message.created",
-      payload: { messageId: message.id, role: "user", blocks, replyToMessageId: parent.id },
+    if (
+      !message ||
+      !input.reaction ||
+      !input.canStartTurn ||
+      target.kind !== "bot" ||
+      !ANSWERING_REACTIONS.has(input.reaction) ||
+      parent.role !== "bot" ||
+      parent.botId !== target.botId ||
+      !(await isLatestConversationMessage(tx, target.threadId, parent.seq)) ||
+      (await tx.run.count({
+        where: {
+          threadId: target.threadId,
+          botId: target.botId,
+          status: { in: [...ACTIVE_RUN_STATUSES] },
+        },
+      })) > 0
+    ) {
+      return { eventSeq, runs: [] };
+    }
+    const task = await tx.task.create({
+      data: {
+        spaceId: actor.spaceId,
+        botId: target.botId,
+        threadId: target.threadId,
+        userId: actor.userId,
+        prompt: input.reaction,
+        status: "queued",
+      },
     });
-    return { eventSeq: event.seq };
+    const run = await tx.run.create({
+      data: {
+        spaceId: actor.spaceId,
+        botId: target.botId,
+        threadId: target.threadId,
+        taskId: task.id,
+        userId: actor.userId,
+        status: "queued",
+        trigger: "reaction",
+        clientNonce: `reaction:${message.id}`,
+        sourceMessageId: message.id,
+      },
+      select: { id: true, taskId: true, status: true },
+    });
+    await tx.message.update({ where: { id: message.id }, data: { runId: run.id } });
+    return { eventSeq, runs: [run] };
   });
 }
 
-export async function stopThreadRuns(
-  deps: {
-    prisma: PrismaClient;
-    sandbox: SandboxProvider;
-    events: ThreadEvents;
-  },
+/** True when nothing but reactions came after the message at `seq`. */
+async function isLatestConversationMessage(
+  tx: Prisma.TransactionClient,
+  threadId: string,
+  seq: number,
+) {
+  const later = await tx.message.findMany({
+    where: { threadId, seq: { gt: seq } },
+    select: { role: true, blocks: true, replyToMessageId: true },
+  });
+  return later.every((message) =>
+    messageReaction({ ...message, blocks: message.blocks as MessageBlock[] }),
+  );
+}
+
+type StopRunsDeps = {
+  prisma: PrismaClient;
+  sandbox: SandboxProvider;
+  events: ThreadEvents;
+};
+
+export async function stopThreadRuns(deps: StopRunsDeps, actor: Actor, target: ThreadTarget) {
+  await stopRunsInThread(deps, actor, {
+    threadId: target.threadId,
+    botIds: target.kind === "bot" ? [target.botId] : target.memberBotIds,
+    onlyTheseBots: false,
+  });
+}
+
+/**
+ * Cancels what these bots are doing in every thread they work in (their own and the groups
+ * they are in), leaving the other members of a group alone. The caller owns the bots.
+ */
+export async function stopBotRuns(deps: StopRunsDeps, actor: Actor, botIds: readonly string[]) {
+  if (botIds.length === 0) return;
+  const active = await deps.prisma.run.findMany({
+    where: {
+      spaceId: actor.spaceId,
+      botId: { in: [...botIds] },
+      status: { in: [...ACTIVE_RUN_STATUSES] },
+    },
+    select: { threadId: true },
+    distinct: ["threadId"],
+  });
+  for (const { threadId } of active) {
+    await stopRunsInThread(deps, actor, { threadId, botIds, onlyTheseBots: true });
+  }
+}
+
+async function stopRunsInThread(
+  deps: StopRunsDeps,
   actor: Actor,
-  target: ThreadTarget,
+  scope: { threadId: string; botIds: readonly string[]; onlyTheseBots: boolean },
 ) {
   const { runIds, computers, leases, eventSeq } = await deps.prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM threads WHERE id = ${target.threadId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM threads WHERE id = ${scope.threadId} FOR UPDATE`;
     const cancelled = await tx.run.updateManyAndReturn({
       where: {
-        threadId: target.threadId,
+        threadId: scope.threadId,
         status: { in: [...ACTIVE_RUN_STATUSES] },
+        ...(scope.onlyTheseBots ? { botId: { in: [...scope.botIds] } } : {}),
       },
       data: { status: "cancelled", completedAt: new Date() },
       select: { id: true, botId: true },
@@ -1089,8 +1251,8 @@ export async function stopThreadRuns(
     const ids = cancelled.map((run) => run.id);
     await tx.steeringMessage.deleteMany({
       where: {
-        botId: { in: target.kind === "bot" ? [target.botId] : target.memberBotIds },
-        message: { threadId: target.threadId },
+        botId: { in: [...scope.botIds] },
+        message: { threadId: scope.threadId },
       },
     });
     // Snapshot teardown coordinates before commit. Once cancellation becomes
@@ -1131,7 +1293,7 @@ export async function stopThreadRuns(
     for (const run of cancelled) {
       const event = await appendEventInTransaction(tx, {
         spaceId: actor.spaceId,
-        threadId: target.threadId,
+        threadId: scope.threadId,
         botId: run.botId,
         type: "run.cancelled",
         runId: run.id,
@@ -1151,7 +1313,7 @@ export async function stopThreadRuns(
   });
   if (eventSeq !== null) {
     // The events are durable; subscribers refetch from their persisted cursor.
-    await deps.events.notify(target.threadId, eventSeq).catch((error) => {
+    await deps.events.notify(scope.threadId, eventSeq).catch((error) => {
       getLogger().error("thread stop realtime notification", error);
     });
   }

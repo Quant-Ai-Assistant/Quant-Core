@@ -2,6 +2,7 @@ import * as z from "zod";
 import { AGENT_SECRET_NAME_PATTERN } from "./agent-secret-name.js";
 import { BotAvatarValueSchema } from "./bot-avatar.js";
 import { DisabledBuiltinToolsSchema } from "./builtin-tools.js";
+import { BotClaudeCodeSchema, DEFAULT_BOT_CLAUDE_CODE } from "./claude-code.js";
 import {
   CLOUDFLARE_AI_GATEWAY_CONFIG_MESSAGE,
   cloudflareGatewayRoutingId,
@@ -78,6 +79,8 @@ export const BotSchema = z.object({
   teamChatAmbientEnabled: z.boolean(),
   teamChatRules: z.string(),
   disabledBuiltinTools: z.array(z.string()).default([]),
+  /** Coding work goes through the Claude Code CLI when enabled. */
+  claudeCode: BotClaudeCodeSchema.default(DEFAULT_BOT_CLAUDE_CODE),
   webhookConfigured: z.boolean(),
   /** Present when created with an idempotency key (e.g. onboarding:first). */
   spawnKey: z.string().nullable(),
@@ -93,6 +96,17 @@ export const BotSchema = z.object({
     .optional(),
 });
 export type Bot = z.infer<typeof BotSchema>;
+
+/** One row of the desktop's assistant controls: what the bot is doing and whether it is off. */
+export const BotControlSchema = z.object({
+  id: Id,
+  name: z.string(),
+  color: z.string(),
+  /** The active run's status, or "idle". */
+  status: z.string(),
+  paused: z.boolean(),
+});
+export type BotControl = z.infer<typeof BotControlSchema>;
 
 export const ReorderBotsInput = z.object({
   botIds: z
@@ -356,6 +370,7 @@ export const UpdateBotInput = z
     teamChatAmbientEnabled: z.boolean().optional(),
     teamChatRules: z.string().max(TEAM_CHAT_RULES_MAX_LENGTH).optional(),
     disabledBuiltinTools: DisabledBuiltinToolsSchema.optional(),
+    claudeCode: BotClaudeCodeSchema.optional(),
   })
   .superRefine((value, ctx) => {
     const providerProvided = value.modelProvider !== undefined;
@@ -866,6 +881,8 @@ export const ComputerStatusSchema = z.object({
   busyBotName: z.string().nullable(),
   canUpdate: z.boolean(),
   terminalAvailable: z.boolean(),
+  /** The bot can switch between this host's screen (team) and its own virtual desktop. */
+  virtualDesktops: z.boolean().optional(),
 });
 export type ComputerStatus = z.infer<typeof ComputerStatusSchema>;
 
@@ -1238,6 +1255,8 @@ export const VoiceStatusSchema = z.object({
   voiceId: z.string(),
   /** Calls are available: the calls OpenAI key is connected. */
   live: z.boolean().optional(),
+  /** The server transcribes voice messages (AAC/MP4 recordings) without help from the device. */
+  voiceMessages: z.boolean().optional(),
 });
 export type VoiceStatus = z.infer<typeof VoiceStatusSchema>;
 

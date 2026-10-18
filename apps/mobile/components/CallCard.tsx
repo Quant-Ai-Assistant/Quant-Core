@@ -1,3 +1,5 @@
+import type { ActivityStatus } from "@rakazo/contracts";
+import { liveToolKind } from "@rakazo/core";
 import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
 import type { ComponentProps, ReactNode } from "react";
@@ -5,8 +7,9 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { activityLine, activitySymbol } from "../lib/activity-label";
 import type { CallPhase, CallState } from "../lib/call-session";
-import { endCall, toggleMute, toggleTranscript, useCallSession } from "../lib/call-session";
+import { endCall, toggleMute, useCallSession } from "../lib/call-session";
 import { useI18n } from "../lib/i18n";
 import { useMobileTokens } from "../lib/native";
 import { BotAvatar } from "./bot-avatar";
@@ -14,7 +17,6 @@ import { GlassIconButton } from "./glass-icon-button";
 import { NativeSymbol } from "./native-symbol";
 
 const AVATAR = 128;
-const TRANSCRIPT_LINES = 6;
 
 /**
  * A call lives in the foreground: once the screen locks, Android pauses the app and the
@@ -26,18 +28,56 @@ function KeepScreenOnDuringCall() {
   return null;
 }
 
-/** Seconds since the call came up, ticking once a second. */
-function useCallSeconds(onCall: boolean): number {
-  const startedAt = useRef<number | null>(null);
+/** Seconds since the bot answered, ticking once a second and frozen once the call ends. */
+function useCallSeconds(call: CallState | null): number {
+  const connectedAt = call?.connectedAt ?? null;
+  const endedAt = call?.endedAt ?? null;
   const [now, setNow] = useState(() => Date.now());
-  if (onCall && startedAt.current === null) startedAt.current = Date.now();
-  if (!onCall) startedAt.current = null;
   useEffect(() => {
-    if (!onCall) return;
+    if (connectedAt === null || endedAt !== null) return;
+    setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(timer);
-  }, [onCall]);
-  return startedAt.current === null ? 0 : Math.max(0, Math.floor((now - startedAt.current) / 1000));
+  }, [connectedAt, endedAt]);
+  if (connectedAt === null) return 0;
+  return Math.max(0, Math.floor(((endedAt ?? now) - connectedAt) / 1000));
+}
+
+type ToolBadge = {
+  label: string;
+  ios: string;
+  android: ComponentProps<typeof NativeSymbol>["android"];
+};
+
+/** What the call's badge says for the tool the bot is using; new tools read generically. */
+function useToolBadge(tool: string | null, activity: ActivityStatus | null): ToolBadge | null {
+  const { t } = useI18n();
+  if (!tool) return null;
+  if (activity) return { label: activityLine(activity), ...activitySymbol(activity.kind) };
+  switch (liveToolKind(tool)) {
+    case "computer":
+      return {
+        label: t("Working on the computer"),
+        ios: "desktopcomputer",
+        android: "desktop-outline",
+      };
+    case "web":
+      return { label: t("Searching the web"), ios: "globe", android: "globe-outline" };
+    case "page":
+      return { label: t("Opening a page"), ios: "safari", android: "globe-outline" };
+    case "files":
+      return { label: t("Working with files"), ios: "doc.text", android: "document-text-outline" };
+    case "terminal":
+      return { label: t("Running a command"), ios: "terminal", android: "terminal-outline" };
+    case "memory":
+      return { label: t("Remembering"), ios: "brain", android: "bulb-outline" };
+    default:
+      return {
+        label: t("Using a tool"),
+        ios: "wrench.and.screwdriver",
+        android: "construct-outline",
+      };
+  }
 }
 
 function clock(seconds: number): string {
@@ -48,7 +88,7 @@ function clock(seconds: number): string {
 export function CallCard() {
   const call = useCallSession();
   const [minimized, setMinimized] = useState(false);
-  const seconds = useCallSeconds(Boolean(call));
+  const seconds = useCallSeconds(call);
   const botId = call?.botId;
   // A new call always opens full screen.
   useEffect(() => {
@@ -91,7 +131,7 @@ function CallBar({
         {call.botName}
       </Text>
       <Text style={[styles.barText, styles.digits, { color: tokens.primaryForeground }]}>
-        {clock(seconds)}
+        {call.connectedAt === null ? t("Connecting…") : clock(seconds)}
       </Text>
     </Pressable>
   );
@@ -110,14 +150,14 @@ function CallScreen({
   const tokens = useMobileTokens();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const status = call.muted
-    ? t("Muted")
-    : call.phase === "speaking"
-      ? t("Speaking")
-      : call.phase === "thinking"
-        ? t("Thinking")
-        : t("Listening");
-  const live = call.caption || call.heard;
+  const ended = call.endedAt !== null;
+  // Like a phone call: "Connecting…" until the bot answers, then only the clock.
+  const status = ended
+    ? t("Call ended · {time}", { time: clock(seconds) })
+    : call.connectedAt !== null
+      ? clock(seconds)
+      : t("Connecting…");
+  const tool = useToolBadge(ended ? null : call.tool, call.activity);
   return (
     <View
       accessibilityViewIsModal
@@ -163,69 +203,63 @@ function CallScreen({
       </View>
       <View style={styles.center}>
         <Pulse
-          phase={call.muted ? "thinking" : call.phase}
+          phase={call.muted || ended ? "thinking" : call.phase}
           color={call.botColor || tokens.foreground}
         >
-          <BotAvatar color={call.botColor} identity={call.botId} size={AVATAR} />
+          <View style={{ opacity: ended ? 0.6 : 1 }}>
+            <BotAvatar color={call.botColor} identity={call.botId} size={AVATAR} />
+          </View>
         </Pulse>
         <Text numberOfLines={1} style={[styles.name, { color: tokens.foreground }]}>
           {call.botName}
         </Text>
-        <Text style={[styles.status, { color: tokens.mutedForeground }]}>
-          <Text style={styles.digits}>{clock(seconds)}</Text>
-          {` · ${status}`}
+        <Text
+          accessibilityLiveRegion="polite"
+          style={[styles.status, styles.digits, { color: tokens.mutedForeground }]}
+        >
+          {status}
         </Text>
-      </View>
-      <View style={styles.words}>
-        {call.transcriptOpen ? (
-          call.exchanges.slice(-TRANSCRIPT_LINES).map((exchange, index) => (
-            <Text
-              key={`${exchange.role}-${index + 1}-${exchange.text.slice(0, 24)}`}
-              numberOfLines={2}
-              style={[
-                styles.line,
-                {
-                  color: exchange.role === "bot" ? tokens.foreground : tokens.mutedForeground,
-                  textAlign: exchange.role === "bot" ? "left" : "right",
-                },
-              ]}
-            >
-              {exchange.text}
-            </Text>
-          ))
-        ) : live ? (
-          <Text
-            numberOfLines={3}
-            accessibilityLiveRegion="polite"
-            style={[styles.caption, { color: tokens.foreground }]}
+        {tool ? (
+          <Pressable
+            testID="call-tool"
+            accessibilityRole="button"
+            accessibilityLabel={tool.label}
+            onPress={() => {
+              if (liveToolKind(call.tool ?? "") !== "computer") return;
+              onMinimize();
+              router.push({
+                pathname: "/computer",
+                params: { botId: call.botId, name: call.botName },
+              });
+            }}
+            style={[styles.tool, { borderColor: tokens.border, backgroundColor: tokens.muted }]}
           >
-            {live}
+            <View style={[styles.toolDot, { backgroundColor: tokens.foreground }]} />
+            <NativeSymbol
+              ios={tool.ios}
+              android={tool.android}
+              size={14}
+              color={tokens.foreground}
+            />
+            <Text style={{ fontSize: 13, color: tokens.foreground }}>{tool.label}</Text>
+          </Pressable>
+        ) : null}
+        {call.error ? (
+          <Text accessibilityRole="alert" style={[styles.error, { color: tokens.destructive }]}>
+            {call.error}
           </Text>
         ) : null}
       </View>
-      <View style={styles.actions}>
-        <RoundAction
-          label={t("Transcript")}
-          ios="captions.bubble"
-          android="chatbox-outline"
-          selected={call.transcriptOpen}
-          onPress={toggleTranscript}
-        />
+      <View
+        style={[styles.actions, ended && { opacity: 0 }]}
+        pointerEvents={ended ? "none" : "auto"}
+      >
         <RoundAction
           label={call.muted ? t("Unmute") : t("Mute")}
           ios={call.muted ? "mic.slash.fill" : "mic.fill"}
           android={call.muted ? "mic-off" : "mic"}
           selected={call.muted}
           onPress={toggleMute}
-        />
-        <RoundAction
-          label={t("Settings")}
-          ios="gearshape"
-          android="settings-outline"
-          onPress={() => {
-            onMinimize();
-            router.push("/calls");
-          }}
         />
         <RoundAction
           label={t("Hang up")}
@@ -282,7 +316,7 @@ function RoundAction({
   );
 }
 
-/** Rings around the avatar: breathing while the caller talks, quick while the bot speaks. */
+/** Rings around the avatar while the bot speaks, like the other side of a real call. */
 function Pulse({
   phase,
   color,
@@ -294,14 +328,14 @@ function Pulse({
 }) {
   const reduceMotion = useReducedMotion();
   const ring = useRef(new Animated.Value(0)).current;
-  const still = phase === "thinking" || reduceMotion;
+  const still = phase !== "speaking" || reduceMotion;
 
   useEffect(() => {
     if (still) {
       ring.setValue(0);
       return;
     }
-    const duration = phase === "speaking" ? 700 : 1_400;
+    const duration = 700;
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(ring, { toValue: 1, duration, useNativeDriver: true }),
@@ -342,7 +376,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", height: 44 },
-  center: { alignItems: "center", marginTop: 48, gap: 6 },
+  center: { flex: 1, alignItems: "center", marginTop: 48, gap: 6 },
   pulse: {
     width: AVATAR + 72,
     height: AVATAR + 72,
@@ -353,10 +387,19 @@ const styles = StyleSheet.create({
   name: { fontSize: 28, fontWeight: "600", writingDirection: "auto" },
   status: { fontSize: 16 },
   digits: { fontVariant: ["tabular-nums"] },
-  words: { flex: 1, justifyContent: "flex-end", gap: 8, paddingBottom: 24 },
-  caption: { fontSize: 18, lineHeight: 24, textAlign: "center", writingDirection: "auto" },
-  line: { fontSize: 15, lineHeight: 20, writingDirection: "auto" },
-  actions: { flexDirection: "row", justifyContent: "space-between" },
+  tool: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  toolDot: { width: 6, height: 6, borderRadius: 3 },
+  error: { fontSize: 14, textAlign: "center", marginTop: 16, writingDirection: "auto" },
+  actions: { flexDirection: "row", justifyContent: "space-evenly", paddingBottom: 8 },
   action: { alignItems: "center", gap: 8, width: 72 },
   actionLabel: { fontSize: 12 },
   bar: {

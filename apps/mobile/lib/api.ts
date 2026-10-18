@@ -40,6 +40,7 @@ import {
   takeLiveMessage,
   updateCloudAgentMessages,
   upsertMessageById,
+  withoutRemovedReactions,
 } from "@rakazo/core";
 import * as SecureStore from "expo-secure-store";
 import { promptAiConsent } from "./ai-consent";
@@ -1033,6 +1034,8 @@ export type MobileMessage = {
   role: "user" | "bot" | "system";
   /** Set when the message was sent from a live voice call; groups one call's transcript. */
   callId?: string;
+  /** The sender's key for a user message; matches the send that is still on screen. */
+  clientNonce?: string;
   botId?: string;
   replyToMessageId?: string;
   replyQuote?: string;
@@ -1066,7 +1069,13 @@ export type MobileSnapshot = {
   cursor?: number;
   messages: MobileMessage[];
   olderCursor: number | null;
-  run: { id: string; botId?: string; status: string; error?: string | null } | null;
+  run: {
+    id: string;
+    botId?: string;
+    status: string;
+    trigger?: string;
+    error?: string | null;
+  } | null;
   activeRuns?: Array<{ id: string; botId?: string; status: string }>;
   members?: MobileGroup["members"];
   computer?: {
@@ -1443,6 +1452,13 @@ export function applyMobileThreadEvent(
       messages: updateCloudAgentMessages(prev.messages, event.payload ?? {}),
     };
   }
+  if (event.type === "thread.message.reaction") {
+    return {
+      ...prev,
+      cursor: event.seq ?? prev.cursor,
+      messages: withoutRemovedReactions(prev.messages, event.payload),
+    };
+  }
   if (event.type === "thread.message.created" || event.type === "thread.message.updated") {
     const { remaining } = takeLiveMessage(prev.messages, progressMessageId(event));
     const id = String(event.payload?.messageId ?? event.id ?? `msg:${event.seq ?? 0}`);
@@ -1455,6 +1471,10 @@ export function applyMobileThreadEvent(
       // An update can leave the call id out — the `end_call` marker does — so keep the one
       // the message already carries instead of dropping it out of its call.
       callId: typeof event.payload?.callId === "string" ? event.payload.callId : known?.callId,
+      clientNonce:
+        typeof event.payload?.clientNonce === "string"
+          ? event.payload.clientNonce
+          : known?.clientNonce,
       blocks: (event.payload?.blocks as MobileMessage["blocks"]) ?? [],
       botId: event.botId ?? (event.payload?.botId ? String(event.payload.botId) : undefined),
       ...replyMetadata(event.payload ?? {}, known),

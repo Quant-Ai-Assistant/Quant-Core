@@ -1,4 +1,5 @@
 import type { MessageBlock, ThreadMessage } from "@rakazo/contracts";
+import { ActivityStatusSchema } from "@rakazo/contracts";
 import { cloudAgentBlockFromPayload } from "./cloud-agent.js";
 
 export function projectMessages(
@@ -263,6 +264,17 @@ export function reduceLiveMessageBlocks(
     update.type === "progress"
       ? update.payload?.activity === true
       : tail?.kind === "progress" && tail.activity === true;
+  const parsedStatus =
+    update.type === "progress" ? ActivityStatusSchema.safeParse(update.payload?.status) : undefined;
+  // A new activity line brings its own status; text and tool updates keep the current one.
+  const status =
+    update.type === "progress"
+      ? parsedStatus?.success
+        ? parsedStatus.data
+        : undefined
+      : tail?.kind === "progress"
+        ? tail.activityStatus
+        : undefined;
 
   if (pendingToolNames.length > 0 && endsSentence(tailText)) {
     let next = activity ? [...segments] : appendTextSegment(segments, tailText);
@@ -276,6 +288,7 @@ export function reduceLiveMessageBlocks(
       kind: "progress",
       text: tailText,
       ...(activity ? { activity: true as const } : {}),
+      ...(activity && status ? { activityStatus: status } : {}),
       ...(pendingToolNames.length > 0 ? { pendingToolNames } : {}),
     },
   ];
@@ -343,6 +356,20 @@ export function appendToolCallSegment(
     return [...segments.slice(0, -1), { kind: "steps", steps }];
   }
   return [...segments, { kind: "steps", steps }];
+}
+
+const COMPUTER_STEP_LABELS = new Set(
+  ["computer_observe", "computer_act"].map((name) => humanizeToolName(name)),
+);
+
+/** How many times a reply looked at or acted on the bot's computer; 0 when it never did. */
+export function computerUseCount(blocks: readonly MessageBlock[]): number {
+  let count = 0;
+  for (const block of blocks) {
+    if (block.kind !== "steps") continue;
+    for (const step of block.steps) if (COMPUTER_STEP_LABELS.has(step.label)) count += step.count;
+  }
+  return count;
 }
 
 export function humanizeToolName(name: string): string {

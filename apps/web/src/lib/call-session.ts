@@ -1,4 +1,6 @@
 import { t } from "@lingui/core/macro";
+import type { ActivityStatus } from "@rakazo/contracts";
+import { LIVE_TOOL_POLL_MS, sameActivityStatus } from "@rakazo/core";
 import { useSyncExternalStore } from "react";
 import { pickUp } from "./call-pickup.js";
 import type { LiveConnection } from "./live-call.js";
@@ -15,13 +17,20 @@ export interface CallState {
   botName: string;
   botColor: string;
   startedAt: number;
-  /** When the call picked up; null while it is still ringing. */
+  /** When the bot answered and the clock started; null while the call is connecting. */
   connectedAt: number | null;
+  /** When the call ended; it stays on screen a moment so the caller sees how long it ran. */
+  endedAt: number | null;
+  /** The tool the bot is using right now, such as `computer_act`. */
+  tool: string | null;
+  /** What that tool is doing, in the shared status vocabulary. */
+  activity: ActivityStatus | null;
+  /** Why the call could not connect. */
+  error: string | null;
   phase: CallPhase;
   muted: boolean;
   /** The call window is tucked away; the call keeps running. */
   minimized: boolean;
-  transcriptOpen: boolean;
   /** What the bot is saying now. */
   caption: string;
   /** What the caller is saying now. */
@@ -35,6 +44,10 @@ let callId = "";
 /** Rings, then connects; aborting it ends a call that has not finished connecting. */
 let connecting: AbortController | null = null;
 let live: LiveConnection | null = null;
+let toolPoll: ReturnType<typeof setInterval> | null = null;
+let closing: ReturnType<typeof setTimeout> | null = null;
+/** How long an ended call stays on screen. */
+export const CALL_ENDED_MS = 1_500;
 const watchers = new Set<() => void>();
 
 export function subscribe(watcher: () => void): () => void {
@@ -74,6 +87,8 @@ export function startCall(call: {
   answered?: { callId: string; opening: string };
 }): void {
   endCall();
+  if (closing) clearTimeout(closing);
+  closing = null;
   callId = call.answered?.callId ?? randomId();
   state = {
     botId: call.botId,
@@ -81,10 +96,13 @@ export function startCall(call: {
     botColor: call.botColor ?? "",
     startedAt: Date.now(),
     connectedAt: null,
+    endedAt: null,
+    tool: null,
+    activity: null,
+    error: null,
     phase: "ringing",
     muted: false,
     minimized: false,
-    transcriptOpen: false,
     caption: "",
     heard: "",
     exchanges: [],
@@ -96,7 +114,7 @@ export function startCall(call: {
   void pickUp(controller.signal, { ring: !call.answered })
     .then(() => {
       if (controller.signal.aborted || callId !== thisCallId) return;
-      set({ phase: "thinking", connectedAt: Date.now() });
+      set({ phase: "thinking" });
       return connectLiveCall(
         {
           botId: call.botId,
@@ -127,17 +145,39 @@ export function startCall(call: {
         }
         live = connection;
         connection.setMuted(state.muted);
-        set({ phase: "listening" });
+        set({ phase: "listening", connectedAt: Date.now() });
+        watchTool(call.botId, thisCallId);
       },
       (error: unknown) => {
         if (controller.signal.aborted || callId !== thisCallId) return;
-        set({ caption: errorText(error, t`Could not connect the call.`) });
+        set({ error: errorText(error, t`Could not connect the call.`) });
       },
     );
 }
 
+function sameStatus(a: ActivityStatus | null, b: ActivityStatus | null): boolean {
+  return a === b || (a !== null && b !== null && sameActivityStatus(a, b));
+}
+
+/** Asks what the bot is using while the call is connected, for the call's tool badge. */
+function watchTool(botId: string, thisCallId: string) {
+  if (toolPoll) clearInterval(toolPoll);
+  const poll = () => {
+    void rpc.threads.activity({ botId }).then(
+      ({ tool, status }) => {
+        if (callId !== thisCallId || !state || state.endedAt) return;
+        if (state.tool === tool && sameStatus(state.activity, status)) return;
+        set({ tool, activity: status });
+      },
+      () => undefined,
+    );
+  };
+  poll();
+  toolPoll = setInterval(poll, LIVE_TOOL_POLL_MS);
+}
+
 export function endCall(): void {
-  if (!state) return;
+  if (!state || state.endedAt !== null) return;
   const { botId, connectedAt } = state;
   // The server files the call's last words and its card, then lets the bot finish what was
   // asked. A second close of the same call is a no-op there.
@@ -150,8 +190,22 @@ export function endCall(): void {
   connecting = null;
   live?.close();
   live = null;
-  state = null;
-  emit();
+  if (toolPoll) clearInterval(toolPoll);
+  toolPoll = null;
+  // A call that never connected just closes; one that ran says how long, then closes.
+  if (connectedAt === null) {
+    state = null;
+    emit();
+    return;
+  }
+  set({ endedAt: Date.now(), tool: null, activity: null });
+  closing = setTimeout(() => {
+    closing = null;
+    if (state?.endedAt) {
+      state = null;
+      emit();
+    }
+  }, CALL_ENDED_MS);
 }
 
 export function toggleMute(): void {
@@ -159,11 +213,6 @@ export function toggleMute(): void {
   const muted = !state.muted;
   set({ muted });
   live?.setMuted(muted);
-}
-
-export function toggleTranscript(): void {
-  if (!state) return;
-  set({ transcriptOpen: !state.transcriptOpen });
 }
 
 export function setCallMinimized(minimized: boolean): void {

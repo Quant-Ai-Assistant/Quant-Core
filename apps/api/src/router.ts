@@ -35,7 +35,9 @@ import type {
   TicketChangeNotifier,
 } from "@rakazo/adapters";
 import {
+  ANTHROPIC_OAUTH_PROVIDER,
   acquireComputerExecutionLease,
+  advanceReminderMessage,
   applyCodexLiveCatalog,
   applyTeachingDesktopInput,
   archiveBot,
@@ -61,6 +63,7 @@ import {
   deletePushToken,
   deploymentAutoReviewDefault,
   destroyBot,
+  disconnectClaudeCode,
   displayBotWorkspacePath,
   enqueueTakeoverContinuation,
   ensureComputerWorkspaceLayout,
@@ -77,6 +80,7 @@ import {
   listBotSecretMetadata,
   listPiCatalog,
   listScratchpadItems,
+  loadClaudeCodeAccount,
   McpOAuthBroker,
   mapScratchpadItem,
   modelCredentialAuthKindsForSpace,
@@ -104,6 +108,7 @@ import {
   revokeScreenControl,
   routineRunModelPin,
   sanitizeComposioError,
+  saveClaudeCodeSecret,
   savePushToken,
   scheduleComputerControlExpiry,
   scheduleComputerSleep,
@@ -264,6 +269,7 @@ import {
   startOnboarding,
 } from "./onboarding.js";
 import { listRingingCalls } from "./ringing-calls.js";
+import { listRingingReminders } from "./ringing-reminders.js";
 import { listRoutineRuns } from "./routine-runs.js";
 import { listSpaceRuns } from "./runs.js";
 import { addScreenProxyCapability } from "./screen-proxy.js";
@@ -286,11 +292,15 @@ import {
   shouldForwardPeerThreadEvent,
 } from "./thread-message-pages.js";
 import {
+  enqueueRunsNeedingContinue,
   reactToThreadMessage,
+  replayExistingSend,
   resolveThreadTarget,
   sendThreadMessage,
   setThreadUnreadState,
+  stopBotRuns,
   stopThreadRuns,
+  threadActivity,
   threadHead,
   threadSnapshot,
 } from "./thread-target.js";
@@ -306,6 +316,7 @@ import {
   updateVoiceSpeechModel,
   voiceContext,
 } from "./voice.js";
+import { transcribeVoiceMessage } from "./voice-message.js";
 
 const MAX_COMPUTER_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 /** Each command writes a running and a done event, so this keeps about 100 commands. */
@@ -1784,6 +1795,13 @@ export function createRouter(deps: RouterDeps) {
             ...(input.disabledBuiltinTools !== undefined
               ? { disabledBuiltinTools: input.disabledBuiltinTools }
               : {}),
+            ...(input.claudeCode !== undefined
+              ? {
+                  claudeCodeEnabled: input.claudeCode.enabled,
+                  claudeCodeModel: input.claudeCode.model,
+                  claudeCodeEffort: input.claudeCode.effort,
+                }
+              : {}),
           },
         });
         const bots = await repos.listBots(context.actor);
@@ -1911,6 +1929,68 @@ export function createRouter(deps: RouterDeps) {
             signal: new AbortController().signal,
           },
           { deleteMemories: input.deleteMemories },
+        );
+        return { ok: true as const };
+      }),
+      controls: authed.bots.controls.handler(async ({ context }) => {
+        const bots = await deps.prisma.bot.findMany({
+          where: {
+            spaceId: context.actor.spaceId,
+            userId: context.actor.userId,
+            archivedAt: null,
+          },
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            pausedAt: true,
+            runs: {
+              where: { status: { in: [...ACTIVE_RUN_STATUSES] } },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { status: true },
+            },
+          },
+          orderBy: [{ pinned: "desc" }, { position: "asc" }, { createdAt: "asc" }],
+        });
+        return bots.map((bot) => ({
+          id: bot.id,
+          name: bot.name,
+          color: bot.color,
+          status: bot.runs[0]?.status ?? "idle",
+          paused: bot.pausedAt !== null,
+        }));
+      }),
+      stop: authed.bots.stop.handler(async ({ context, input }) => {
+        const bot = await repos.getBot(context.actor, input.botId);
+        await stopBotRuns(deps, context.actor, [bot.id]);
+        return { ok: true as const };
+      }),
+      setPaused: authed.bots.setPaused.handler(async ({ context, input }) => {
+        const bot = await repos.getBot(context.actor, input.botId);
+        // Off first, so no run can start between the stop and the flag.
+        await deps.prisma.bot.update({
+          where: { id: bot.id },
+          data: { pausedAt: input.paused ? new Date() : null },
+        });
+        if (input.paused) await stopBotRuns(deps, context.actor, [bot.id]);
+        return { ok: true as const };
+      }),
+      setAllPaused: authed.bots.setAllPaused.handler(async ({ context, input }) => {
+        const owned = { spaceId: context.actor.spaceId, userId: context.actor.userId };
+        if (!input.paused) {
+          await deps.prisma.bot.updateMany({ where: owned, data: { pausedAt: null } });
+          return { ok: true as const };
+        }
+        await deps.prisma.bot.updateMany({
+          where: { ...owned, pausedAt: null },
+          data: { pausedAt: new Date() },
+        });
+        const bots = await deps.prisma.bot.findMany({ where: owned, select: { id: true } });
+        await stopBotRuns(
+          deps,
+          context.actor,
+          bots.map((bot) => bot.id),
         );
         return { ok: true as const };
       }),
@@ -2098,6 +2178,10 @@ export function createRouter(deps: RouterDeps) {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
         return threadHead(deps.prisma, target);
       }),
+      activity: authed.threads.activity.handler(async ({ context, input }) => {
+        const target = await resolveThreadTarget(deps.prisma, context.actor, input);
+        return threadActivity(deps.prisma, target.threadId);
+      }),
       get: authed.threads.get.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input, {
           includeArchived: true,
@@ -2185,16 +2269,31 @@ export function createRouter(deps: RouterDeps) {
         if (target.kind === "bot") {
           await assertTeachingSendAllowed(deps.prisma, context.actor.spaceId, target.botId);
         }
-        return sendThreadMessage(deps, context.actor, target, input);
+        const { voice, ...message } = input;
+        if (!voice) return sendThreadMessage(deps, context.actor, target, message);
+        // A replayed send must not transcribe the recording a second time.
+        const replayed = await replayExistingSend(deps, target.threadId, input.clientNonce);
+        if (replayed) return replayed;
+        const transcript = await transcribeVoiceMessage(deps, context.actor, voice);
+        return sendThreadMessage(deps, context.actor, target, {
+          ...message,
+          text: transcript || undefined,
+          voice: { ...voice, transcribed: Boolean(transcript) },
+        });
       }),
       react: authed.threads.react.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
-        const result = await reactToThreadMessage(deps, context.actor, target, input);
+        const canStartTurn = !(await modelSetup(deps, context.actor)).needsModel;
+        const result = await reactToThreadMessage(deps, context.actor, target, {
+          ...input,
+          canStartTurn,
+        });
         if (result.eventSeq != null) {
           await deps.events.notify(target.threadId, result.eventSeq).catch((error) => {
             getLogger().error("thread reaction realtime notification", error);
           });
         }
+        await enqueueRunsNeedingContinue(deps.jobs, result.runs);
         return { ok: true as const };
       }),
       stop: authed.threads.stop.handler(async ({ context, input }) => {
@@ -2365,6 +2464,20 @@ export function createRouter(deps: RouterDeps) {
             });
           }
         }
+        return { ok: true as const };
+      }),
+      ringingReminders: authed.threads.ringingReminders.handler(async ({ context }) =>
+        listRingingReminders(deps.prisma, context.actor),
+      ),
+      settleReminder: authed.threads.settleReminder.handler(async ({ context, input }) => {
+        const target = await resolveThreadTarget(deps.prisma, context.actor, input);
+        if (target.kind !== "bot") throw new IsolationError();
+        // Already settled elsewhere is fine: the other device got there first.
+        await advanceReminderMessage(deps, {
+          threadId: target.threadId,
+          reminderId: input.reminderId,
+          event: input.action,
+        });
         return { ok: true as const };
       }),
       ringingCalls: callsEnabled.threads.ringingCalls.handler(async ({ context }) =>
@@ -3181,6 +3294,17 @@ export function createRouter(deps: RouterDeps) {
             },
           ),
         };
+      }),
+      screenFrame: authed.computer.screenFrame.handler(async ({ context, input }) => {
+        const bot = await repos.getBot(context.actor, input.botId);
+        if (bot.computer?.kind !== "desktop" || !deps.sandbox.screenFrame) {
+          throw new ORPCError("NOT_FOUND", { message: "This computer has no host screen." });
+        }
+        const frame = await deps.sandbox.screenFrame(
+          toComputerRef(bot.computer),
+          computerContext(context.actor, bot.id, "screen.frame"),
+        );
+        return { imageBase64: Buffer.from(frame.image).toString("base64") };
       }),
       screenUrl: authed.computer.screenUrl.handler(async ({ context, input }) => {
         let bot = await repos.getBot(context.actor, input.botId);
@@ -6100,6 +6224,42 @@ export function createRouter(deps: RouterDeps) {
         runs: await listSpaceRuns(deps.prisma, context.actor, input.filter),
       })),
     },
+    claudeCode: {
+      account: authed.claudeCode.account.handler(async ({ context }) =>
+        loadClaudeCodeAccount(deps.prisma, context.actor.userId),
+      ),
+      finishSignIn: authed.claudeCode.finishSignIn.handler(async ({ context, input }) => {
+        const result = await deps.oauthLogins.finish(input.loginId, context.actor, (login) => {
+          if (login.provider !== ANTHROPIC_OAUTH_PROVIDER) {
+            throw new ORPCError("BAD_REQUEST", { message: "Sign in with Claude." });
+          }
+          return saveClaudeCodeSecret(
+            { prisma: deps.prisma, secretStore: deps.secrets },
+            context.actor,
+            { kind: "oauth", credential: login.credential },
+            login.signal,
+          );
+        });
+        if (result.status === "pending") {
+          throw new ORPCError("CONFLICT", { message: "Sign-in has not finished yet." });
+        }
+        if (result.status === "error") {
+          throw new ORPCError("NOT_FOUND", { message: result.error });
+        }
+        return result.value;
+      }),
+      connectKey: authed.claudeCode.connectKey.handler(async ({ context, input, signal }) =>
+        saveClaudeCodeSecret(
+          { prisma: deps.prisma, secretStore: deps.secrets },
+          context.actor,
+          { kind: "api_key", key: input.apiKey },
+          signal,
+        ),
+      ),
+      disconnect: authed.claudeCode.disconnect.handler(async ({ context }) =>
+        disconnectClaudeCode(deps.prisma, context.actor.userId),
+      ),
+    },
     calls: {
       settings: callsEnabled.calls.settings.handler(async ({ context }) =>
         loadCallSettings(deps, context.actor),
@@ -6522,7 +6682,17 @@ async function computerStatus(
     botId,
     botName: bot.name,
   });
-  return toComputerStatus(botId, bot.computer, busyBotName);
+  const status = toComputerStatus(botId, bot.computer, busyBotName);
+  if (!deps.sandbox.virtualDesktops) return status;
+  const settings =
+    deps.env.sandboxProvider === "desktop"
+      ? null
+      : await deps.prisma.deploymentSettings.findUnique({
+          where: { id: "default" },
+          select: { computerHost: true },
+        });
+  const hostOn = deps.env.sandboxProvider === "desktop" || settings?.computerHost === "this-mac";
+  return hostOn ? { ...status, virtualDesktops: true } : status;
 }
 
 /** Hand the user's screen control for this bot back, continuing any run waiting on it. */

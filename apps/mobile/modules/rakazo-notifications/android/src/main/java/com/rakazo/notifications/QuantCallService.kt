@@ -38,10 +38,24 @@ private data class RingingCall(
   val expiresAt: Long,
 )
 
+private data class RingingReminder(
+  val botId: String,
+  val botName: String,
+  val botColor: String,
+  val reminderId: String,
+  val text: String,
+  val details: String,
+  val ringsAt: Long,
+) {
+  /** A snoozed reminder that rings again is a new ring. */
+  val ringKey get() = "$reminderId@$ringsAt"
+}
+
 /**
- * Keeps a quiet connection to the user's Quant server so a bot's call rings like a phone call
- * with the app closed or the screen off. Interim: without a push relay this is the only way to
- * wake a sleeping Android phone, at the cost of an always-on service notification.
+ * Keeps a quiet connection to the user's Quant server so a bot's call rings like a phone call,
+ * and a bot's reminder wakes the phone like an alarm, with the app closed or the screen off.
+ * Interim: without a push relay this is the only way to wake a sleeping Android phone, at the
+ * cost of an always-on service notification.
  */
 class QuantCallService : Service() {
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -49,6 +63,8 @@ class QuantCallService : Service() {
   private var pollJob: Job? = null
   /** Calls ringing on this phone now, by call id. */
   private val ringing = mutableMapOf<String, RingingCall>()
+  /** Reminders ringing on this phone now, by ring. */
+  private val reminders = mutableMapOf<String, RingingReminder>()
 
   override fun onCreate() {
     super.onCreate()
@@ -57,9 +73,15 @@ class QuantCallService : Service() {
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    val storage = NotificationStorage(this)
+    val title = when {
+      storage.callsEnabled && storage.remindersEnabled -> R.string.quant_calls_and_reminders_ready
+      storage.callsEnabled -> R.string.quant_calls_ready
+      else -> R.string.quant_reminders_ready
+    }
     val ready = builder(CHANNEL_SERVICE)
       .setSmallIcon(R.drawable.ic_rakazo_notification)
-      .setContentTitle(getString(R.string.quant_calls_ready))
+      .setContentTitle(getString(title))
       .setContentIntent(openApp())
       .setOngoing(true)
       .setCategory(Notification.CATEGORY_SERVICE)
@@ -81,6 +103,10 @@ class QuantCallService : Service() {
       for (callId in ringing.keys) manager.cancel(callNotificationId(callId))
       ringing.clear()
     }
+    synchronized(reminders) {
+      for (reminder in reminders.values) manager.cancel(reminderNotificationId(reminder.reminderId))
+      reminders.clear()
+    }
     super.onDestroy()
   }
 
@@ -89,7 +115,7 @@ class QuantCallService : Service() {
     while (scope.isActive) {
       val storage = NotificationStorage(this)
       if (
-        !storage.callsEnabled ||
+        !(storage.callsEnabled || storage.remindersEnabled) ||
         storage.endpoint.isBlank() ||
         storage.token.isBlank() ||
         !isAllowedNotificationEndpoint(storage.endpoint)
@@ -98,13 +124,22 @@ class QuantCallService : Service() {
         return
       }
       try {
-        val calls = ringingCalls(storage)
-        update(calls)
+        if (storage.callsEnabled) {
+          // Calls are off on this server: reminders still ring.
+          val calls = offWhenMissing({ storage.callsEnabled = false }) { ringingCalls(storage) }
+          update(calls)
+        }
+        if (storage.remindersEnabled) {
+          // A server from before reminders: calls still ring.
+          val due = offWhenMissing({ storage.remindersEnabled = false }) { ringingReminders(storage) }
+          updateReminders(due)
+        }
         backoff = POLL_INTERVAL_MS
       } catch (error: ApiException) {
-        // Signed out, or calls are off on this server: nothing will ring until the app says so.
-        if (error.status == 401 || error.status == 404) {
+        // Signed out: nothing will ring until the app says so.
+        if (error.status == 401) {
           storage.callsEnabled = false
+          storage.remindersEnabled = false
           stopSelf()
           return
         }
@@ -139,6 +174,114 @@ class QuantCallService : Service() {
           ?: (System.currentTimeMillis() + DEFAULT_RING_MS),
       )
     }.filter { it.botId.isNotBlank() && it.callId.isNotBlank() }
+  }
+
+  /** An endpoint this server does not have rings nothing, and is not asked again. */
+  private fun <T> offWhenMissing(off: () -> Unit, load: () -> List<T>): List<T> =
+    try {
+      load()
+    } catch (error: ApiException) {
+      if (error.status != 404) throw error
+      off()
+      emptyList()
+    }
+
+  private fun ringingReminders(storage: NotificationStorage): List<RingingReminder> {
+    val body = rpcBody(
+      storage.endpoint,
+      storage.token,
+      storage.spaceId,
+      "threads/ringingReminders",
+      JSONObject(),
+      storage.gateAuth,
+    )
+    val rows = JSONObject(body).optJSONArray("json") ?: throw IOException("Invalid server response")
+    return List(rows.length()) { index ->
+      val row = rows.optJSONObject(index) ?: throw IOException("Invalid server response")
+      RingingReminder(
+        botId = row.optString("botId"),
+        botName = row.optString("botName"),
+        botColor = row.optString("botColor"),
+        reminderId = row.optString("reminderId"),
+        text = row.optString("text"),
+        details = row.optString("details"),
+        // Stable when unreadable, so the same ring is not rung again on every poll.
+        ringsAt = parseInstant(row.optString("ringsAt")) ?: 0L,
+      )
+    }.filter { it.botId.isNotBlank() && it.reminderId.isNotBlank() && it.text.isNotBlank() }
+  }
+
+  private fun updateReminders(due: List<RingingReminder>) = synchronized(reminders) {
+    val current = due.associateBy { it.ringKey }
+    // Done or snoozed on another device, or rang out: this phone goes quiet.
+    for ((key, reminder) in reminders) {
+      if (key !in current) manager.cancel(reminderNotificationId(reminder.reminderId))
+    }
+    for ((key, reminder) in current) if (key !in reminders) ringReminder(reminder)
+    reminders.clear()
+    reminders.putAll(current)
+  }
+
+  private fun ringReminder(reminder: RingingReminder) {
+    val storage = NotificationStorage(this)
+    val screen = reminderScreen(reminder, storage.spaceId)
+    val icon = Icon.createWithResource(this, R.drawable.ic_rakazo_notification)
+    val snooze = reminderAction(reminder, ACTION_REMINDER_SNOOZE, 0)
+    val done = reminderAction(reminder, ACTION_REMINDER_DONE, 1)
+    val body = reminder.details.ifBlank { reminder.botName }
+    val builder = builder(CHANNEL_REMINDERS)
+      .setSmallIcon(R.drawable.ic_rakazo_notification)
+      .setContentTitle(reminder.text)
+      .setContentText(body)
+      .setStyle(Notification.BigTextStyle().bigText(body))
+      .setCategory(Notification.CATEGORY_ALARM)
+      .setContentIntent(screen)
+      .setFullScreenIntent(screen, true)
+      .setOngoing(true)
+      .setAutoCancel(false)
+      .addAction(Notification.Action.Builder(icon, getString(R.string.quant_reminders_snooze), snooze).build())
+      .addAction(Notification.Action.Builder(icon, getString(R.string.quant_reminders_done), done).build())
+    if (reminder.details.isNotBlank()) builder.setSubText(reminder.botName)
+    if (Build.VERSION.SDK_INT >= 26) {
+      val endsAt = reminder.ringsAt + REMINDER_RING_MS
+      builder.setTimeoutAfter((endsAt - System.currentTimeMillis()).coerceAtLeast(1_000L))
+    } else {
+      @Suppress("DEPRECATION")
+      builder.setPriority(Notification.PRIORITY_MAX)
+    }
+    val notification = builder.build()
+    // Keep sounding until the user answers or the ring runs out, like an alarm.
+    notification.flags = notification.flags or Notification.FLAG_INSISTENT
+    manager.notify(reminderNotificationId(reminder.reminderId), notification)
+  }
+
+  private fun reminderAction(reminder: RingingReminder, action: String, offset: Int): PendingIntent =
+    PendingIntent.getBroadcast(
+      this,
+      reminderNotificationId(reminder.reminderId) + offset,
+      Intent(this, QuantReminderActionReceiver::class.java)
+        .setAction(action)
+        .putExtra(EXTRA_BOT_ID, reminder.botId)
+        .putExtra(EXTRA_REMINDER_ID, reminder.reminderId),
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+  /** The app's full-screen reminder, over the lock screen. */
+  private fun reminderScreen(reminder: RingingReminder, spaceId: String): PendingIntent {
+    val link = "rakazo://reminder?botId=${Uri.encode(reminder.botId)}" +
+      "&name=${Uri.encode(reminder.botName)}&color=${Uri.encode(reminder.botColor)}" +
+      "&reminderId=${Uri.encode(reminder.reminderId)}" +
+      "&text=${Uri.encode(reminder.text)}&details=${Uri.encode(reminder.details)}" +
+      "&spaceId=${Uri.encode(spaceId)}"
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+      .setPackage(packageName)
+      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+    return PendingIntent.getActivity(
+      this,
+      reminderNotificationId(reminder.reminderId),
+      intent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
   }
 
   private fun update(calls: List<RingingCall>) = synchronized(ringing) {
@@ -235,17 +378,36 @@ class QuantCallService : Service() {
       vibrationPattern = longArrayOf(0, 800, 600, 800)
       lockscreenVisibility = Notification.VISIBILITY_PUBLIC
     }
+    val reminderChannel = NotificationChannel(
+      CHANNEL_REMINDERS,
+      getString(R.string.quant_reminders_channel),
+      NotificationManager.IMPORTANCE_HIGH,
+    ).apply {
+      setSound(
+        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+        AudioAttributes.Builder()
+          .setUsage(AudioAttributes.USAGE_ALARM)
+          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+          .build(),
+      )
+      enableVibration(true)
+      vibrationPattern = longArrayOf(0, 500, 500, 500)
+      lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+    }
     val service = NotificationChannel(
       CHANNEL_SERVICE,
       getString(R.string.quant_calls_channel_service),
       NotificationManager.IMPORTANCE_MIN,
     ).apply { setShowBadge(false) }
-    manager.createNotificationChannels(listOf(incoming, service))
+    manager.createNotificationChannels(listOf(incoming, reminderChannel, service))
   }
 
   companion object {
     private const val CHANNEL_INCOMING = "quant_incoming_calls"
     private const val CHANNEL_SERVICE = "quant_calls_service"
+    private const val CHANNEL_REMINDERS = "quant_reminders"
+    /** How long one ring of a reminder lasts; the server's REMINDER_RING_MS. */
+    private const val REMINDER_RING_MS = 60_000L
     private const val SERVICE_NOTIFICATION_ID = 1201
     private const val POLL_INTERVAL_MS = 3_000L
     private const val MAX_BACKOFF_MS = 30_000L
@@ -253,8 +415,14 @@ class QuantCallService : Service() {
     internal const val ACTION_DECLINE = "com.rakazo.notifications.DECLINE_CALL"
     internal const val EXTRA_BOT_ID = "botId"
     internal const val EXTRA_CALL_ID = "callId"
+    internal const val ACTION_REMINDER_DONE = "com.rakazo.notifications.REMINDER_DONE"
+    internal const val ACTION_REMINDER_SNOOZE = "com.rakazo.notifications.REMINDER_SNOOZE"
+    internal const val EXTRA_REMINDER_ID = "reminderId"
 
     internal fun callNotificationId(callId: String) = 0x5100000 + (callId.hashCode() and 0xFFFFF) * 2
+
+    internal fun reminderNotificationId(reminderId: String) =
+      0x5300000 + (reminderId.hashCode() and 0xFFFFF) * 2
 
     fun start(context: Context) {
       val intent = Intent(context, QuantCallService::class.java)
@@ -268,6 +436,11 @@ class QuantCallService : Service() {
     /** The app answered or declined: stop ringing now instead of at the next poll. */
     fun dismiss(context: Context, callId: String) {
       context.getSystemService(NotificationManager::class.java).cancel(callNotificationId(callId))
+    }
+
+    /** The app marked the reminder done or snoozed it: stop ringing now. */
+    fun dismissReminder(context: Context, reminderId: String) {
+      context.getSystemService(NotificationManager::class.java).cancel(reminderNotificationId(reminderId))
     }
   }
 }
@@ -298,7 +471,39 @@ class QuantCallActionReceiver : BroadcastReceiver() {
             storage.token,
             storage.spaceId,
             "threads/declineCall",
-            JSONObject().put("botId", botId).put("callId", callId),
+            JSONObject().put("botId", botId).put("callId", callId).put("outcome", "declined"),
+            storage.gateAuth,
+          )
+        }
+      } finally {
+        pending.finish()
+      }
+    }.start()
+  }
+}
+
+/** Marks a reminder done or snoozes it from the notification without opening the app. */
+class QuantReminderActionReceiver : BroadcastReceiver() {
+  override fun onReceive(context: Context, intent: Intent) {
+    val action = when (intent.action) {
+      QuantCallService.ACTION_REMINDER_DONE -> "done"
+      QuantCallService.ACTION_REMINDER_SNOOZE -> "snooze"
+      else -> return
+    }
+    val botId = intent.getStringExtra(QuantCallService.EXTRA_BOT_ID) ?: return
+    val reminderId = intent.getStringExtra(QuantCallService.EXTRA_REMINDER_ID) ?: return
+    QuantCallService.dismissReminder(context, reminderId)
+    val pending = goAsync()
+    Thread {
+      try {
+        val storage = NotificationStorage(context)
+        runCatching {
+          rpc(
+            storage.endpoint,
+            storage.token,
+            storage.spaceId,
+            "threads/settleReminder",
+            JSONObject().put("botId", botId).put("reminderId", reminderId).put("action", action),
             storage.gateAuth,
           )
         }
@@ -319,6 +524,8 @@ class QuantCallBootReceiver : BroadcastReceiver() {
       return
     }
     val storage = NotificationStorage(context)
-    if (storage.callsEnabled && storage.token.isNotBlank()) QuantCallService.start(context)
+    if ((storage.callsEnabled || storage.remindersEnabled) && storage.token.isNotBlank()) {
+      QuantCallService.start(context)
+    }
   }
 }

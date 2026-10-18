@@ -10,6 +10,7 @@ import {
   LONG_WORK_PROGRESS_GUIDANCE,
   mayOpenModelStream,
   NO_RESPONSE,
+  REACTION_REPLY_GUIDANCE,
   ROUTINE_SILENT_REPLY_GUIDANCE,
   runAllowsSilentEmpty,
   runIdentityInstruction,
@@ -19,6 +20,7 @@ import {
   stripNoResponseReply,
   subagentMarksUnread,
   TICKET_SILENT_REPLY_GUIDANCE,
+  WATCH_SILENT_REPLY_GUIDANCE,
 } from "./executor.js";
 import { finalBlocksAfterMidTurnProgress } from "./user-progress.js";
 
@@ -168,6 +170,31 @@ describe("completionMarksUnread", () => {
     expect(segments).toEqual([]);
     expect(text).toBe("");
     expect(completionMarksUnread("routine", text)).toBe(false);
+  });
+
+  it("lets a reaction-answered turn finish silently without marking unread", () => {
+    expect(runAllowsSilentEmpty("reaction")).toBe(true);
+    expect(runReplyGuidance("reaction")).toBe(REACTION_REPLY_GUIDANCE);
+    const segments = completionMessageSegments([], {
+      allowSilentEmpty: runAllowsSilentEmpty("reaction"),
+    });
+    expect(segments).toEqual([]);
+    expect(completionMarksUnread("reaction", "")).toBe(false);
+    expect(completionMarksUnread("reaction", "Moved it to tomorrow.")).toBe(true);
+  });
+
+  it("lets a watch wake stay silent until it has something to report", () => {
+    expect(runAllowsSilentEmpty("watch")).toBe(true);
+    expect(runPromotesMidTurnNarration("watch")).toBe(false);
+    expect(runReplyGuidance("watch")).toBe(WATCH_SILENT_REPLY_GUIDANCE);
+    expect(stripNoResponseReply(NO_RESPONSE, [{ kind: "text", text: NO_RESPONSE }])).toEqual({
+      assembled: "",
+      blocks: [],
+    });
+    expect(completionMarksUnread("watch", "")).toBe(false);
+    expect(completionMarksUnread("watch", "Builder opened the PR.")).toBe(true);
+    expect(subagentMarksUnread("watch", "completed")).toBe(false);
+    expect(subagentMarksUnread("watch", "failed")).toBe(true);
   });
 
   it("still invents done. for a user-triggered empty run", () => {

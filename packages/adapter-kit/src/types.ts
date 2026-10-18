@@ -1,4 +1,5 @@
 import type {
+  ActivityStatus,
   CacheCapabilities as ConnectionCacheCapabilities,
   ConnectionCatalogItem,
   SandboxKind,
@@ -574,6 +575,10 @@ export type AgentRuntimeEvent =
       text: string;
       /** Provider-generated tool status rather than assistant-authored narration. */
       activity?: true;
+      /** The tool an activity line is about, so clients can say what the bot is using. */
+      tool?: string;
+      /** What the activity line says, in the shared vocabulary clients translate. */
+      status?: ActivityStatus;
     }
   | { type: "tool"; name: string; args: Record<string, unknown>; executionId: string }
   | {
@@ -665,10 +670,14 @@ export interface BackgroundJobPayloads {
   "skill.teaching-expire": { skillId: string };
   /** The bot's call rang out: mark it missed if nobody answered. */
   "call.expire": { threadId: string; callId: string };
+  /** A reminder's ring ran out or its snooze ended: move it on. */
+  "reminder.tick": { threadId: string; reminderId: string };
   "history.compact": { threadId: string };
   "messaging.deliver": { runId?: string };
   /** Reconcile durable remote-agent intent; scope is loaded from the database. */
   "cloud_agent.poll": { agentId: string };
+  /** Run a command watch's check once; it re-enqueues itself until it passes or expires. */
+  "watch.check": { watchId: string };
 }
 
 export type BackgroundJobName = keyof BackgroundJobPayloads;

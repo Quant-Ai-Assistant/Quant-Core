@@ -1,5 +1,7 @@
 import * as z from "zod";
+import { ActivityStatusSchema } from "./activity.js";
 import { botSecretDestinationSchema } from "./bot-secrets.js";
+import { ClaudeCodeBlockSchema } from "./claude-code.js";
 import { Id } from "./ids.js";
 import { McpTransportSchema } from "./mcp.js";
 
@@ -176,12 +178,29 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     /** Connected time the user's client measured after answering. */
     durationSeconds: z.number().int().nonnegative().optional(),
   }),
+  z.object({
+    /**
+     * A reminder that rings the user's devices like an alarm until they mark it done. Snoozing
+     * or letting it ring out moves `ringsAt` on; after a few unanswered rings it is missed.
+     */
+    kind: z.literal("reminder"),
+    reminderId: z.string(),
+    text: z.string(),
+    details: z.string().optional(),
+    status: z.enum(["ringing", "snoozed", "done", "missed"]),
+    /** When it started ringing, or when a snoozed reminder rings again. */
+    ringsAt: z.string(),
+    /** Unanswered rings in a row, counting the current one; a snooze starts it over. */
+    rings: z.number().int().nonnegative(),
+  }),
   z.object({ kind: z.literal("meta"), text: z.string() }),
   z.object({
     kind: z.literal("progress"),
     text: z.string(),
     /** Provider-generated tool status rather than assistant-authored narration. */
     activity: z.literal(true).optional(),
+    /** What the activity line says, for clients to word in their own language. */
+    activityStatus: ActivityStatusSchema.optional(),
     pendingToolNames: z.array(z.string()).optional(),
   }),
   z.object({
@@ -216,6 +235,7 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     prUrl: z.string().optional(),
     latestRunId: z.string().optional(),
   }),
+  ClaudeCodeBlockSchema,
   z.object({
     kind: z.literal("skill_draft"),
     skillId: Id,
@@ -257,6 +277,16 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     mimeType: z.string(),
     name: z.string(),
     size: z.number().int().nonnegative(),
+  }),
+  z.object({
+    /** A recorded voice message. Its transcript, when there is one, is the message's text. */
+    kind: z.literal("voice"),
+    artifactId: Id,
+    mimeType: z.string(),
+    durationMs: z.number().int().nonnegative(),
+    /** Loudness per bar, 0 to 1, for drawing the message. */
+    waveform: z.array(z.number().min(0).max(1)).max(128),
+    transcribed: z.boolean(),
   }),
   z.object({
     kind: z.literal("handoff"),
@@ -382,6 +412,8 @@ export const ThreadMessageSchema = z.object({
   runId: Id.optional(),
   /** Set when the message was sent from a live voice call; groups one call's transcript. */
   callId: z.string().optional(),
+  /** The sender's key for a user message, so its device swaps its draft for it in place. */
+  clientNonce: z.string().optional(),
   createdAt: z.string(),
 });
 export type ThreadMessage = z.infer<typeof ThreadMessageSchema>;

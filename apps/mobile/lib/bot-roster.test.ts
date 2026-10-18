@@ -35,6 +35,7 @@ function bot(id = "bot-1"): Bot {
     teamChatAmbientEnabled: false,
     teamChatRules: "",
     disabledBuiltinTools: [],
+    claudeCode: { enabled: false, model: null, effort: null },
     webhookConfigured: false,
     spawnKey: null,
   };

@@ -1,19 +1,26 @@
 import { useLingui } from "@lingui/react/macro";
+import type { ActivityStatus } from "@rakazo/contracts";
+import { liveToolKind } from "@rakazo/core";
 import { BotAvatar, Button, cn, defaultBotAvatarValue } from "@rakazo/ui-web";
-import { Captions, ChevronDown, Mic, MicOff, PhoneOff, Settings } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Brain,
+  ChevronDown,
+  FileText,
+  Globe,
+  Mic,
+  MicOff,
+  Monitor,
+  PhoneOff,
+  SquareTerminal,
+  Wrench,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { activityIcon, activityLine } from "../../lib/activity-label";
 import type { CallState } from "../../lib/call-session";
-import {
-  endCall,
-  setCallMinimized,
-  toggleMute,
-  toggleTranscript,
-  useCallSession,
-} from "../../lib/call-session";
+import { endCall, setCallMinimized, toggleMute, useCallSession } from "../../lib/call-session";
 
-const BARS = [9, 15, 21, 15, 9];
-const TRANSCRIPT_LINES = 4;
 const EDITABLE = /^(?:input|textarea|select)$/i;
 
 export function callClock(seconds: number): string {
@@ -21,25 +28,54 @@ export function callClock(seconds: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-/** Whole seconds the call has been connected, ticking while it is. */
+/** Whole seconds the call has been connected, ticking while it is and frozen once it ends. */
 export function useCallElapsed(call: CallState | null): number {
   const connectedAt = call?.connectedAt ?? null;
+  const endedAt = call?.endedAt ?? null;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (connectedAt === null) return;
+    if (connectedAt === null || endedAt !== null) return;
     setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [connectedAt]);
-  return connectedAt === null ? 0 : Math.max(0, Math.floor((now - connectedAt) / 1000));
+  }, [connectedAt, endedAt]);
+  if (connectedAt === null) return 0;
+  return Math.max(0, Math.floor(((endedAt ?? now) - connectedAt) / 1000));
 }
 
-export function CallCard({ onSettings }: { onSettings: () => void }) {
+/** What the call's badge says for the tool the bot is using, with its icon. */
+export function useCallTool(
+  tool: string | null,
+  activity: ActivityStatus | null = null,
+): { label: string; Icon: LucideIcon } | null {
+  const { t } = useLingui();
+  if (!tool) return null;
+  if (activity) return { label: activityLine(activity), Icon: activityIcon(activity.kind) };
+  switch (liveToolKind(tool)) {
+    case "computer":
+      return { label: t`Working on the computer`, Icon: Monitor };
+    case "web":
+      return { label: t`Searching the web`, Icon: Globe };
+    case "page":
+      return { label: t`Opening a page`, Icon: Globe };
+    case "files":
+      return { label: t`Working with files`, Icon: FileText };
+    case "terminal":
+      return { label: t`Running a command`, Icon: SquareTerminal };
+    case "memory":
+      return { label: t`Remembering`, Icon: Brain };
+    default:
+      return { label: t`Using a tool`, Icon: Wrench };
+  }
+}
+
+export function CallCard({ onOpenComputer }: { onOpenComputer: (botId: string) => void }) {
   const { t } = useLingui();
   const call = useCallSession();
   const elapsed = useCallElapsed(call);
   const navigate = useNavigate();
   const { botId } = useParams();
+  const tool = useCallTool(call?.tool ?? null, call?.activity ?? null);
   const onCall = Boolean(call);
   useEffect(() => {
     if (!onCall) return;
@@ -54,24 +90,23 @@ export function CallCard({ onSettings }: { onSettings: () => void }) {
   }, [onCall]);
   if (!call || call.minimized) return null;
   const onBotScreen = botId === call.botId;
-  const ringing = call.phase === "ringing";
-  const activity =
-    call.phase === "speaking"
-      ? t({ message: "Speaking", context: "call status" })
-      : call.phase === "thinking"
-        ? t({ message: "Thinking", context: "call status" })
-        : call.muted
-          ? t({ message: "Muted", context: "call status" })
-          : t({ message: "Listening", context: "call status" });
-  const status = ringing ? t`Calling…` : `${callClock(elapsed)} · ${activity}`;
+  const ended = call.endedAt !== null;
+  const connected = call.connectedAt !== null;
+  // Like a phone call: "Connecting…" until the bot answers, then only the clock.
+  const status = ended
+    ? t`Call ended · ${callClock(elapsed)}`
+    : connected
+      ? callClock(elapsed)
+      : t({ message: "Connecting…", context: "call status" });
   return (
     <div
       data-testid="call-view"
+      data-call-state={ended ? "ended" : connected ? "connected" : "connecting"}
       role="dialog"
       aria-label={t`Call with ${call.botName}`}
       className="fixed inset-0 z-50 flex flex-col bg-background px-5 pt-[max(env(safe-area-inset-top),12px)] pb-[max(env(safe-area-inset-bottom),24px)] md:inset-auto md:end-4 md:top-16 md:w-[360px] md:rounded-[22px] md:border md:border-border md:bg-card md:px-4 md:pt-2 md:pb-5 md:shadow-lg"
     >
-      <div className="flex items-center gap-1">
+      <div className={cn("flex items-center gap-1", ended && "invisible")}>
         <Button
           variant="ghost"
           size="icon"
@@ -80,26 +115,6 @@ export function CallCard({ onSettings }: { onSettings: () => void }) {
           onClick={() => setCallMinimized(true)}
         >
           <ChevronDown />
-        </Button>
-        <span className="flex-1" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full text-muted-foreground"
-          aria-label={t`Transcript`}
-          aria-pressed={call.transcriptOpen}
-          onClick={toggleTranscript}
-        >
-          <Captions />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full text-muted-foreground"
-          aria-label={t`Settings`}
-          onClick={onSettings}
-        >
-          <Settings />
         </Button>
       </div>
 
@@ -110,12 +125,15 @@ export function CallCard({ onSettings }: { onSettings: () => void }) {
           onClick={() => {
             if (!onBotScreen) navigate(`/app/${call.botId}`);
           }}
-          className="relative grid size-32 place-items-center md:size-24"
+          className={cn(
+            "relative grid size-32 place-items-center md:size-24",
+            ended && "opacity-60",
+          )}
         >
-          {ringing ? (
+          {call.phase === "speaking" && !ended ? (
             <span
               aria-hidden="true"
-              className="absolute inset-0 animate-ping rounded-full border-2"
+              className="absolute -inset-2 animate-pulse rounded-full border-2 motion-reduce:animate-none"
               style={{ borderColor: defaultBotAvatarValue(call.botColor) }}
             />
           ) : null}
@@ -125,59 +143,34 @@ export function CallCard({ onSettings }: { onSettings: () => void }) {
           <span className="text-[22px] font-semibold text-foreground md:text-[19px]" dir="auto">
             {call.botName}
           </span>
-          <span className="text-[14px] tabular-nums text-muted-foreground" aria-live="polite">
+          <span className="text-[15px] tabular-nums text-muted-foreground" aria-live="polite">
             {status}
           </span>
         </div>
-        {!ringing ? (
-          <div className="flex h-7 items-center gap-[4px]" aria-hidden="true">
-            {BARS.map((height, index) => (
-              <span
-                key={`bar-${index + 1}`}
-                className={cn(
-                  "w-1 rounded-full",
-                  call.phase === "speaking"
-                    ? "animate-pulse bg-foreground"
-                    : "animate-pulse bg-muted-foreground/50",
-                )}
-                style={{
-                  height,
-                  animationDelay: `${index * 90}ms`,
-                  animationDuration: call.phase === "speaking" ? "600ms" : "1400ms",
-                }}
-              />
-            ))}
-          </div>
+        {tool && !ended ? (
+          <button
+            type="button"
+            data-testid="call-tool"
+            onClick={() => {
+              if (liveToolKind(call.tool ?? "") !== "computer") return;
+              setCallMinimized(true);
+              onOpenComputer(call.botId);
+            }}
+            className="inline-flex animate-in fade-in slide-in-from-bottom-1 items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-[12.5px] text-foreground motion-reduce:animate-none"
+          >
+            <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-foreground" />
+            <tool.Icon size={14} strokeWidth={1.8} aria-hidden />
+            {tool.label}
+          </button>
+        ) : null}
+        {call.error ? (
+          <p role="alert" className="text-center text-[13px] text-destructive" dir="auto">
+            {call.error}
+          </p>
         ) : null}
       </div>
 
-      {call.transcriptOpen ? (
-        <div className="mb-4 flex flex-col gap-1.5 border-t border-border pt-2.5 text-[13px] leading-[1.45]">
-          {call.exchanges.slice(-TRANSCRIPT_LINES).map((exchange, index) => (
-            <p
-              key={`${exchange.role}-${index + 1}-${exchange.text.slice(0, 24)}`}
-              className={cn(
-                "truncate",
-                exchange.role === "bot" ? "text-foreground" : "text-muted-foreground",
-              )}
-              dir="auto"
-            >
-              {exchange.text}
-            </p>
-          ))}
-          {call.caption || call.heard ? (
-            <p className="truncate text-muted-foreground/70" dir="auto">
-              {call.caption || call.heard}
-            </p>
-          ) : null}
-        </div>
-      ) : call.caption ? (
-        <p className="mb-4 text-center text-[13px] text-muted-foreground" dir="auto">
-          {call.caption}
-        </p>
-      ) : null}
-
-      <div className="flex items-center justify-center gap-3">
+      <div className={cn("flex items-center justify-center gap-3", ended && "invisible")}>
         <Button
           variant={call.muted ? "default" : "secondary"}
           size="icon-lg"
@@ -217,7 +210,10 @@ export function CallReturnBar() {
     >
       <span dir="auto">{t`Return to call with ${call.botName}`}</span>
       <span className="tabular-nums">
-        · {call.phase === "ringing" ? t`Calling…` : callClock(elapsed)}
+        ·{" "}
+        {call.connectedAt === null
+          ? t({ message: "Connecting…", context: "call status" })
+          : callClock(elapsed)}
       </span>
     </button>
   );

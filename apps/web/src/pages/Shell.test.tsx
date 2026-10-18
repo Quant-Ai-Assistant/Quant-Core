@@ -14,7 +14,6 @@ vi.mock("@lingui/react/macro", () => {
   return { useLingui: () => ({ t }), Trans: ({ children }: { children: ReactNode }) => children };
 });
 
-import { dictation } from "../lib/dictation";
 import { Composer } from "./Shell";
 
 let root: Root | null = null;
@@ -68,6 +67,7 @@ function renderComposer(
     onAttachmentPick: () => true,
     onRemoveAttachment: () => {},
     onSend,
+    onSendVoice: async () => true,
     onStop: async () => {},
     mentionTargets: [bob],
     agentSkills: [summarize],
@@ -342,41 +342,12 @@ describe("Composer", () => {
   });
 });
 
-it.each([false, true])(
-  "preserves dictation alongside a draft when sending fails (throws=%s)",
-  async (throws) => {
-    let finish!: (value: boolean) => void;
-    let fail!: (error: Error) => void;
-    const onSend = vi.fn(
-      () =>
-        new Promise<boolean>((resolve, reject) => {
-          finish = resolve;
-          fail = reject;
-        }),
-    );
-    let onFinal!: (text: string) => void;
-    const listen = vi.spyOn(dictation, "listen").mockImplementation(async (options) => {
-      onFinal = options.onFinal;
-    });
-    try {
-      const textarea = renderComposer(onSend, { phoneCallsEnabled: true });
-      const mic = container?.querySelector<HTMLButtonElement>('button[aria-label="Hold to talk"]');
-      expect(mic).not.toBeNull();
-      act(() => mic?.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 })));
-      act(() => onFinal("dictated words"));
-      type(textarea, "typed draft");
-      await act(async () => {
-        if (throws) fail(new Error("offline"));
-        else finish(false);
-      });
-      expect(textarea.value).toBe("typed draft dictated words");
-    } finally {
-      listen.mockRestore();
-    }
-  },
-);
+it("offers voice messages once the server enables calls", () => {
+  renderComposer(vi.fn().mockResolvedValue(true), { phoneCallsEnabled: true });
+  expect(container?.querySelector('button[aria-label="Record voice message"]')).not.toBeNull();
+});
 
-it("hides call dictation until the server enables it", () => {
+it("hides voice messages until the server enables them", () => {
   renderComposer(vi.fn().mockResolvedValue(true));
-  expect(container?.querySelector('button[aria-label="Hold to talk"]')).toBeNull();
+  expect(container?.querySelector('button[aria-label="Record voice message"]')).toBeNull();
 });

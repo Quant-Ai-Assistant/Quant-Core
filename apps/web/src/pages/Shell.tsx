@@ -1,6 +1,6 @@
 import { i18n } from "@lingui/core";
 import { t } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { ChatMarkdown, LinkifiedText } from "@rakazo/chat-ui/web";
 import type {
   AgentSkillCatalogEntry,
@@ -33,28 +33,35 @@ import {
   MESSAGE_REACTIONS,
   normalizeCreateBotProfile,
 } from "@rakazo/contracts";
-import type { ComposerMention, SlashActionId } from "@rakazo/core";
+import type { ComposerMention, MessageReactionSummary, SlashActionId } from "@rakazo/core";
 import {
+  type AppearState,
+  appearState,
+  attachmentExtensionForMimeType,
   attachmentsForThread,
   buildComposerMentionOptions,
   clampMentionHighlightIndex,
+  computerUseCount,
   cronFromPreset,
   formatMessageTime,
   groupVoiceChats,
   inferAttachmentMimeType,
   isActive,
+  isArriving,
   isPeerReceiptBlocks,
   isRunTerminalEvent,
   isToolActivityBlock,
   latestAnswerableAskMessageId,
   mentionChipKey,
   nestRosterByParent,
+  noteArrivals,
   plainTextFromMarkdown,
   projectMessageReactions,
   reorderBotTo,
   replyAttachment,
   resolveComposerSendPlan,
   resolveMentionPickerKey,
+  runShowsTyping,
   runThreadSubscription,
   SLASH_ACTIONS,
   searchHitThreadTarget,
@@ -90,8 +97,10 @@ import {
   Bell,
   Box,
   ChevronDown,
+  ChevronRight,
   CircleAlert,
   Clock,
+  Clock3,
   Copy,
   FolderOpen,
   Gauge,
@@ -138,6 +147,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArtifactFileCard } from "../components/ArtifactFileCard";
 import { AskCard } from "../components/AskCard";
 import { ActiveBotGlyph, CollaborationMarker } from "../components/ai/CollaborationMarker";
+import { ClaudeCodeCard } from "../components/ClaudeCodeCard";
 import { CloudAgentCard } from "../components/CloudAgentCard";
 import { ComputerMaintenanceActions } from "../components/ComputerMaintenanceActions";
 import {
@@ -154,8 +164,17 @@ import {
   useHoldToTalk,
 } from "../components/composer/HoldToTalk";
 import { ComputerWorkspace } from "../components/computer/ComputerWorkspace";
+import {
+  ComputerPlaceSwitch,
+  HostScreen,
+  useHostLabel,
+  useVirtualDesktopEngine,
+  VirtualDesktopSetup,
+} from "../components/computer/HostScreen";
 import { lazyOverlay } from "../components/ErrorBoundary";
 import { MessageHoverMetadata } from "../components/MessageHoverMetadata";
+import { ReminderCard } from "../components/reminder/ReminderCard";
+import { RingingReminder } from "../components/reminder/RingingReminder";
 import {
   LIVE_TOOL_STEP_WINDOW,
   StandaloneToolActivity,
@@ -254,6 +273,7 @@ import {
 } from "../lib/transcript-scroll";
 import { speaker } from "../lib/tts";
 import { errorText } from "../lib/user-error";
+import { transcriptionLanguage, type VoiceRecording } from "../lib/voice-recorder";
 import { ActivityList } from "./ActivityList";
 import type { ContextMenuPosition } from "./BotContextMenu";
 import { CreateGroupForm, GroupSettings, memberName } from "./GroupPanel";
@@ -292,6 +312,7 @@ import {
   McpApprovalCard,
 } from "./shell/message-cards";
 import { commitSpaceRename, sidebarGroupsForSpaces } from "./shell/space-sidebar";
+import { formatVoiceTime, VoiceMessageBubble, voiceTranscript } from "./shell/voice-message";
 import { WindowChrome } from "./WindowChrome";
 
 const BotContextMenu = lazyOverlay(() =>
@@ -405,6 +426,8 @@ function readCollapsedRosterParents(userId: string | null | undefined): Set<stri
 
 export function ShellPage() {
   const { t } = useLingui();
+  const hostLabel = useHostLabel();
+  const virtualDesktopEngine = useVirtualDesktopEngine();
   const { botId, groupId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1811,8 +1834,8 @@ export function ShellPage() {
   }, []);
   const currentRuns = activeThreadRuns(activeSnapshot);
   const answerableAskMessageId = latestAnswerableAskMessageId(activeSnapshot);
-  const workingRuns = currentRuns.filter((run) =>
-    ["running", "queued", "leased"].includes(run.status),
+  const workingRuns = currentRuns.filter(
+    (run) => ["running", "queued", "leased"].includes(run.status) && runShowsTyping(run.trigger),
   );
   const transcriptRunning = workingRuns.length > 0;
   const composerRunning = currentRuns.some((run) => isActive(run.status));
@@ -2035,7 +2058,7 @@ export function ShellPage() {
     [],
   );
   const reactToMessage = useCallback(
-    async (message: ThreadMessage, reaction: MessageReaction) => {
+    async (message: ThreadMessage, reaction: MessageReaction | null) => {
       const botId = activeBotId.current;
       const groupId = activeGroupId.current;
       if (!botId && !groupId) return;
@@ -2095,6 +2118,15 @@ export function ShellPage() {
     revokePendingAttachmentPreviews([attachment]);
     setPendingAttachments((current) => current.filter((item) => item.id !== attachment.id));
   }, []);
+  /** Sends on their way, drawn as the message they will become until it arrives. */
+  const [pendingSends, setPendingSends] = useState<PendingSend[]>([]);
+  const dropPendingSend = useCallback((clientNonce: string) => {
+    setPendingSends((current) => current.filter((send) => send.clientNonce !== clientNonce));
+  }, []);
+  const activePendingSends = useMemo(() => {
+    const threadKey = inGroup ? groupId : active?.id;
+    return pendingSends.filter((send) => send.threadKey === threadKey);
+  }, [pendingSends, inGroup, groupId, active?.id]);
   const sendMessage = useCallback(
     async (text: string, mentions: ComposerMention[], clientNonce: string) => {
       const initialBotTarget = activeBotId.current;
@@ -2124,6 +2156,17 @@ export function ShellPage() {
       sendingRef.current = true;
       setSending(true);
       setSendError(null);
+      if (plan.shouldSend && !reroutedToGroup && originThreadKey) {
+        setPendingSends((current) => [
+          ...current,
+          {
+            clientNonce,
+            threadKey: originThreadKey,
+            text: trimmed,
+            attachments: attachments.map((pending) => pending.file.name),
+          },
+        ]);
+      }
       const dropDelayedSetup = () => {
         // Only after successful engagement so a failed upload/send keeps the setup card.
         if (initialBotTarget && focusPromptBotIdRef.current === initialBotTarget) {
@@ -2229,10 +2272,16 @@ export function ShellPage() {
         }
         if (groupTarget && activeGroupId.current === groupTarget) setAttachmentNotice(null);
         if (botTarget && activeBotId.current === botTarget) setAttachmentNotice(null);
-        if (groupTarget) void refreshGroupThreadRef.current(groupTarget).catch(() => undefined);
-        else if (botTarget) void refreshThreadRef.current(botTarget).catch(() => undefined);
+        const refreshed = groupTarget
+          ? refreshGroupThreadRef.current(groupTarget)
+          : botTarget
+            ? refreshThreadRef.current(botTarget)
+            : Promise.resolve();
+        // The message normally replaces its bubble first; this only cleans up after it.
+        void refreshed.catch(() => undefined).finally(() => dropPendingSend(clientNonce));
         return true;
       } catch (error) {
+        dropPendingSend(clientNonce);
         if (reroutedToGroup && groupTarget) {
           setSendError(errorText(error, t`Failed to send message`));
         } else if (groupTarget && activeGroupId.current === groupTarget) {
@@ -2250,12 +2299,72 @@ export function ShellPage() {
       activeReplyTarget?.id,
       activeReplyQuote,
       clearReply,
+      dropPendingSend,
       flushPendingBrowserNotifications,
       navigate,
       pendingAttachments,
       sending,
       t,
     ],
+  );
+  /** Uploads a recording and sends it as a voice message; the server transcribes it. */
+  const sendVoiceMessage = useCallback(
+    async (recording: VoiceRecording, clientNonce: string) => {
+      const botTarget = activeBotId.current;
+      const groupTarget = activeGroupId.current;
+      if (!botTarget && !groupTarget) return false;
+      setSendError(null);
+      const threadKey = groupTarget ?? botTarget!;
+      setPendingSends((current) => [
+        ...current,
+        { clientNonce, threadKey, text: "", attachments: [], voiceMs: recording.durationMs },
+      ]);
+      try {
+        const contentBase64 = await readFileAsBase64(recording.blob);
+        const name = `voice${attachmentExtensionForMimeType(recording.mimeType)}`;
+        const artifact = await rpc.artifacts.create(
+          groupTarget
+            ? { groupId: groupTarget, name, mimeType: recording.mimeType, contentBase64 }
+            : { botId: botTarget!, name, mimeType: recording.mimeType, contentBase64 },
+        );
+        const voice = {
+          artifactId: artifact.id,
+          durationMs: Math.round(recording.durationMs),
+          waveform: recording.waveform,
+          transcript: recording.transcript,
+          language: transcriptionLanguage(),
+        };
+        const target = groupTarget ? { groupId: groupTarget } : { botId: botTarget! };
+        const sent = await rpc.threads.send({
+          ...target,
+          clientNonce,
+          voice,
+          replyToMessageId: activeReplyTarget?.id,
+          replyQuote: activeReplyQuote ?? undefined,
+        });
+        clearReply();
+        if (botTarget && activeBotId.current === botTarget) {
+          updateSnapshot((current) =>
+            applyThreadSendReceipt(
+              current,
+              { botId: botTarget, runId: sent.runId, taskId: sent.taskId },
+              terminalRunReceipts.current,
+            ),
+          );
+        }
+        void refreshBots().catch(() => undefined);
+        const refreshed = groupTarget
+          ? refreshGroupThreadRef.current(groupTarget)
+          : refreshThreadRef.current(botTarget!);
+        void refreshed.catch(() => undefined).finally(() => dropPendingSend(clientNonce));
+        return true;
+      } catch (error) {
+        dropPendingSend(clientNonce);
+        setSendError(errorText(error, t`Failed to send message`));
+        return false;
+      }
+    },
+    [activeReplyTarget?.id, activeReplyQuote, clearReply, dropPendingSend, t],
   );
   const stopRun = useCallback(async () => {
     if (sending) return;
@@ -3693,6 +3802,7 @@ export function ShellPage() {
         ) : (
           <Transcript
             key={activeSnapshot?.threadId}
+            pendingSends={activePendingSends}
             scrollRef={messageScroll}
             scrollRequest={scrollRequest}
             onScrollRequestHandled={clearScrollRequest}
@@ -3757,7 +3867,8 @@ export function ShellPage() {
             onSend={sendMessage}
             onStop={stopRun}
             phoneCallsEnabled={bootstrapMe?.phoneCallsEnabled === true}
-            dictationTranscribe={voiceStatus ? Boolean(voiceStatus.transcribe) : undefined}
+            browserTranscript={voiceStatus ? !voiceStatus.voiceMessages : undefined}
+            onSendVoice={sendVoiceMessage}
             artifactTarget={transcriptArtifactTarget}
             replyTarget={activeReplyTarget}
             replyQuote={activeReplyQuote}
@@ -3783,11 +3894,12 @@ export function ShellPage() {
         ) : null}
       </main>
 
-      <CallCard onSettings={() => openSettings("calls")} />
+      <CallCard onOpenComputer={onOpenComputer} />
       <IncomingCall
         bots={callsAvailable ? bots : []}
         onAnswered={(botId) => navigate(`/app/${botId}`)}
       />
+      <RingingReminder bots={bots} />
 
       <ResizableSidePanel
         botsSidebarCollapsed={botsSidebarCollapsed}
@@ -3801,15 +3913,28 @@ export function ShellPage() {
             panel !== "create-group" &&
             panel !== "group-settings" ? (
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-[13.5px] text-muted-foreground">
-                  {panel === "settings" ? (
-                    <Trans>Settings</Trans>
-                  ) : active ? (
-                    (computer?.state ?? active.status)
-                  ) : (
-                    <Trans>Group</Trans>
-                  )}
-                </span>
+                {panel === "computer" && active && computer?.virtualDesktops ? (
+                  <ComputerPlaceSwitch
+                    botId={active.id}
+                    mode={computer.mode}
+                    onSwitched={async () => {
+                      await refreshThread(active.id);
+                      await refreshBots().catch(() => undefined);
+                    }}
+                  />
+                ) : (
+                  <span className="text-[13.5px] text-muted-foreground">
+                    {panel === "settings" ? (
+                      <Trans>Settings</Trans>
+                    ) : panel === "computer" && computer?.kind === "desktop" ? (
+                      hostLabel
+                    ) : active ? (
+                      (computer?.state ?? active.status)
+                    ) : (
+                      <Trans>Group</Trans>
+                    )}
+                  </span>
+                )}
                 <div className="flex gap-1">
                   {active &&
                   panel === "computer" &&
@@ -3857,8 +3982,10 @@ export function ShellPage() {
                     <div className="grid h-full place-items-center text-sm text-muted-foreground/80">
                       <Trans>Open in full window</Trans>
                     </div>
+                  ) : computer?.mode === "dedicated" && virtualDesktopEngine ? (
+                    <VirtualDesktopSetup {...virtualDesktopEngine} />
                   ) : computer?.kind === "desktop" ? (
-                    <DesktopKindEmptyState className="grid h-full place-items-center px-6 text-center text-sm text-muted-foreground/80" />
+                    <HostScreen botId={active.id} noScreen={<DesktopKindEmptyState />} />
                   ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
                     <iframe
                       title={t`Bot screen preview`}
@@ -4793,7 +4920,7 @@ export function ShellPage() {
                 }
               >
                 {computer?.kind === "desktop" ? (
-                  <DesktopKindEmptyState className="grid h-full place-items-center px-8 text-center text-sm text-muted-foreground/80" />
+                  <HostScreen botId={computerBot.id} noScreen={<DesktopKindEmptyState />} />
                 ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
                   <>
                     <iframe
@@ -4838,6 +4965,7 @@ export function ShellPage() {
 }
 
 const Transcript = memo(function Transcript({
+  pendingSends,
   scrollRef,
   scrollRequest,
   onScrollRequestHandled,
@@ -4868,6 +4996,7 @@ const Transcript = memo(function Transcript({
   onSpeak,
   onOpenComputer,
 }: {
+  pendingSends: PendingSend[];
   scrollRef: RefObject<HTMLDivElement | null>;
   scrollRequest: { messageId: string; nonce: number } | null;
   onScrollRequestHandled: () => void;
@@ -4886,7 +5015,7 @@ const Transcript = memo(function Transcript({
   onAnswer: (message: ThreadMessage, text: string, username?: string) => Promise<void>;
   onReply: (message: ThreadMessage) => void;
   onQuote: (message: ThreadMessage, quote: string) => void;
-  onReact: (message: ThreadMessage, reaction: MessageReaction) => Promise<void>;
+  onReact: (message: ThreadMessage, reaction: MessageReaction | null) => Promise<void>;
   onJumpToMessage: (messageId: string) => void;
   onOpenPeerMessages: (peer: { peerBotId: string; peerBotName: string }) => void;
   memberName?: (botId: string | undefined) => string | undefined;
@@ -4911,6 +5040,22 @@ const Transcript = memo(function Transcript({
     [messages],
   );
   const reactionView = useMemo(() => projectMessageReactions(messages), [messages]);
+  // A send gives way in the same frame its message arrives, so it is never shown twice.
+  const waitingSends = pendingSends.filter(
+    (send) => !messages.some((message) => message.clientNonce === send.clientNonce),
+  );
+  const arrivals = useRef<{ messages: ThreadMessage[]; state: AppearState } | null>(null);
+  if (!arrivals.current) {
+    arrivals.current = { messages, state: appearState() };
+    noteArrivals(arrivals.current.state, messages, { first: true, now: Date.now() });
+  } else if (arrivals.current.messages !== messages) {
+    arrivals.current.messages = messages;
+    noteArrivals(arrivals.current.state, messages, {
+      first: arrivals.current.state.seen.size === 0,
+      now: Date.now(),
+    });
+  }
+  const arrivalState = arrivals.current.state;
   const separatorIds = timeSeparatorIds(
     reactionView.visibleMessages.filter((message) =>
       messageHasVisibleBlocks(message.blocks, showToolActivity),
@@ -5084,6 +5229,17 @@ const Transcript = memo(function Transcript({
     if (following.current) snapToEnd();
   }, [messages, running, snapToEnd]);
 
+  // Your own send always brings the thread to its end, where the message is rising in.
+  const waitingCount = waitingSends.length;
+  const previousWaiting = useRef(waitingCount);
+  useLayoutEffect(() => {
+    if (waitingCount > previousWaiting.current) {
+      following.current = true;
+      snapToEnd();
+    }
+    previousWaiting.current = waitingCount;
+  }, [waitingCount, snapToEnd]);
+
   useLayoutEffect(() => {
     const button = jumpButtonRef.current;
     if (atEnd && button && document.activeElement === button) {
@@ -5200,7 +5356,10 @@ const Transcript = memo(function Transcript({
               ) : null}
               <div
                 data-message-id={message.id}
-                className={peerReceipt ? "relative py-0.5" : "group/message relative hover:z-20"}
+                className={cn(
+                  peerReceipt ? "relative py-0.5" : "group/message relative hover:z-20",
+                  isArriving(arrivalState, message.id, Date.now()) && ARRIVE_CLASS,
+                )}
               >
                 <div
                   className={
@@ -5258,10 +5417,17 @@ const Transcript = memo(function Transcript({
                         side={message.role === "user" ? "start" : "end"}
                         onReply={onReply}
                         onReact={onReact}
+                        myReaction={messageReactions?.find((reaction) => reaction.mine)?.emoji}
                       />
                     )}
                   </div>
                 </div>
+                {message.role === "bot" ? (
+                  <ComputerUseBadge
+                    message={message}
+                    onOpen={() => onOpenComputer(message.botId)}
+                  />
+                ) : null}
                 {!peerReceipt && !message.id.startsWith("progress:") ? (
                   <time
                     dateTime={message.createdAt}
@@ -5286,28 +5452,20 @@ const Transcript = memo(function Transcript({
                   </time>
                 ) : null}
                 {!peerReceipt && messageReactions ? (
-                  <div
-                    data-testid="message-reactions"
-                    className={cn(
-                      "mt-1 flex flex-wrap gap-1",
-                      message.role === "user" && "justify-end",
-                    )}
-                  >
-                    {[...messageReactions].map(([emoji, count]) => (
-                      <span
-                        key={emoji}
-                        className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs"
-                      >
-                        {emoji}
-                        {count > 1 ? ` ${count}` : ""}
-                      </span>
-                    ))}
-                  </div>
+                  <MessageReactionChips
+                    message={message}
+                    reactions={messageReactions}
+                    peerBot={peerBot}
+                    onReact={onReact}
+                  />
                 ) : null}
               </div>
             </Fragment>
           );
         })}
+        {waitingSends.map((send) => (
+          <PendingSendBubble key={send.clientNonce} send={send} />
+        ))}
         {running &&
         !messages.some(
           (message) =>
@@ -5440,7 +5598,8 @@ export const Composer = memo(function Composer({
   onSend,
   onStop,
   phoneCallsEnabled,
-  dictationTranscribe,
+  browserTranscript,
+  onSendVoice,
   replyTarget,
   replyQuote,
   replyTargetName,
@@ -5467,8 +5626,9 @@ export const Composer = memo(function Composer({
   onSend: (text: string, mentions: ComposerMention[], clientNonce: string) => Promise<boolean>;
   onStop: () => Promise<void>;
   phoneCallsEnabled?: boolean;
-  /** Hold-to-talk falls back to the voice provider's transcription; undefined while unknown. */
-  dictationTranscribe?: boolean;
+  /** The server cannot transcribe voice messages, so the browser's own words go along. */
+  browserTranscript?: boolean;
+  onSendVoice: (recording: VoiceRecording, clientNonce: string) => Promise<boolean>;
   artifactTarget: ArtifactTarget;
   replyTarget?: ThreadMessage | null;
   replyQuote?: string | null;
@@ -5483,16 +5643,9 @@ export const Composer = memo(function Composer({
   const [draft, setDraft] = useState("");
   const onCall = useCallSession() !== null;
   const talk = useHoldToTalk({
-    transcribe: dictationTranscribe,
+    browserTranscript,
     disabled: disabled || onCall || !phoneCallsEnabled,
-    onText: (text) => {
-      // A refused send keeps the words: they land in the field to edit or retry.
-      void onSend(text, [], newClientNonce())
-        .then((accepted) => {
-          if (accepted === false) setDraft((current) => (current ? `${current} ${text}` : text));
-        })
-        .catch(() => setDraft((current) => (current ? `${current} ${text}` : text)));
-    },
+    onRecording: (recording) => void onSendVoice(recording, newClientNonce()),
   });
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionHighlightIndex, setMentionHighlightIndex] = useState(0);
@@ -6305,6 +6458,71 @@ export const Composer = memo(function Composer({
 
 type ComposerLayout = { barHeight: number; fieldX: number; fieldY: number };
 
+/** Says a reply used the bot's computer, and opens its screen. Absent when it did not. */
+function ComputerUseBadge({ message, onOpen }: { message: ThreadMessage; onOpen: () => void }) {
+  const { t } = useLingui();
+  const count = computerUseCount(message.blocks);
+  if (count === 0) return null;
+  const live = message.id.startsWith("progress:");
+  return (
+    <button
+      type="button"
+      data-testid="computer-use-badge"
+      onClick={onOpen}
+      className={cn(
+        "mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[12px] transition-colors hover:text-foreground",
+        live ? "text-foreground" : "text-muted-foreground",
+      )}
+    >
+      {live ? (
+        <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-foreground" />
+      ) : (
+        <Monitor size={13} strokeWidth={1.8} aria-hidden />
+      )}
+      {live ? (
+        t`Working on the computer`
+      ) : (
+        <Plural value={count} one="Computer · # action" other="Computer · # actions" />
+      )}
+      <ChevronRight size={12} strokeWidth={1.8} aria-hidden />
+    </button>
+  );
+}
+
+/** A new message rises from the composer, as in Telegram; reduced motion keeps it still. */
+const ARRIVE_CLASS =
+  "animate-in fade-in slide-in-from-bottom-3 duration-200 ease-out motion-reduce:animate-none";
+
+/** A send on its way: drawn as the user's message until the real one replaces it. */
+type PendingSend = {
+  clientNonce: string;
+  threadKey: string;
+  text: string;
+  attachments: string[];
+  voiceMs?: number;
+};
+
+function PendingSendBubble({ send }: { send: PendingSend }) {
+  const { t } = useLingui();
+  return (
+    <div data-testid="pending-send" className={cn("flex justify-end", ARRIVE_CLASS)}>
+      <div className="flex max-w-[min(84%,calc(100%_-_8rem))] items-end gap-2 rounded-[20px] bg-chat-user px-[18px] py-3 text-[15.5px] leading-[1.45] text-chat-user-foreground [@media(hover:none)]:max-w-[84%]">
+        <span className="min-w-0 whitespace-pre-wrap wrap-anywhere" dir="auto">
+          {send.voiceMs !== undefined
+            ? `${t`Voice message`} · ${formatVoiceTime(send.voiceMs)}`
+            : [send.text, ...send.attachments].filter(Boolean).join("\n")}
+        </span>
+        <Clock3
+          size={12}
+          strokeWidth={2}
+          aria-label={t`Sending…`}
+          className="mb-1 shrink-0 opacity-60"
+        />
+      </div>
+    </div>
+  );
+}
+
 /** Screen coordinates; the bar grows upward from its bottom edge. */
 function readComposerLayout(
   bar: HTMLElement | null,
@@ -6437,16 +6655,80 @@ function formatRosterTime(isoDate?: string | null): string {
   }
 }
 
+function MessageReactionChips({
+  message,
+  reactions,
+  peerBot,
+  onReact,
+}: {
+  message: ThreadMessage;
+  reactions: MessageReactionSummary[];
+  peerBot: (botId: string) => { name?: string; color: string } | undefined;
+  onReact: (message: ThreadMessage, reaction: MessageReaction | null) => Promise<void>;
+}) {
+  const { t } = useLingui();
+  return (
+    <div
+      data-testid="message-reactions"
+      className={cn("mt-1 flex flex-wrap gap-1", message.role === "user" && "justify-end")}
+    >
+      {reactions.map(({ emoji, count, mine, botIds }) => {
+        const botId = botIds[0];
+        const bot = botId ? peerBot(botId) : undefined;
+        const content = (
+          <>
+            {emoji}
+            {botId ? (
+              <BotAvatar color={bot?.color ?? FALLBACK_BOT_COLOR} identity={botId} size={14} />
+            ) : null}
+            {count > 1 ? <span className="tabular-nums">{count}</span> : null}
+          </>
+        );
+        const chipClass = cn(
+          "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs",
+          mine ? "border-foreground bg-accent" : "border-border bg-muted",
+        );
+        // A bot's reaction is read-only; the user's own toggles off, and another emoji joins in.
+        if (!mine && botIds.length === count) {
+          return (
+            <span key={emoji} className={chipClass} title={bot?.name}>
+              {content}
+            </span>
+          );
+        }
+        return (
+          <button
+            key={emoji}
+            type="button"
+            aria-pressed={mine}
+            aria-label={mine ? t`Remove reaction ${emoji}` : t`React ${emoji}`}
+            className={cn(
+              chipClass,
+              "hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
+            )}
+            onClick={() => void onReact(message, mine ? null : emoji)}
+          >
+            {content}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function MessageHoverActions({
   message,
   side,
   onReply,
   onReact,
+  myReaction,
 }: {
   message: ThreadMessage;
   side: "start" | "end";
   onReply: (message: ThreadMessage) => void;
-  onReact: (message: ThreadMessage, reaction: MessageReaction) => Promise<void>;
+  onReact: (message: ThreadMessage, reaction: MessageReaction | null) => Promise<void>;
+  /** The user's current reaction; choosing it again removes it. */
+  myReaction?: MessageReaction;
 }) {
   const { t } = useLingui();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -6488,10 +6770,14 @@ function MessageHoverActions({
                   key={emoji}
                   type="button"
                   aria-label={emoji}
-                  className="grid h-11 w-11 place-items-center rounded-xl text-2xl hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                  aria-pressed={emoji === myReaction}
+                  className={cn(
+                    "grid h-11 w-11 place-items-center rounded-xl text-2xl hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
+                    emoji === myReaction && "bg-accent",
+                  )}
                   onClick={() => {
                     setReactionsOpen(false);
-                    void onReact(message, emoji);
+                    void onReact(message, emoji === myReaction ? null : emoji);
                   }}
                 >
                   {emoji}
@@ -6940,6 +7226,25 @@ const MessageView = memo(function MessageView({
             </div>
           );
         }
+        if (block.kind === "voice") {
+          return (
+            <div
+              key={i}
+              className={`flex w-full ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <VoiceMessageBubble
+                target={artifactTarget}
+                block={block}
+                transcript={voiceTranscript(message.blocks)}
+                fromUser={message.role === "user"}
+              />
+            </div>
+          );
+        }
+        // A voice message's transcript lives inside its bubble.
+        if (block.kind === "text" && message.blocks.some((item) => item.kind === "voice")) {
+          return null;
+        }
         if (block.kind === "image") {
           return (
             <div
@@ -7042,6 +7347,8 @@ const MessageView = memo(function MessageView({
           );
         }
         if (block.kind === "cloud_agent") return <CloudAgentCard key={i} block={block} />;
+        if (block.kind === "claude_code") return <ClaudeCodeCard key={i} block={block} />;
+        if (block.kind === "reminder") return <ReminderCard key={i} block={block} />;
         if (block.kind === "skill_draft") {
           return (
             <div key={i} className="flex justify-start">
@@ -7090,13 +7397,11 @@ const MessageView = memo(function MessageView({
   );
 });
 
-function DesktopKindEmptyState({ className }: { className?: string }) {
+function DesktopKindEmptyState() {
   return (
-    <div className={className}>
-      <Trans>
-        This bot runs on this computer, not a Linux desktop. Shell and files use your home folder.
-      </Trans>
-    </div>
+    <Trans>
+      This bot runs on this computer, not a Linux desktop. Shell and files use your home folder.
+    </Trans>
   );
 }
 

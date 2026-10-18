@@ -287,6 +287,7 @@ function toThreadMessage(row: {
     replyPreview,
     runId: row.runId ?? undefined,
     callId: callIdFromClientNonce(row.clientNonce),
+    clientNonce: row.role === "user" ? (row.clientNonce ?? undefined) : undefined,
     createdAt: row.createdAt.toISOString(),
   };
 }
