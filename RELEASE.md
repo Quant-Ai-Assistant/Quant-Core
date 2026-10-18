@@ -12,6 +12,7 @@ on a release branch first and reaches `main` only when the maintainer says so.
 
 | Feature | Branch | Notes |
 | --- | --- | --- |
+| **Settings → Permissions** on the phone: what Quant may use (notifications, over the lock screen, background work, microphone, camera, photos, installing updates), with **Allow** on each missing one and **Allow all** to grant them in one go | `feat/permissions-screen` | No migration. The Android native module adds `canRequestPackageInstalls` and `openInstallSettings`. |
 
 ## How to land a feature or fix
 

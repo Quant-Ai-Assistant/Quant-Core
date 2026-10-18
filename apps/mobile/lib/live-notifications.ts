@@ -43,6 +43,8 @@ type NativeNotifications = {
   openFullScreenIntentSettings(): Promise<void>;
   isIgnoringBatteryOptimizations(): Promise<boolean>;
   requestIgnoreBatteryOptimizations(): Promise<void>;
+  canRequestPackageInstalls(): Promise<boolean>;
+  openInstallSettings(): Promise<void>;
   showOverLockScreen(show: boolean): Promise<void>;
   stop(clearSession: boolean): Promise<void>;
   setOpenThread(botId: string | null, threadId: string | null): Promise<void>;
@@ -255,6 +257,15 @@ export async function openFullScreenCallSettings(): Promise<void> {
 
 export async function requestUnrestrictedBattery(): Promise<void> {
   await nativeNotifications?.requestIgnoreBatteryOptimizations();
+}
+
+/** Whether Android lets Quant install its own updates; null where the module is absent. */
+export async function canInstallUpdates(): Promise<boolean | null> {
+  return nativeNotifications ? nativeNotifications.canRequestPackageInstalls() : null;
+}
+
+export async function openInstallUpdateSettings(): Promise<void> {
+  await nativeNotifications?.openInstallSettings();
 }
 
 /** The incoming call screen shows over the lock screen and wakes it. */

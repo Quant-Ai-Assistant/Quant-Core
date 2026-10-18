@@ -126,6 +126,19 @@ class RakazoNotificationsModule : Module() {
       )
     }
 
+    /** Whether Quant may install the update APKs it downloads. */
+    AsyncFunction("canRequestPackageInstalls") {
+      context().packageManager.canRequestPackageInstalls()
+    }
+
+    AsyncFunction("openInstallSettings") {
+      val context = context()
+      context.startActivity(
+        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+      )
+    }
+
     /** An incoming call shows over the lock screen and wakes it, like the phone app. */
     AsyncFunction("showOverLockScreen") { show: Boolean ->
       val activity = appContext.currentActivity
