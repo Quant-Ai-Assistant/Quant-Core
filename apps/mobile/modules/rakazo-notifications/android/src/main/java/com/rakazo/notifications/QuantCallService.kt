@@ -471,7 +471,7 @@ class QuantCallActionReceiver : BroadcastReceiver() {
             storage.token,
             storage.spaceId,
             "threads/declineCall",
-            JSONObject().put("botId", botId).put("callId", callId),
+            JSONObject().put("botId", botId).put("callId", callId).put("outcome", "declined"),
             storage.gateAuth,
           )
         }

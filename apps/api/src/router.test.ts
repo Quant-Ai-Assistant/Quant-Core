@@ -3750,6 +3750,15 @@ describe("threads.answerCall and threads.declineCall", () => {
     expect(prisma.routine.create).not.toHaveBeenCalled();
   });
 
+  it("treats a hang-up without an outcome as declined", async () => {
+    const { call, appended } = fixture();
+    const { response } = await call("declineCall", {});
+    expect(response.status).toBe(200);
+    expect(appended[0]?.payload).toMatchObject({
+      blocks: [expect.objectContaining({ status: "declined" })],
+    });
+  });
+
   it("rejects expired answers and records a missed call", async () => {
     const { call, appended } = fixture("ringing", 1, new Date(0).toISOString());
     expect((await call("answerCall", {})).response.status).toBe(409);

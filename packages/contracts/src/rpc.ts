@@ -489,7 +489,8 @@ export const appContract = {
             .min(1)
             .max(200)
             .regex(/^[^:]+$/),
-          outcome: z.enum(["declined", "missed"]),
+          /** Older Android builds send no outcome when the user hangs up. */
+          outcome: z.enum(["declined", "missed"]).default("declined"),
         }),
       )
       .output(z.object({ ok: z.literal(true) })),
