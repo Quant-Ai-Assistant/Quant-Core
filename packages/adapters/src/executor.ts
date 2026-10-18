@@ -387,6 +387,12 @@ import {
   isUserProgressClientNonce,
   userProgressClientNonce,
 } from "./user-progress.js";
+import {
+  cancelWatchFromTool,
+  createWatchFromTool,
+  fireBotWatches,
+  listWatchesFromTool,
+} from "./watches.js";
 import { createWebProvider } from "./web-provider-factory.js";
 import { webFetchFromTool, webSearchFromTool } from "./web-tools.js";
 
@@ -3678,6 +3684,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
               .enqueue(runContinueJob(failed.continuationRunId))
               .catch((error) => getLogger().error("steering continuation enqueue", error));
           }
+          await fireBotWatches(deps, { run, botName: bot.name, event: "failed", text: message });
           if (run.trigger === "bot_message") {
             await returnBotMessageOutcome(
               deps,
@@ -5441,6 +5448,35 @@ export function createRunExecutor(deps: ExecutorDeps) {
             });
             return finish(cancelled);
           }
+          if (name === "watch_create") {
+            return finish(
+              await createWatchFromTool(deps, {
+                spaceId: run.spaceId,
+                botId: bot.id,
+                userId: run.userId,
+                threadId: thread.id,
+                args,
+              }),
+            );
+          }
+          if (name === "watch_list") {
+            return listWatchesFromTool(deps, {
+              spaceId: run.spaceId,
+              botId: bot.id,
+              userId: run.userId,
+            });
+          }
+          if (name === "watch_cancel") {
+            return finish(
+              await cancelWatchFromTool(deps, {
+                spaceId: run.spaceId,
+                botId: bot.id,
+                userId: run.userId,
+                watchId: args.watchId ? String(args.watchId) : undefined,
+                name: args.name ? String(args.name) : undefined,
+              }),
+            );
+          }
           if (name === "skill_read") {
             return skillReadFromTool(
               deps.prisma,
@@ -6200,6 +6236,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
             );
             midTurnUserTexts.push(text);
             publishedMidTurnUserMessage = true;
+            await fireBotWatches(deps, { run, botName: bot.name, event: "update", text });
             return finish(
               truncated
                 ? {
@@ -7198,6 +7235,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
               .enqueue(runContinueJob(completed.continuationRunId))
               .catch((error) => getLogger().error("steering continuation enqueue", error));
           }
+          await fireBotWatches(deps, { run, botName: bot.name, event: "finished", text });
           if (botMessageOutcome) {
             // Prefer the final reply. If the turn only posted mid-turn progress, return that
             // text explicitly as status. Delivery uses a stable auto-outcome key; mark
@@ -7276,6 +7314,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
               .enqueue(runContinueJob(failed.continuationRunId))
               .catch((error) => getLogger().error("steering continuation enqueue", error));
           }
+          await fireBotWatches(deps, { run, botName: bot.name, event: "failed", text: message });
           if (run.trigger === "bot_message") {
             await returnBotMessageOutcome(
               deps,
@@ -8000,11 +8039,16 @@ export const LONG_WORK_PROGRESS_GUIDANCE =
 export const ROUTINE_SILENT_REPLY_GUIDANCE = `If this routine's prompt says to stay silent when there is nothing to report, the entire final assistant reply must be exactly ${NO_RESPONSE} — no surrounding prose, no variants, no progress updates, no all-clear, and no meta note that you are staying silent. Do not call message_user unless you have something to report.`;
 
 export function runAllowsSilentEmpty(trigger: string): boolean {
-  return trigger === "routine" || trigger === "reaction" || isBackgroundRunTrigger(trigger);
+  return (
+    trigger === "routine" ||
+    trigger === "reaction" ||
+    trigger === "watch" ||
+    isBackgroundRunTrigger(trigger)
+  );
 }
 
 export function runPromotesMidTurnNarration(trigger: string): boolean {
-  return trigger !== "routine" && !isBackgroundRunTrigger(trigger);
+  return trigger !== "routine" && trigger !== "watch" && !isBackgroundRunTrigger(trigger);
 }
 
 export const TICKET_SILENT_REPLY_GUIDANCE =
@@ -8012,11 +8056,14 @@ export const TICKET_SILENT_REPLY_GUIDANCE =
 
 export const REACT_INSTEAD_OF_REPLY_GUIDANCE = `When your whole reply would only acknowledge the user (ok, sure, done, will do), react to their message with 👍 using react_to_message and make the final reply exactly ${NO_RESPONSE}. Write a reply whenever they need an answer, a result, or a question.`;
 
+export const WATCH_SILENT_REPLY_GUIDANCE = `When this watch update is not what you are waiting for, the entire final assistant reply must be exactly ${NO_RESPONSE}: no surrounding prose, no all-clear, and no note that you are staying silent. Do not call message_user unless you have something to report.`;
+
 export const REACTION_REPLY_GUIDANCE = `The user answered your latest message with a reaction instead of words: 👍 means yes or done, 👎 means no or not now. Act on that answer, for example mark a reminder done or move it later. If nothing needs saying, the entire final reply must be exactly ${NO_RESPONSE}. Otherwise reply briefly.`;
 
 export function runReplyGuidance(trigger: string): string {
   if (isBackgroundRunTrigger(trigger)) return TICKET_SILENT_REPLY_GUIDANCE;
   if (trigger === "reaction") return REACTION_REPLY_GUIDANCE;
+  if (trigger === "watch") return WATCH_SILENT_REPLY_GUIDANCE;
   return runAllowsSilentEmpty(trigger)
     ? ROUTINE_SILENT_REPLY_GUIDANCE
     : LONG_WORK_PROGRESS_GUIDANCE;
@@ -8030,7 +8077,7 @@ function replyGuidanceForOfferedTools(
   if (guidance === LONG_WORK_PROGRESS_GUIDANCE) {
     return "Always put the complete final answer in your normal reply.";
   }
-  if (guidance === ROUTINE_SILENT_REPLY_GUIDANCE) {
+  if (guidance === ROUTINE_SILENT_REPLY_GUIDANCE || guidance === WATCH_SILENT_REPLY_GUIDANCE) {
     return guidance.replace(" Do not call message_user unless you have something to report.", "");
   }
   return guidance.includes("message_user") ? undefined : guidance;
@@ -8101,7 +8148,7 @@ export function completionMarksUnread(
 ): boolean {
   if (trigger === "bot_message") return userFacingPeerReply;
   if (isBackgroundRunTrigger(trigger)) return false;
-  return (trigger !== "routine" && trigger !== "reaction") || Boolean(text);
+  return (trigger !== "routine" && trigger !== "reaction" && trigger !== "watch") || Boolean(text);
 }
 
 export function missingTurnImagesInstruction(
@@ -8151,7 +8198,7 @@ export function subagentMarksUnread(
   return (
     status === "failed" ||
     (trigger === "bot_message" && userFacingPeerReply) ||
-    (trigger !== "routine" && trigger !== "bot_message")
+    (trigger !== "routine" && trigger !== "bot_message" && trigger !== "watch")
   );
 }
 

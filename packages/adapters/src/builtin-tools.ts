@@ -919,7 +919,7 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "schedule_create",
     description:
-      'Create a reminder or recurring job for this bot. Use for "remind me in 10 minutes" or "every morning send a joke". Repeats: cron or every/unit (min 1 minute). One-shot: runAt, delayMinutes, or delaySeconds.',
+      'Create a reminder or recurring job for this bot. Use for "remind me in 10 minutes" or "every morning send a joke". Repeats: cron or every/unit (min 1 minute). One-shot: runAt, delayMinutes, or delaySeconds. To wait for another bot\'s progress or for something to finish, use watch_create instead of polling.',
     inputSchema: scheduleCreateInputSchema,
   },
   {
@@ -934,6 +934,56 @@ export const builtinAgentTools: ConnectorTool[] = [
       type: "object",
       properties: {
         routineId: { type: "string" },
+        name: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "watch_create",
+    description:
+      "Wait for something to happen instead of polling on a schedule. Watch a teammate bot (bot_id or confirm_name): every update it posts in its chat wakes you, you stay silent on the ones that do not matter and report the ones that do, e.g. key milestones. Or watch a check command (e.g. test -f ~/Downloads/report.pdf): the server runs it on your computer every intervalSeconds and wakes you once when it exits 0, or when the watch expires.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Short label for watch_list and watch_cancel." },
+        goal: {
+          type: "string",
+          description:
+            "What you are waiting for and what to do then. It is given back to you each time the watch wakes you.",
+        },
+        bot_id: { type: "string", description: "Teammate bot to watch, from your teammate list." },
+        confirm_name: {
+          type: "string",
+          description: "Exact name of the teammate bot when bot_id is omitted.",
+        },
+        command: {
+          type: "string",
+          description: "Shell check that exits 0 once the thing has happened.",
+        },
+        intervalSeconds: {
+          type: "integer",
+          description: "Seconds between command checks (5 to 3600). Defaults to 10.",
+        },
+        expiresInMinutes: {
+          type: "integer",
+          description: "When the watch lapses (1 to 10080). Defaults to 1440 (one day).",
+        },
+      },
+      required: ["goal"],
+    },
+  },
+  {
+    name: "watch_list",
+    description: "List this bot's watches.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "watch_cancel",
+    description: "Stop a watch by watchId or exact name.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        watchId: { type: "string" },
         name: { type: "string" },
       },
     },
