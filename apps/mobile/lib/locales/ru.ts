@@ -951,4 +951,6 @@ export const RU_MESSAGES: Record<string, string> = {
   "activity.done.plan": "План",
   "activity.done.read_skill": "Навык",
   "activity.done.tool": "Инструмент",
+  "Share today's logs": "Поделиться логами за сегодня",
+  "Could not share logs": "Не удалось поделиться логами",
 };

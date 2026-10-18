@@ -15,6 +15,7 @@ on a release branch first and reaches `main` only when the maintainer says so.
 | Reminders ring on time: a scheduled reminder rings the phone and desktop itself when it comes due, instead of a model turn that could skip ringing and ask "when should I remind you?" | `fix/reminders-voice-model-versions` | Adds `Routine.reminder` (migration `20261018030000_routine_reminder`). `schedule_create` takes `reminder`. |
 | Phone voice messages record as AAC 48 kHz instead of 8 kHz AMR, so they sound right, play back and the server transcribes them for the bot | `fix/reminders-voice-model-versions` | Old recordings stay AMR. |
 | Claude Code per bot can pin a model version (e.g. Opus 4.8), grouped by family, besides the latest-of-family alias | `fix/reminders-voice-model-versions` | No migration: the stored model is a string. |
+| Phone keeps a detailed log of the current day (start-up and update state, every request and its result, console output, errors) in one file that is replaced each new day; **Settings → Advanced → Share today's logs** sends it with Expo Updates' own native log | `feat/mobile-daily-logs` | No migration and no new native module (uses `expo-file-system` and `expo-sharing`). Each over-the-air update step is logged, to find why the restart into an update fails. |
 
 ## How to land a feature or fix
 

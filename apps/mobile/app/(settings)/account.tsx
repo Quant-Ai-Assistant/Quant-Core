@@ -3,6 +3,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -39,6 +40,7 @@ import {
   selectedSpaceId,
   signOut,
 } from "../../lib/api";
+import { shareAppLog } from "../../lib/app-log";
 import { formatUpdateLabel, getAppVersionInfo } from "../../lib/app-version";
 import {
   getCachedAppearancePreference,
@@ -577,6 +579,17 @@ export default function Account() {
               label={loadRemoteImagesLabel}
               value={loadRemoteImages}
               onChange={(checked) => void setRemoteImagesPreference(checked ? "on" : "off")}
+            />
+          ) : null}
+          {advancedOpen ? (
+            <SettingsRow
+              accessibilityRole="button"
+              onPress={() =>
+                void shareAppLog().catch((error) =>
+                  Alert.alert(t("Could not share logs"), errorText(error, "")),
+                )
+              }
+              title={t("Share today's logs")}
             />
           ) : null}
         </SettingsGroup>
