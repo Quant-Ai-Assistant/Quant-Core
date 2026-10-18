@@ -28,6 +28,7 @@ import {
   subscribeApiBase,
   subscribeSessionRejected,
 } from "../lib/api";
+import { installAppLog } from "../lib/app-log";
 import { loadAppearancePreference, mobileTokens } from "../lib/appearance";
 import { replaceWithSignIn } from "../lib/auth-routing";
 import { loadAvatarStyle } from "../lib/avatar-style";
@@ -53,6 +54,7 @@ import { loadServerAccess } from "../lib/server-access-store";
 import { registerSessionDiskCache } from "../lib/session";
 import { startUnsentSends } from "../lib/unsent-sends";
 
+installAppLog();
 // Before any request: every fetch to a gated server carries its Basic Auth credential.
 installServerAccessFetch();
 
