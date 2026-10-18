@@ -78,6 +78,25 @@ describe("reaction tool availability", () => {
   });
 });
 
+describe("Claude Code tool availability", () => {
+  it("offers claude_code only to a bot that turned Claude Code on", () => {
+    const options = {
+      graphicalToolsAllowed: false,
+      groupId: null,
+      trigger: "user",
+      semanticMemoryEnabled: false,
+      messagingChannelRun: false,
+    };
+    const offered = (overrides: Partial<Parameters<typeof selectBuiltinToolsForRun>[0]>) =>
+      selectBuiltinToolsForRun({ ...options, ...overrides }).some(
+        (tool) => tool.name === "claude_code",
+      );
+    expect(offered({})).toBe(false);
+    expect(offered({ claudeCodeEnabled: true })).toBe(true);
+    expect(offered({ claudeCodeEnabled: true, disabledBuiltinTools: ["claude_code"] })).toBe(false);
+  });
+});
+
 describe("tool completion audit", () => {
   it("records result metadata without persisting tool contents", () => {
     const payload = toolCompletionAuditPayload({

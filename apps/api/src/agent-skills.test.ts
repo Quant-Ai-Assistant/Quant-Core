@@ -55,15 +55,20 @@ function setup(rows: ReturnType<typeof savedSkill>[] = []) {
   };
 }
 
+/** These cases are about Interrogate; the Claude Code built-in is listed alongside it. */
+async function withoutClaudeCode<T extends { name: string }>(list: Promise<T[]>): Promise<T[]> {
+  return (await list).filter((skill) => skill.name !== "Claude Code");
+}
+
 describe("built-in skill precedence in the API", () => {
   it.each(["interrogate", " Interrogate "])(
     "keeps %j listed, readable and mutable",
     async (name) => {
       const { service } = setup([savedSkill(name)]);
-      await expect(service.list(actor)).resolves.toEqual([
+      await expect(withoutClaudeCode(service.list(actor))).resolves.toEqual([
         expect.objectContaining({ id: "saved-1", name, readOnly: false }),
       ]);
-      await expect(service.listWithContent(actor)).resolves.toEqual([
+      await expect(withoutClaudeCode(service.listWithContent(actor))).resolves.toEqual([
         expect.objectContaining({ id: "saved-1", content: expect.stringContaining("Saved steps") }),
       ]);
       await expect(service.get(actor, { name: " INTERROGATE " })).resolves.toMatchObject({
@@ -105,7 +110,7 @@ describe("built-in skill precedence in the API", () => {
         id: "builtin:Interrogate",
         readOnly: true,
       });
-      await expect(service.list(actor)).resolves.toEqual([
+      await expect(withoutClaudeCode(service.list(actor))).resolves.toEqual([
         expect.objectContaining({ id: "builtin:Interrogate" }),
       ]);
       await expect(service.get(actor, { skillId: "saved-1" })).rejects.toThrow();

@@ -100,6 +100,7 @@ function bot(description = "Billing"): Bot {
     teamChatAmbientEnabled: false,
     teamChatRules: "",
     disabledBuiltinTools: [],
+    claudeCode: { enabled: false, model: null, effort: null },
     webhookConfigured: false,
     spawnKey: null,
   };

@@ -3640,7 +3640,22 @@ describe("threadActivity", () => {
       { id: "run-1" },
       { text: "Operating the computer", activity: true, tool: "computer_act" },
     );
-    await expect(threadActivity(prisma, "thread-1")).resolves.toEqual({ tool: "computer_act" });
+    await expect(threadActivity(prisma, "thread-1")).resolves.toEqual({
+      tool: "computer_act",
+      status: null,
+    });
+  });
+
+  it("passes along what the tool is doing", async () => {
+    const status = { kind: "read_file", detail: "session.ts", via: "claude_code" };
+    const prisma = prismaWith(
+      { id: "run-1" },
+      { text: "Claude Code: session.ts", activity: true, tool: "claude_code", status },
+    );
+    await expect(threadActivity(prisma, "thread-1")).resolves.toEqual({
+      tool: "claude_code",
+      status,
+    });
   });
 
   it("is idle once the bot talks again or nothing runs", async () => {
@@ -3648,7 +3663,11 @@ describe("threadActivity", () => {
       threadActivity(prismaWith({ id: "run-1" }, { delta: "Done" }), "t"),
     ).resolves.toEqual({
       tool: null,
+      status: null,
     });
-    await expect(threadActivity(prismaWith(null, undefined), "t")).resolves.toEqual({ tool: null });
+    await expect(threadActivity(prismaWith(null, undefined), "t")).resolves.toEqual({
+      tool: null,
+      status: null,
+    });
   });
 });

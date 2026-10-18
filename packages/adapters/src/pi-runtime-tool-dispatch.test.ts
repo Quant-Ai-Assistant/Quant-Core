@@ -784,6 +784,7 @@ describe("Pi connector tool dispatch", () => {
       text: "Using destination_write",
       activity: true,
       tool: "destination_write",
+      status: { kind: "tool", detail: "destination write" },
     });
     expect(events).not.toContainEqual({
       type: "text",

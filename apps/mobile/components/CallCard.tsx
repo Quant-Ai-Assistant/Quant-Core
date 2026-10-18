@@ -1,3 +1,4 @@
+import type { ActivityStatus } from "@rakazo/contracts";
 import { liveToolKind } from "@rakazo/core";
 import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
@@ -6,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { activityLine, activitySymbol } from "../lib/activity-label";
 import type { CallPhase, CallState } from "../lib/call-session";
 import { endCall, toggleMute, useCallSession } from "../lib/call-session";
 import { useI18n } from "../lib/i18n";
@@ -48,9 +50,10 @@ type ToolBadge = {
 };
 
 /** What the call's badge says for the tool the bot is using; new tools read generically. */
-function useToolBadge(tool: string | null): ToolBadge | null {
+function useToolBadge(tool: string | null, activity: ActivityStatus | null): ToolBadge | null {
   const { t } = useI18n();
   if (!tool) return null;
+  if (activity) return { label: activityLine(activity), ...activitySymbol(activity.kind) };
   switch (liveToolKind(tool)) {
     case "computer":
       return {
@@ -154,7 +157,7 @@ function CallScreen({
     : call.connectedAt !== null
       ? clock(seconds)
       : t("Connecting…");
-  const tool = useToolBadge(ended ? null : call.tool);
+  const tool = useToolBadge(ended ? null : call.tool, call.activity);
   return (
     <View
       accessibilityViewIsModal

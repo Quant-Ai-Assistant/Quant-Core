@@ -1,5 +1,6 @@
 import { eventIterator, oc } from "@orpc/contract";
 import * as z from "zod";
+import { ActivityStatusSchema } from "./activity.js";
 import { AiConsentQuerySchema, AiConsentStatusSchema } from "./ai-consent.js";
 import {
   ARTIFACT_DESCRIPTION_MAX_LENGTH,
@@ -23,6 +24,7 @@ import {
   UpdateTicketInput,
 } from "./board.js";
 import { BotSecretMetadata, BotSecretPutInput, StoredBotSecretName } from "./bot-secrets.js";
+import { ClaudeCodeAccountSchema } from "./claude-code.js";
 import {
   ActionApprovalRuleSchema,
   ActionAutoReviewSettingsSchema,
@@ -368,7 +370,9 @@ export const appContract = {
     ),
     get: oc.input(threadTarget).output(ThreadSnapshotSchema),
     /** The tool the bot's running work is using right now, if any; calls show it live. */
-    activity: oc.input(threadTarget).output(z.object({ tool: z.string().nullable() })),
+    activity: oc
+      .input(threadTarget)
+      .output(z.object({ tool: z.string().nullable(), status: ActivityStatusSchema.nullable() })),
     messages: oc
       .input(
         threadTarget.safeExtend({
@@ -1082,6 +1086,17 @@ export const appContract = {
         }),
       )
       .output(CallSettingsSchema),
+  },
+  claudeCode: {
+    account: oc.output(ClaudeCodeAccountSchema),
+    /** Saves the Claude sign-in started with `models.beginOAuth` for Claude Code, not for chat. */
+    finishSignIn: oc
+      .input(z.object({ loginId: z.string().min(1) }))
+      .output(ClaudeCodeAccountSchema),
+    connectKey: oc
+      .input(z.object({ apiKey: z.string().trim().min(8).max(500) }))
+      .output(ClaudeCodeAccountSchema),
+    disconnect: oc.output(ClaudeCodeAccountSchema),
   },
   externalConversations: {
     updatePolicy: oc

@@ -71,6 +71,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="models" options={glassHeaderOptions(t("Models"))} />
       <Stack.Screen name="voice" options={glassHeaderOptions(t("Voice"))} />
       <Stack.Screen name="calls" options={glassHeaderOptions(t("Calls"))} />
+      <Stack.Screen name="claude-code" options={glassHeaderOptions("Claude Code")} />
       <Stack.Screen name="integrations" options={glassHeaderOptions(t("Integrations"))} />
       <Stack.Screen
         name="integration-setup"

@@ -35,6 +35,7 @@ import type {
   TicketChangeNotifier,
 } from "@rakazo/adapters";
 import {
+  ANTHROPIC_OAUTH_PROVIDER,
   acquireComputerExecutionLease,
   advanceReminderMessage,
   applyCodexLiveCatalog,
@@ -62,6 +63,7 @@ import {
   deletePushToken,
   deploymentAutoReviewDefault,
   destroyBot,
+  disconnectClaudeCode,
   displayBotWorkspacePath,
   enqueueTakeoverContinuation,
   ensureComputerWorkspaceLayout,
@@ -78,6 +80,7 @@ import {
   listBotSecretMetadata,
   listPiCatalog,
   listScratchpadItems,
+  loadClaudeCodeAccount,
   McpOAuthBroker,
   mapScratchpadItem,
   modelCredentialAuthKindsForSpace,
@@ -105,6 +108,7 @@ import {
   revokeScreenControl,
   routineRunModelPin,
   sanitizeComposioError,
+  saveClaudeCodeSecret,
   savePushToken,
   scheduleComputerControlExpiry,
   scheduleComputerSleep,
@@ -1790,6 +1794,13 @@ export function createRouter(deps: RouterDeps) {
             ...(input.teamChatRules !== undefined ? { teamChatRules: input.teamChatRules } : {}),
             ...(input.disabledBuiltinTools !== undefined
               ? { disabledBuiltinTools: input.disabledBuiltinTools }
+              : {}),
+            ...(input.claudeCode !== undefined
+              ? {
+                  claudeCodeEnabled: input.claudeCode.enabled,
+                  claudeCodeModel: input.claudeCode.model,
+                  claudeCodeEffort: input.claudeCode.effort,
+                }
               : {}),
           },
         });
@@ -6212,6 +6223,42 @@ export function createRouter(deps: RouterDeps) {
       list: authed.runs.list.handler(async ({ context, input }) => ({
         runs: await listSpaceRuns(deps.prisma, context.actor, input.filter),
       })),
+    },
+    claudeCode: {
+      account: authed.claudeCode.account.handler(async ({ context }) =>
+        loadClaudeCodeAccount(deps.prisma, context.actor.userId),
+      ),
+      finishSignIn: authed.claudeCode.finishSignIn.handler(async ({ context, input }) => {
+        const result = await deps.oauthLogins.finish(input.loginId, context.actor, (login) => {
+          if (login.provider !== ANTHROPIC_OAUTH_PROVIDER) {
+            throw new ORPCError("BAD_REQUEST", { message: "Sign in with Claude." });
+          }
+          return saveClaudeCodeSecret(
+            { prisma: deps.prisma, secretStore: deps.secrets },
+            context.actor,
+            { kind: "oauth", credential: login.credential },
+            login.signal,
+          );
+        });
+        if (result.status === "pending") {
+          throw new ORPCError("CONFLICT", { message: "Sign-in has not finished yet." });
+        }
+        if (result.status === "error") {
+          throw new ORPCError("NOT_FOUND", { message: result.error });
+        }
+        return result.value;
+      }),
+      connectKey: authed.claudeCode.connectKey.handler(async ({ context, input, signal }) =>
+        saveClaudeCodeSecret(
+          { prisma: deps.prisma, secretStore: deps.secrets },
+          context.actor,
+          { kind: "api_key", key: input.apiKey },
+          signal,
+        ),
+      ),
+      disconnect: authed.claudeCode.disconnect.handler(async ({ context }) =>
+        disconnectClaudeCode(deps.prisma, context.actor.userId),
+      ),
     },
     calls: {
       settings: callsEnabled.calls.settings.handler(async ({ context }) =>

@@ -2,6 +2,7 @@ import type { Actor, Bot, BotSection, MessageBlock, SpaceBot } from "@rakazo/con
 import { BOT_COLORS } from "@rakazo/contracts";
 import {
   BACKGROUND_RUN_TRIGGERS,
+  botClaudeCode,
   CALL_REQUEST_RING_MS,
   isBackgroundRunTrigger,
   ringingCall,
@@ -72,6 +73,9 @@ function mapBot(
     teamChatAmbientEnabled?: boolean;
     teamChatRules?: string;
     disabledBuiltinTools?: string[];
+    claudeCodeEnabled?: boolean;
+    claudeCodeModel?: string | null;
+    claudeCodeEffort?: string | null;
     webhookSecretId?: string | null;
     spawnKey?: string | null;
   },
@@ -113,6 +117,7 @@ function mapBot(
     teamChatAmbientEnabled: bot.teamChatAmbientEnabled ?? false,
     teamChatRules: bot.teamChatRules ?? "",
     disabledBuiltinTools: bot.disabledBuiltinTools ?? [],
+    claudeCode: botClaudeCode(bot),
     webhookConfigured: Boolean(bot.webhookSecretId),
     spawnKey: bot.spawnKey ?? null,
     incomingCall,
