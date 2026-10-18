@@ -81,6 +81,11 @@ const scheduleCreateProperties = {
       "Concrete steps for when the schedule fires: name the connected plugin tools to call (e.g. GITHUB_LIST_RELEASES for owner/repo), what to extract, and how to report. Prefer plugin tools over computer browser or web search for app data.",
   },
   timezone: { type: "string", description: "IANA timezone (default UTC)." },
+  reminder: {
+    type: "string",
+    description:
+      'For a reminder the user asked for: what to do, short and in the user\'s language, e.g. "Take out the trash". Max 120 chars. When set, the server itself rings their phone and desktop like an alarm at that time.',
+  },
 };
 
 const scheduleTimingNames = [
@@ -939,7 +944,7 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "schedule_create",
     description:
-      'Create a reminder or recurring job for this bot. Use for "remind me in 10 minutes" or "every morning send a joke". Repeats: cron or every/unit (min 1 minute). One-shot: runAt, delayMinutes, or delaySeconds. To wait for another bot\'s progress or for something to finish, use watch_create instead of polling.',
+      'Create a reminder or recurring job for this bot. Use for "remind me in 10 minutes" or "every morning send a joke". Repeats: cron or every/unit (min 1 minute). One-shot: runAt, delayMinutes, or delaySeconds. For a reminder, always set reminder so it rings on time. A one-shot schedule turns inactive once it fires. To wait for another bot\'s progress or for something to finish, use watch_create instead of polling.',
     inputSchema: scheduleCreateInputSchema,
   },
   {
@@ -1051,7 +1056,7 @@ export const builtinAgentTools: ConnectorTool[] = [
   {
     name: "remind_user",
     description:
-      "Ring the user's phone and desktop with a reminder, like an alarm: it wakes a locked phone and shows your text full screen until they tap Done or ask again in 5 minutes. Use it when a reminder the user asked for comes due, usually from the schedule that fires it, so when you schedule a reminder, say in the schedule's prompt to call remind_user. The chat shows whether they finished it, snoozed it or missed it. Never use it for updates a message can carry.",
+      "Ring the user's phone and desktop with a reminder, like an alarm: it wakes a locked phone and shows your text full screen until they tap Done or ask again in 5 minutes. Use it to ring now; to ring later, use schedule_create with reminder instead. The chat shows whether they finished it, snoozed it or missed it. Never use it for updates a message can carry.",
     inputSchema: {
       type: "object",
       properties: {
