@@ -3161,6 +3161,31 @@ export function createRunExecutor(deps: ExecutorDeps) {
             new Date(Math.max(Date.now(), scheduledAt.getTime())),
             routine.timezone,
           );
+      if (routine.reminder) {
+        // A reminder rings by itself at its time: a model turn could be late or skip remind_user.
+        const claimedReminder = await deps.prisma.routine.updateMany({
+          where: {
+            id: routine.id,
+            active: true,
+            nextRunAt: scheduledAt,
+            bot: { archivedAt: null },
+          },
+          data: { lastRunAt: new Date(), nextRunAt, ...(nextRunAt ? {} : { active: false }) },
+        });
+        if (claimedReminder.count !== 1) return;
+        await remindUser(
+          deps,
+          {
+            spaceId: routine.spaceId,
+            userId: routine.userId,
+            threadId: bot.thread.id,
+            botId: bot.id,
+          },
+          { text: routine.reminder },
+        );
+        if (nextRunAt) await deps.jobs.enqueue(routineWakeupJob(routine.id, nextRunAt));
+        return;
+      }
       const previousLastRunAt = routine.lastRunAt;
       const skillRecords = await listAgentSkillRecords(deps.prisma, {
         spaceId: routine.spaceId,
@@ -5491,6 +5516,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
               name: String(args.name ?? ""),
               prompt: String(args.prompt ?? ""),
               timezone: args.timezone ? String(args.timezone) : undefined,
+              reminder: typeof args.reminder === "string" ? args.reminder : undefined,
               schedule: compactScheduleInput({
                 cron: args.cron,
                 every: args.every,

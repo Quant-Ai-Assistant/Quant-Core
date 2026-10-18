@@ -26,7 +26,7 @@ type ReminderDeps = {
 /** Rings the user's devices with a reminder they mark done or snooze, like an alarm. */
 export async function remindUser(
   deps: ReminderDeps,
-  run: { id: string; spaceId: string; userId: string; threadId: string; botId: string },
+  run: { id?: string; spaceId: string; userId: string; threadId: string; botId: string },
   input: { text: string; details?: string },
   now = Date.now(),
 ): Promise<{ error: string } | { ok: true; status: "ringing" }> {

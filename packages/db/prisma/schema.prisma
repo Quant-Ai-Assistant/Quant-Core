@@ -820,6 +820,8 @@ model Routine {
   thread         Thread?   @relation(fields: [threadId], references: [id], onDelete: SetNull)
   name           String
   prompt         String
+  /// Reminder text: when set, the schedule rings the user's devices itself, with no model turn.
+  reminder       String?
   crons          String[]
   timezone       String    @default("UTC")
   active         Boolean   @default(false)
