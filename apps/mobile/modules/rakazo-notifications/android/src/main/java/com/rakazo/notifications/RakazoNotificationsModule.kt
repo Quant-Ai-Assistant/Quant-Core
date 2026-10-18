@@ -61,14 +61,15 @@ class RakazoNotificationsModule : Module() {
         storage.spaceId = ""
         storage.gateAuth = ""
         storage.callsEnabled = false
+        storage.remindersEnabled = false
       } else {
         RakazoNotificationService.stop(context)
       }
     }
 
-    AsyncFunction("setCalls") { enabled: Boolean, endpoint: String, token: String, spaceId: String, gateAuth: String ->
+    AsyncFunction("setCalls") { calls: Boolean, reminders: Boolean, endpoint: String, token: String, spaceId: String, gateAuth: String ->
       val context = context()
-      if (enabled && !isAllowedNotificationEndpoint(endpoint)) {
+      if ((calls || reminders) && !isAllowedNotificationEndpoint(endpoint)) {
         throw IllegalArgumentException("Public servers need https://. HTTP only works on your local network.")
       }
       val storage = NotificationStorage(context)
@@ -76,12 +77,21 @@ class RakazoNotificationsModule : Module() {
       storage.token = token
       storage.spaceId = spaceId
       storage.gateAuth = gateAuth
-      storage.callsEnabled = enabled && token.isNotBlank()
-      if (storage.callsEnabled) QuantCallService.start(context) else QuantCallService.stop(context)
+      storage.callsEnabled = calls && token.isNotBlank()
+      storage.remindersEnabled = reminders && token.isNotBlank()
+      if (storage.callsEnabled || storage.remindersEnabled) {
+        QuantCallService.start(context)
+      } else {
+        QuantCallService.stop(context)
+      }
     }
 
     AsyncFunction("dismissCall") { callId: String ->
       QuantCallService.dismiss(context(), callId)
+    }
+
+    AsyncFunction("dismissReminder") { reminderId: String ->
+      QuantCallService.dismissReminder(context(), reminderId)
     }
 
     AsyncFunction("canUseFullScreenIntent") {

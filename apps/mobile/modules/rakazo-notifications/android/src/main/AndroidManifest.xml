@@ -21,6 +21,9 @@
     <receiver
       android:name=".QuantCallActionReceiver"
       android:exported="false" />
+    <receiver
+      android:name=".QuantReminderActionReceiver"
+      android:exported="false" />
     <!-- Boot and update broadcasts are protected: only the system can send them. -->
     <receiver
       android:name=".QuantCallBootReceiver"

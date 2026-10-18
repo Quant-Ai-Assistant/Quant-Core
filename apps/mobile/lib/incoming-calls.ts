@@ -13,38 +13,42 @@ import { loadSessionToken } from "./session";
 
 const ASKED_KEY = "quant.incoming-calls-asked";
 
+/** What may ring this phone in the background. */
+export type Ringing = { calls: boolean; reminders: boolean };
+
 export type IncomingCallDeps = {
-  loadAvailability: () => Promise<boolean>;
-  apply: (enabled: boolean) => Promise<void>;
+  loadAvailability: () => Promise<Ringing>;
+  apply: (ringing: Ringing) => Promise<void>;
   askOnce: () => Promise<void>;
 };
 
 /**
- * Android: rings in the background while the server offers calls (calls on, and the OpenAI
- * voice connection they need), and stops otherwise. Safe to call on every launch and resume.
+ * Android: rings in the background while signed in, so bots' reminders wake the phone, and
+ * takes calls too while the server offers them (calls on, and the OpenAI voice connection they
+ * need). Safe to call on every launch and resume.
  */
 export async function syncIncomingCalls(deps: IncomingCallDeps = productionDeps()): Promise<void> {
   if (Platform.OS !== "android") return;
-  const enabled = await deps.loadAvailability().catch(() => null);
+  const ringing = await deps.loadAvailability().catch(() => null);
   // A failed check leaves the service as it was: a flaky network must not silence calls.
-  if (enabled === null) return;
-  await deps.apply(enabled);
-  if (enabled) await deps.askOnce();
+  if (ringing === null) return;
+  await deps.apply(ringing);
+  if (ringing.calls || ringing.reminders) await deps.askOnce();
 }
 
 function productionDeps(): IncomingCallDeps {
   return {
     loadAvailability: async () => {
-      if (!(await loadSessionToken())) return false;
+      if (!(await loadSessionToken())) return { calls: false, reminders: false };
       const [me, voice] = await Promise.all([
         rpc<MobileMe>("me"),
         rpc<{ live?: boolean }>("voice/status"),
       ]);
-      return Boolean(me.phoneCallsEnabled && voice.live);
+      return { calls: Boolean(me.phoneCallsEnabled && voice.live), reminders: true };
     },
-    apply: async (enabled) =>
+    apply: async (ringing) =>
       setIncomingCalls(
-        enabled,
+        ringing,
         currentApiBase(),
         await loadSessionToken(),
         selectedSpaceId() ?? "",
@@ -53,14 +57,14 @@ function productionDeps(): IncomingCallDeps {
   };
 }
 
-/** Once per install: a call can only wake a locked, idle phone with these two allowed. */
+/** Once per install: a call or reminder can only wake a locked, idle phone with these allowed. */
 async function askToRingWhenLocked(): Promise<void> {
   if (await SecureStore.getItemAsync(ASKED_KEY)) return;
   await SecureStore.setItemAsync(ASKED_KEY, "1");
   const blockers = await incomingCallBlockers();
   if (blockers.battery) await requestUnrestrictedBattery().catch(() => undefined);
   if (!blockers.fullScreen) return;
-  Alert.alert(t("Let bots' calls show on the lock screen?"), undefined, [
+  Alert.alert(t("Let bots' calls and reminders show on the lock screen?"), undefined, [
     { text: t("Not now"), style: "cancel" },
     { text: t("Allow"), onPress: () => void openFullScreenCallSettings().catch(() => undefined) },
   ]);

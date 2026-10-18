@@ -1763,6 +1763,7 @@ msgid "Could not send reset email"
 msgstr "Не удалось отправить электронное письмо для сброса"
 
 #: src/components/call/IncomingCall.tsx
+#: src/components/reminder/RingingReminder.tsx
 msgid "Could not send that"
 msgstr "Не удалось отправить это"
 
@@ -2152,6 +2153,12 @@ msgstr "Не блокировать Mac"
 #: src/lib/ticket-status.ts
 #: src/pages/ActivityList.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
+msgid "Done"
+msgstr "Готово"
+
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgctxt "reminder"
 msgid "Done"
 msgstr "Готово"
 
@@ -2583,6 +2590,10 @@ msgstr "Область загрузки изображения"
 msgid "Import OpenAPI JSON"
 msgstr "Импортировать OpenAPI JSON"
 
+#: src/components/reminder/RingingReminder.tsx
+msgid "In 5 minutes"
+msgstr "Через 5 минут"
+
 #: src/lib/ticket-status.ts
 msgid "In progress"
 msgstr ""
@@ -3010,6 +3021,10 @@ msgstr "минута"
 #: src/pages/RoutineSchedule.tsx
 msgid "minutes"
 msgstr "минуты"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Missed"
+msgstr "Пропущено"
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Missed call"
@@ -3783,6 +3798,16 @@ msgstr "Освободить прерванный компьютер?"
 msgid "Remembering"
 msgstr "Запоминает"
 
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder"
+msgstr "Напоминание"
+
+#. placeholder {0}: reminder.botName
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder from {0}"
+msgstr "Напоминание от {0}"
+
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3985,6 +4010,10 @@ msgstr "Проверьте настройки поставщика и повто
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "Отозвать"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Ringing now"
+msgstr "Звонит сейчас"
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Robot"
@@ -4398,6 +4427,10 @@ msgstr "Slack не включен"
 #: src/components/composer/HoldToTalk.tsx
 msgid "Slide to cancel"
 msgstr "Влево — отмена"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Snoozed until {time}"
+msgstr "Отложено до {time}"
 
 #: src/components/SoftwareUpdateSection.tsx
 msgid "Software update"

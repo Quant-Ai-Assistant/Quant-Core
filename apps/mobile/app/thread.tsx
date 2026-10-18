@@ -110,6 +110,7 @@ import { MessageCaption } from "../components/message-caption";
 import { MessageContextMenu } from "../components/message-context-menu";
 import { NativeActionButton } from "../components/native-action-button";
 import { NativeSymbol } from "../components/native-symbol";
+import { ReminderCard } from "../components/ReminderCard";
 import { ReplyDismissButton } from "../components/reply-dismiss-button";
 import { ReplyLine } from "../components/reply-line";
 import { SelectTextSheet } from "../components/select-text-sheet";
@@ -3913,6 +3914,9 @@ const MessageBubble = memo(function MessageBubble({
   const computerBlocks = message.blocks.filter(
     (block): block is Extract<MessageBlock, { kind: "computer" }> => block.kind === "computer",
   );
+  const reminderBlocks = message.blocks.filter(
+    (block): block is Extract<MessageBlock, { kind: "reminder" }> => block.kind === "reminder",
+  );
   return (
     <View style={{ gap: 8, width: "100%" }}>
       {segments.map((segment, index) => (
@@ -3941,6 +3945,14 @@ const MessageBubble = memo(function MessageBubble({
           onOpen={
             computerBotId ? () => onOpenComputer(computerBotId, speaker ?? t("Bot")) : undefined
           }
+          accessibilityActions={actionProps.accessibilityActions}
+          onAccessibilityAction={actionProps.onAccessibilityAction}
+        />
+      ))}
+      {reminderBlocks.map((block) => (
+        <ReminderCard
+          key={`reminder-${block.reminderId}`}
+          block={block}
           accessibilityActions={actionProps.accessibilityActions}
           onAccessibilityAction={actionProps.onAccessibilityAction}
         />

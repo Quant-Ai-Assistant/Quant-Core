@@ -1763,6 +1763,7 @@ msgid "Could not send reset email"
 msgstr "재설정 이메일을 보낼 수 없습니다"
 
 #: src/components/call/IncomingCall.tsx
+#: src/components/reminder/RingingReminder.tsx
 msgid "Could not send that"
 msgstr "메시지를 보내지 못했습니다."
 
@@ -2154,6 +2155,12 @@ msgstr ""
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Done"
 msgstr "완료"
+
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgctxt "reminder"
+msgid "Done"
+msgstr ""
 
 #: src/components/computer/FilesApp.tsx
 #: src/pages/Artifacts.tsx
@@ -2583,6 +2590,10 @@ msgstr "이미지 업로드 영역"
 msgid "Import OpenAPI JSON"
 msgstr "OpenAPI JSON 가져오기"
 
+#: src/components/reminder/RingingReminder.tsx
+msgid "In 5 minutes"
+msgstr ""
+
 #: src/lib/ticket-status.ts
 msgid "In progress"
 msgstr ""
@@ -3010,6 +3021,10 @@ msgstr "분"
 #: src/pages/RoutineSchedule.tsx
 msgid "minutes"
 msgstr "분"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Missed"
+msgstr ""
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Missed call"
@@ -3783,6 +3798,16 @@ msgstr ""
 msgid "Remembering"
 msgstr ""
 
+#: src/components/reminder/ReminderCard.tsx
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder"
+msgstr ""
+
+#. placeholder {0}: reminder.botName
+#: src/components/reminder/RingingReminder.tsx
+msgid "Reminder from {0}"
+msgstr ""
+
 #: src/components/ApprovalRulesSettings.tsx
 #: src/pages/ModelBackupsSettings.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -3985,6 +4010,10 @@ msgstr "서비스 설정을 확인한 뒤 다시 테스트하세요."
 #: src/pages/MessagingSettingsOverlay.tsx
 msgid "Revoke"
 msgstr "연결 해제"
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Ringing now"
+msgstr ""
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Robot"
@@ -4397,6 +4426,10 @@ msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
 msgid "Slide to cancel"
+msgstr ""
+
+#: src/components/reminder/ReminderCard.tsx
+msgid "Snoozed until {time}"
 msgstr ""
 
 #: src/components/SoftwareUpdateSection.tsx

@@ -176,6 +176,21 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     /** Connected time the user's client measured after answering. */
     durationSeconds: z.number().int().nonnegative().optional(),
   }),
+  z.object({
+    /**
+     * A reminder that rings the user's devices like an alarm until they mark it done. Snoozing
+     * or letting it ring out moves `ringsAt` on; after a few unanswered rings it is missed.
+     */
+    kind: z.literal("reminder"),
+    reminderId: z.string(),
+    text: z.string(),
+    details: z.string().optional(),
+    status: z.enum(["ringing", "snoozed", "done", "missed"]),
+    /** When it started ringing, or when a snoozed reminder rings again. */
+    ringsAt: z.string(),
+    /** Unanswered rings in a row, counting the current one; a snooze starts it over. */
+    rings: z.number().int().nonnegative(),
+  }),
   z.object({ kind: z.literal("meta"), text: z.string() }),
   z.object({
     kind: z.literal("progress"),

@@ -221,6 +221,15 @@ export default function Layout() {
                       }}
                     />
                     <Stack.Screen
+                      name="reminder"
+                      options={{
+                        headerShown: false,
+                        presentation: "fullScreenModal",
+                        animation: "fade",
+                        gestureEnabled: false,
+                      }}
+                    />
+                    <Stack.Screen
                       name="new"
                       options={{
                         title: t("New bot"),

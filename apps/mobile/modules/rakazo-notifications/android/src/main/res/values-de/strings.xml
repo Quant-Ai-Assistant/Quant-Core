@@ -6,4 +6,9 @@
   <string name="quant_calls_decline">Ablehnen</string>
   <string name="quant_calls_channel_incoming">Eingehende Anrufe</string>
   <string name="quant_calls_channel_service">Verbindung für Anrufe</string>
+  <string name="quant_reminders_ready">Bereit für Erinnerungen</string>
+  <string name="quant_calls_and_reminders_ready">Bereit für Anrufe und Erinnerungen</string>
+  <string name="quant_reminders_done">Erledigt</string>
+  <string name="quant_reminders_snooze">In 5 Minuten</string>
+  <string name="quant_reminders_channel">Erinnerungen</string>
 </resources>

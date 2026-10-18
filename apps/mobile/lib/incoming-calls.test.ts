@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AnswerDeps, IncomingCallDeps } from "./incoming-calls";
+import type { AnswerDeps, IncomingCallDeps, Ringing } from "./incoming-calls";
 import { answerIncomingCall, isStillRinging, syncIncomingCalls } from "./incoming-calls";
 
 const platform = vi.hoisted(() => ({ OS: "android" }));
@@ -15,7 +15,7 @@ vi.mock("./live-notifications", () => ({
   setIncomingCalls: vi.fn(),
 }));
 
-function syncDeps(availability: () => Promise<boolean>): IncomingCallDeps {
+function syncDeps(availability: () => Promise<Ringing>): IncomingCallDeps {
   return {
     loadAvailability: availability,
     apply: vi.fn(async () => {}),
@@ -28,15 +28,20 @@ afterEach(() => {
 });
 
 describe("incoming calls on Android", () => {
-  it("rings in the background only while the server offers calls", async () => {
-    const on = syncDeps(async () => true);
+  it("rings in the background for reminders, and for calls while the server offers them", async () => {
+    const on = syncDeps(async () => ({ calls: true, reminders: true }));
     await syncIncomingCalls(on);
-    expect(on.apply).toHaveBeenCalledWith(true);
+    expect(on.apply).toHaveBeenCalledWith({ calls: true, reminders: true });
     expect(on.askOnce).toHaveBeenCalled();
 
-    const off = syncDeps(async () => false);
+    const reminders = syncDeps(async () => ({ calls: false, reminders: true }));
+    await syncIncomingCalls(reminders);
+    expect(reminders.apply).toHaveBeenCalledWith({ calls: false, reminders: true });
+    expect(reminders.askOnce).toHaveBeenCalled();
+
+    const off = syncDeps(async () => ({ calls: false, reminders: false }));
     await syncIncomingCalls(off);
-    expect(off.apply).toHaveBeenCalledWith(false);
+    expect(off.apply).toHaveBeenCalledWith({ calls: false, reminders: false });
     expect(off.askOnce).not.toHaveBeenCalled();
   });
 
@@ -48,7 +53,7 @@ describe("incoming calls on Android", () => {
     expect(flaky.apply).not.toHaveBeenCalled();
 
     platform.OS = "ios";
-    const ios = syncDeps(async () => true);
+    const ios = syncDeps(async () => ({ calls: true, reminders: true }));
     await syncIncomingCalls(ios);
     expect(ios.apply).not.toHaveBeenCalled();
   });

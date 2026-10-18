@@ -56,6 +56,7 @@ export const BUILTIN_TOOL_NAMES = [
   "watch_cancel",
   "end_call",
   "call_user",
+  "remind_user",
   "skill_read",
   "skill_create",
   "skill_update",

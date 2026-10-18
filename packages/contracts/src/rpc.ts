@@ -493,6 +493,33 @@ export const appContract = {
         }),
       )
       .output(z.object({ ok: z.literal(true) })),
+    /** Reminders ringing the user now, for the phone and the desktop to show over everything. */
+    ringingReminders: oc.output(
+      z.array(
+        z.object({
+          botId: z.string(),
+          botName: z.string(),
+          botColor: z.string(),
+          reminderId: z.string(),
+          text: z.string(),
+          details: z.string().optional(),
+          ringsAt: z.string(),
+        }),
+      ),
+    ),
+    /** The user marked a reminder done, or asked for it again in five minutes. */
+    settleReminder: oc
+      .input(
+        botId.safeExtend({
+          reminderId: z
+            .string()
+            .min(1)
+            .max(200)
+            .regex(/^[^:]+$/),
+          action: z.enum(["done", "snooze"]),
+        }),
+      )
+      .output(z.object({ ok: z.literal(true) })),
     clear: oc.input(threadTarget).output(z.object({ ok: z.literal(true) })),
     answer: oc
       .input(
