@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Makes Quant selectable as the phone's digital assistant (hold the power button). -->
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+  android:sessionService="com.quant.assistant.QuantAssistSessionService"
+  android:recognitionService="com.quant.assistant.QuantRecognitionService"
+  android:supportsAssist="true"
+  android:supportsLaunchVoiceAssistFromKeyguard="false" />

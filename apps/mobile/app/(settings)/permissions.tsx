@@ -30,6 +30,10 @@ export default function PermissionsScreen() {
     camera: { title: t("Camera"), detail: t("Photos in chat") },
     photos: { title: t("Photos and videos"), detail: t("Attachments from your gallery") },
     updates: { title: t("Install updates"), detail: t("Update Quant from the app") },
+    assistant: {
+      title: t("Default assistant"),
+      detail: t("Hold the power button to ask Quant"),
+    },
   };
 
   const refresh = useCallback(async () => {

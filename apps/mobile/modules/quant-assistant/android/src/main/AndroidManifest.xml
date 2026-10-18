@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- Only the system may bind these: BIND_VOICE_INTERACTION is a signature permission. -->
+    <service
+      android:name=".QuantAssistService"
+      android:exported="true"
+      android:permission="android.permission.BIND_VOICE_INTERACTION">
+      <meta-data
+        android:name="android.voice_interaction"
+        android:resource="@xml/quant_assist_service" />
+      <intent-filter>
+        <action android:name="android.service.voice.VoiceInteractionService" />
+      </intent-filter>
+    </service>
+    <service
+      android:name=".QuantAssistSessionService"
+      android:exported="true"
+      android:permission="android.permission.BIND_VOICE_INTERACTION" />
+    <service
+      android:name=".QuantRecognitionService"
+      android:exported="true">
+      <meta-data
+        android:name="android.speech"
+        android:resource="@xml/quant_recognition_service" />
+      <intent-filter>
+        <action android:name="android.speech.RecognitionService" />
+      </intent-filter>
+    </service>
+    <activity
+      android:name=".QuantAssistantActivity"
+      android:exported="false"
+      android:excludeFromRecents="true"
+      android:launchMode="singleTask"
+      android:taskAffinity="com.quant.assistant"
+      android:theme="@style/Theme.QuantAssistant"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+      android:windowSoftInputMode="adjustResize" />
+  </application>
+</manifest>
