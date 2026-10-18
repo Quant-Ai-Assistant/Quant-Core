@@ -1,6 +1,7 @@
 import { VOICE_MESSAGE_MAX_MS, VOICE_WAVEFORM_BARS } from "@rakazo/contracts";
 import type { AudioRecorder } from "expo-audio";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 import { t } from "./i18n";
 import { errorText } from "./user-error";
 
@@ -45,6 +46,24 @@ export function levelFromDecibels(db: number | undefined): number {
   return Math.min(1, Math.max(0, (db + 50) / 50));
 }
 
+/**
+ * AAC in .m4a, mono, already flattened for this platform. `new AudioRecorder` takes platform
+ * options as is, so passing a preset with nested `android`/`ios` keys made Android fall back to
+ * its default: 8 kHz AMR in a .3gp file that sounds bad and no transcriber or player reads.
+ */
+export function voiceRecordingOptions(os: string) {
+  const common = {
+    extension: ".m4a",
+    sampleRate: 48_000,
+    numberOfChannels: 1,
+    bitRate: 96_000,
+    isMeteringEnabled: true,
+  };
+  if (os === "android") return { ...common, outputFormat: "mpeg4", audioEncoder: "aac" } as const;
+  // IOSOutputFormat.MPEG4AAC and AudioQuality.MAX; expo-audio itself loads only when recording.
+  return { ...common, outputFormat: "aac ", audioQuality: 127 } as const;
+}
+
 /** Records AAC with expo-audio: every provider and macOS speech recognition read it. */
 export function audioClipRecorder(): ClipRecorder {
   let recorder: AudioRecorder | undefined;
@@ -61,14 +80,11 @@ export function audioClipRecorder(): ClipRecorder {
   }
   return {
     start: async (onLevel) => {
-      const { AudioModule, RecordingPresets, setAudioModeAsync } = await import("expo-audio");
+      const { AudioModule, setAudioModeAsync } = await import("expo-audio");
       const permission = await AudioModule.requestRecordingPermissionsAsync();
       if (!permission.granted) throw new Error(t("Allow the microphone to record"));
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-      const next = new AudioModule.AudioRecorder({
-        ...RecordingPresets.HIGH_QUALITY,
-        isMeteringEnabled: true,
-      });
+      const next = new AudioModule.AudioRecorder(voiceRecordingOptions(Platform.OS));
       recorder = next;
       await next.prepareToRecordAsync();
       // Released while preparing: the press was cancelled.

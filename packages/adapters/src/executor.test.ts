@@ -1617,6 +1617,70 @@ describe("createRunExecutor", () => {
     );
   });
 
+  it("rings a scheduled reminder itself instead of starting a model turn", async () => {
+    const scheduledAt = new Date(Date.now() - 1_000);
+    const enqueue = vi.fn(async () => undefined);
+    const routineUpdate = vi.fn(async () => ({ count: 1 }));
+    const messageCreate = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: "message-1",
+      ...data,
+    }));
+    const runCreate = vi.fn(async () => ({ id: "run-1" }));
+    const tx = {
+      thread: {
+        findFirst: vi.fn(async () => ({ id: "thread-1" })),
+        update: vi.fn(async () => ({ nextEventSeq: 1, nextSeq: 1 })),
+      },
+      event: { create: vi.fn(async () => ({ seq: 7 })) },
+      message: { create: messageCreate },
+      run: { create: runCreate },
+    };
+    const prisma = {
+      routine: {
+        findUnique: vi.fn(async () => ({
+          id: "routine-1",
+          spaceId: "ws-1",
+          botId: "bot-1",
+          userId: "user-1",
+          prompt: "Remind the user to take out the trash",
+          reminder: "Take out the trash",
+          crons: [ONCE_ROUTINE_CRON],
+          timezone: "UTC",
+          active: true,
+          nextRunAt: scheduledAt,
+          threadId: null,
+        })),
+        updateMany: routineUpdate,
+      },
+      bot: {
+        findUnique: vi.fn(async () => ({ id: "bot-1", thread: { id: "thread-1" } })),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    } as unknown as PrismaClient;
+    const executor = createRunExecutor({
+      prisma,
+      jobs: { enqueue, cancel: vi.fn(async () => undefined), close: vi.fn(async () => undefined) },
+      events: { append: vi.fn(async () => undefined), notify: vi.fn(async () => undefined) },
+    } as unknown as Parameters<typeof createRunExecutor>[0]);
+
+    await executor.wakeRoutine("routine-1", scheduledAt.toISOString());
+
+    expect(routineUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ active: false, nextRunAt: null }),
+      }),
+    );
+    expect(messageCreate.mock.calls[0]?.[0].data).toMatchObject({
+      threadId: "thread-1",
+      role: "bot",
+      blocks: [{ kind: "reminder", text: "Take out the trash", status: "ringing" }],
+    });
+    expect(runCreate).not.toHaveBeenCalled();
+    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ name: "reminder.tick" }));
+  });
+
   it("pins the routine's own model onto the run it fires", async () => {
     const scheduledAt = new Date(Date.now() - 1_000);
     const taskCreate = vi.fn(async () => ({ id: "task-1" }));

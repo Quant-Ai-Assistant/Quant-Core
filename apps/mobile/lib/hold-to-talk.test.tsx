@@ -11,9 +11,11 @@ import {
   levelFromDecibels,
   TAP_MS,
   useHoldToTalk,
+  voiceRecordingOptions,
   waveformBars,
 } from "./hold-to-talk";
 
+vi.mock("react-native", () => ({ Platform: { OS: "android" } }));
 vi.mock("./i18n", () => ({ t: (text: string) => text }));
 vi.mock("./user-error", () => ({
   errorText: (error: unknown, fallback: string) =>
@@ -88,6 +90,19 @@ describe("hold to record", () => {
     act(() => talk.cancel());
     expect(recorder.cancel).toHaveBeenCalled();
     expect(onClip).not.toHaveBeenCalled();
+  });
+});
+
+describe("recording format", () => {
+  it("records AAC in .m4a on Android, not the 8 kHz AMR default", () => {
+    expect(voiceRecordingOptions("android")).toMatchObject({
+      extension: ".m4a",
+      sampleRate: 48_000,
+      outputFormat: "mpeg4",
+      audioEncoder: "aac",
+    });
+    expect(voiceRecordingOptions("android")).not.toHaveProperty("android");
+    expect(voiceRecordingOptions("ios")).toMatchObject({ extension: ".m4a", outputFormat: "aac " });
   });
 });
 

@@ -34,6 +34,8 @@ export function filterBuiltinToolsForThread<T extends { name: string }>(
   );
 }
 
+const REMINDER_TEXT_MAX = 120;
+
 type ScheduleUnit = "minutes" | "hours" | "days" | "seconds";
 
 export type ResolvedSchedule =
@@ -210,11 +212,13 @@ export async function createScheduleFromTool(
     name: string;
     prompt: string;
     timezone?: string;
+    reminder?: string;
     schedule: Record<string, unknown>;
   },
 ) {
   const name = input.name.trim();
-  const prompt = input.prompt.trim();
+  const reminder = input.reminder?.trim().slice(0, REMINDER_TEXT_MAX) || null;
+  const prompt = input.prompt.trim() || reminder || "";
   if (!name) return { error: "name is required." };
   if (!prompt) return { error: "prompt is required." };
 
@@ -230,6 +234,7 @@ export async function createScheduleFromTool(
       threadId: input.threadId,
       name,
       prompt,
+      reminder,
       crons: [resolved.cron],
       timezone,
       notify: true,
@@ -272,6 +277,7 @@ export async function createScheduleFromTool(
     cron: row.crons[0],
     nextRunAt: row.nextRunAt?.toISOString() ?? null,
     oneShot: resolved.oneShot,
+    ...(reminder ? { reminder } : {}),
   };
 }
 
@@ -294,6 +300,7 @@ export async function listSchedulesFromTool(
       routineId: row.id,
       name: row.name,
       prompt: row.prompt,
+      ...(row.reminder ? { reminder: row.reminder } : {}),
       crons: row.crons,
       active: row.active,
       nextRunAt: row.nextRunAt?.toISOString() ?? null,
