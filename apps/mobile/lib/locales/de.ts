@@ -911,4 +911,6 @@ export const DE_MESSAGES: Record<string, string> = {
   Stopped: "Gestoppt",
   "Using an Anthropic API key": "Anthropic-API-Schlüssel wird verwendet",
   "{count} steps": "{count} Schritte",
+  "Share today's logs": "Heutige Protokolle teilen",
+  "Could not share logs": "Protokolle konnten nicht geteilt werden",
 };

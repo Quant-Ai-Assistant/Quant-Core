@@ -1,3 +1,5 @@
+import { deviceLog, flushDeviceLog } from "./device-log";
+
 export type DiagnosticReport = {
   kind: string;
   message: string;
@@ -24,6 +26,7 @@ export function setDiagnosticsTransport(next: Transport | null): void {
  * delivered is dropped rather than retried, so diagnostics never get in the way of the app.
  */
 export function reportError(kind: string, message: string, detail?: unknown): void {
+  deviceLog("error", kind, message, detail);
   if (queue.length >= MAX_QUEUED) return;
   queue.push({ kind, message, detail, at: new Date().toISOString() });
   timer ??= setTimeout(() => void flushDiagnostics(), FLUSH_DELAY_MS);
@@ -56,6 +59,8 @@ export function reportUncaughtErrors(): void {
       error instanceof Error ? error.message : String(error),
       { stack: error instanceof Error ? error.stack : undefined },
     );
+    deviceLog("error", isFatal ? "crash" : "uncaught", "Uncaught error", error);
+    flushDeviceLog();
     void flushDiagnostics();
     previous(error, isFatal);
   });
