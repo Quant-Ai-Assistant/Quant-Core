@@ -15,6 +15,7 @@ on a release branch first and reaches `main` only when the maintainer says so.
 | "This Mac" settings: emergency stop, per-assistant interrupt and off switch, server on/off, don't lock the Mac | `feat/agent-controls` | Adds `Bot.pausedAt` (migration `20261016020000_bot_paused_at`). |
 | Mac screen in the bot panel with a built-in virtual desktop (Lima, no Docker); Telegram-style voice messages; smooth sending; Android update card; hover without clicking; "Computer" badge on replies; phone-like calls in the chat and on the call screen | `fix/voice-screen-chat-polish` | The virtual desktop downloads a pinned Lima release on first use. User messages and `thread.message.created` carry `clientNonce`; new RPC `threads.activity`. Mobile drops `expo-speech-recognition`. |
 | Telegram-style message reactions: one per person, tap again to remove; 👍/👎 on the bot's latest message answers it (e.g. closes a reminder); the bot can answer with a reaction instead of text, without a typing indicator | `feat/message-reactions` | No migration: reactions stay emoji-only replies. New built-in tool `react_to_message`; `threads.react` takes `reaction: null` to remove; turns started by a reaction use the existing `reaction` run trigger. |
+| Hanging up a bot's call on the phone stops it ringing on the other devices | `fix/call-decline-sync` | The phone sent no `outcome`, so the server rejected the hang-up; `threads.declineCall` now defaults it to `declined`, which also fixes Android builds already installed. |
 
 ## How to land a feature or fix
 
