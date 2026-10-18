@@ -13,6 +13,7 @@ const settingsScreens = new Set([
   "integration-setup",
   "integrations",
   "models",
+  "permissions",
   "voice",
 ]);
 

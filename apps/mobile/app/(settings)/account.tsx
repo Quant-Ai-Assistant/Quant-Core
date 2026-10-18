@@ -538,6 +538,13 @@ export default function Account() {
             accessibilityRole="button"
             chevron="right"
             disabled={pending}
+            onPress={() => router.push("/permissions")}
+            title={t("Permissions")}
+          />
+          <SettingsRow
+            accessibilityRole="button"
+            chevron="right"
+            disabled={pending}
             onPress={() => router.push("/integrations")}
             title={t("Integrations")}
           />
